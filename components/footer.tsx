@@ -9,7 +9,7 @@ import type { MouseEvent } from "react"
 export default function Footer() {
   const router = useRouter()
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault()
     router.push(href)
     setTimeout(() => {
@@ -39,22 +39,22 @@ export default function Footer() {
               <h3 className="text-lg font-semibold mb-2">Quick Links</h3>
               <ul className="space-y-1 text-sm">
                 <li>
-                  <Link href="/" onClick={(e) => handleClick(e, "/")}>
+                  <Link href="/" onClick={(e) => handleClick(e, "/")} passHref>
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about" onClick={(e) => handleClick(e, "/about")}>
+                  <Link href="/about" onClick={(e) => handleClick(e, "/about")} passHref>
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="/rules" onClick={(e) => handleClick(e, "/rules")}>
+                  <Link href="/rules" onClick={(e) => handleClick(e, "/rules")} passHref>
                     Rules
                   </Link>
                 </li>
                 <li>
-                  <Link href="/rankings" onClick={(e) => handleClick(e, "/rankings")}>
+                  <Link href="/rankings" onClick={(e) => handleClick(e, "/rankings")} passHref>
                     Rankings
                   </Link>
                 </li>
@@ -64,22 +64,22 @@ export default function Footer() {
               <h3 className="text-lg font-semibold mb-2">Resources</h3>
               <ul className="space-y-1 text-sm">
                 <li>
-                  <Link href="/faq" onClick={(e) => handleClick(e, "/faq")}>
+                  <Link href="/faq" onClick={(e) => handleClick(e, "/faq")} passHref>
                     FAQ
                   </Link>
                 </li>
                 <li>
-                  <Link href="/community-guidelines" onClick={(e) => handleClick(e, "/community-guidelines")}>
+                  <Link href="/community-guidelines" onClick={(e) => handleClick(e, "/community-guidelines")} passHref>
                     Community Guidelines
                   </Link>
                 </li>
                 <li>
-                  <Link href="/become-a-host" onClick={(e) => handleClick(e, "/become-a-host")}>
+                  <Link href="/become-a-host" onClick={(e) => handleClick(e, "/become-a-host")} passHref>
                     Become a Host
                   </Link>
                 </li>
                 <li>
-                  <Link href="/skyball-for-schools" onClick={(e) => handleClick(e, "/skyball-for-schools")}>
+                  <Link href="/skyball-for-schools" onClick={(e) => handleClick(e, "/skyball-for-schools")} passHref>
                     SkyBall™ for Schools
                   </Link>
                 </li>

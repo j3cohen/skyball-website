@@ -68,10 +68,10 @@ const rankingSections = [
     icon: Star,
     content: (
       <ul className="list-disc list-inside mb-4">
-        <li>A player's ranking is based on their top 10 tournament performances over a rolling 12-month period.</li>
+        <li>A player&apos;s ranking is based on their top 10 tournament performances over a rolling 12-month period.</li>
         <li>After 12 months: Points expire completely</li>
         <li>
-          Protected Ranking: If a player is injured for 6+ months, their ranking is "frozen" for up to 1 year to allow
+          Protected Ranking: If a player is injured for 6+ months, their ranking is &quot;frozen&quot; for up to 1 year to allow
           fair return.
         </li>
         <li>
@@ -124,7 +124,7 @@ export default function RankingsContent() {
             </CardHeader>
             <CardContent>
               <p>
-                SkyBall™ rankings are designed to reflect players' performance in official tournaments over time. These
+                SkyBall™ rankings are designed to reflect players&apos; performance in official tournaments over time. These
                 rankings determine seedings in major tournaments and can qualify players for special events.
                 Understanding the ranking system is crucial for competitive SkyBall™ players.
               </p>

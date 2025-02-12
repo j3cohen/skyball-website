@@ -52,7 +52,7 @@ export default function SkyBallForSchoolsPage() {
             ))}
           </div>
           <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">What's Included in the Program</h2>
+            <h2 className="text-2xl font-bold mb-4">What&apos;s Included in the Program</h2>
             <ul className="list-disc pl-6 mb-6">
               <li>SkyBall equipment set (rackets and balls)</li>
               <li>Portable nets for easy setup</li>

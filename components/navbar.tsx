@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, X, ChevronDown } from "lucide-react"
+// import { Menu, X, ChevronDown } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { libreFranklin } from "@/app/fonts"
 import { motion, AnimatePresence } from "framer-motion"
@@ -70,9 +71,9 @@ export default function Navbar() {
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
                   {item.name}
-                  {item.subItems && <ChevronDown className="ml-1 h-4 w-4" />}
+                  {/* {item.subItems && <ChevronDown className="ml-1 h-4 w-4" />} */}
                 </Link>
-                {item.subItems && (
+                {/* {item.subItems && ( */}
                   <AnimatePresence>
                     {activeDropdown === item.name && (
                       <motion.div
@@ -84,7 +85,7 @@ export default function Navbar() {
                         onMouseEnter={() => setActiveDropdown(item.name)}
                         onMouseLeave={() => setActiveDropdown(null)}
                       >
-                        <div className="py-1">
+                        {/* <div className="py-1">
                           {item.subItems.map((subItem) => (
                             <Link
                               key={subItem.name}
@@ -94,11 +95,11 @@ export default function Navbar() {
                               {subItem.name}
                             </Link>
                           ))}
-                        </div>
+                        </div> */}
                       </motion.div>
                     )}
                   </AnimatePresence>
-                )}
+                {/* )} */}
               </div>
             ))}
           </div>
@@ -130,7 +131,7 @@ export default function Navbar() {
                   >
                     {item.name}
                   </Link>
-                  {item.subItems && (
+                  {/* {item.subItems && (
                     <div className="ml-4 mt-2 space-y-2">
                       {item.subItems.map((subItem) => (
                         <Link
@@ -143,7 +144,7 @@ export default function Navbar() {
                         </Link>
                       ))}
                     </div>
-                  )}
+                  )} */}
                 </div>
               ))}
             </div>

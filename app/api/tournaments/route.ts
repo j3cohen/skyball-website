@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from 'next/server';
+
+// Define a type for the tournament structure (modify as needed)
+type Tournament = {
+  id: string;
+  name: string;
+  date: string;
+  location: string;
+};
 
 export async function GET() {
-  // Return an empty array as there are no tournaments yet
-  const tournaments = []
+  // Explicitly type the empty array
+  const tournaments: Tournament[] = []
 
-  return NextResponse.json(tournaments)
+  return NextResponse.json(tournaments);
 }
-

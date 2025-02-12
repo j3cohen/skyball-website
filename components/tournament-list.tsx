@@ -24,7 +24,7 @@ export default function TournamentList() {
       <CardContent className="p-6">
         <h2 className="text-2xl font-semibold text-center mb-4">Tournaments Coming Soon</h2>
         <p className="text-center text-gray-600">
-          We're excited to announce that SkyBall™ tournaments are in the works! Stay tuned for upcoming events where you
+          We&apos;re excited to announce that SkyBall™ tournaments are in the works! Stay tuned for upcoming events where you
           can showcase your skills and compete with other SkyBall™ enthusiasts.
         </p>
         <p className="text-center text-gray-600 mt-4">

@@ -37,7 +37,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                   Phone Number
                 </label>
                 <Input type="tel" id="phone" name="phone" required className="mt-1" />
-                label>
+                
                 <Input type="tel" id="phone" name="phone" required className="mt-1" />
               </div>
               <div>

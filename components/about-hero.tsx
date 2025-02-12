@@ -25,7 +25,7 @@ export default function AboutHero() {
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">About SkyBall</h1>
           <p className="text-xl md:text-2xl max-w-3xl mx-auto">
-            Discover the story behind the sport that's revolutionizing racket games and bringing communities together.
+            Discover the story behind the sport that&apos;s revolutionizing racket games and bringing communities together.
           </p>
         </motion.div>
       </div>

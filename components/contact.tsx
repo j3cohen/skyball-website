@@ -46,7 +46,7 @@ export default function Contact() {
           <div className="md:flex">
             <div className="md:w-1/2 bg-sky-600 p-12 text-white">
               <h2 className="text-3xl font-bold mb-6">Get in Touch</h2>
-              <p className="mb-6">Have questions about SkyBall? Want to organize a tournament? We're here to help!</p>
+              <p className="mb-6">Have questions about SkyBall? Want to organize a tournament? We&apos;re here to help!</p>
               <div className="space-y-4">
                 <p className="flex items-center">
                   <Send size={20} className="mr-2" />
