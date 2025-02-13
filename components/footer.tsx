@@ -9,13 +9,15 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/SkyBall%20logo_B.jpg-dPdFMlGp5QkZiD1KMEEFeGXKxL28hh.jpeg"
-              alt="SkyBall™ Logo"
-              width={120}
-              height={40}
-              className="h-8 w-auto"
-            />
+            <Link href="/">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/SkyBall%20logo_B.jpg-dPdFMlGp5QkZiD1KMEEFeGXKxL28hh.jpeg"
+                alt="SkyBall™ Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
+            </Link>
             <p className="mt-2 text-sm">Where the Rally Never Ends.</p>
           </div>
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -42,9 +44,9 @@ export default function Footer() {
                 <li>
                   <Link href="/faq">FAQ</Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link href="/community-guidelines">Community Guidelines</Link>
-                </li>
+                </li> */}
                 <li>
                   <Link href="/become-a-host">Become a Host</Link>
                 </li>

@@ -52,7 +52,7 @@ export default function BecomeAHostPage() {
           </div>
           <div className="text-center">
             <Button size="lg" className="bg-sky-600 hover:bg-sky-700 text-white">
-              Apply to Host a Tournament
+              Email play@skyball.us for more information!
             </Button>
           </div>
         </div>
