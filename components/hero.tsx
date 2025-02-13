@@ -22,7 +22,8 @@ export default function Hero() {
         className="absolute inset-0"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80')",
+            // "url('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80')",
+            "url('https://jbcpublicbucket.s3.us-east-1.amazonaws.com/hero.JPG')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           transform: `translateY(${offset * 0.5}px)`,
@@ -40,7 +41,7 @@ export default function Hero() {
           <p
             className={`${libreFranklin.className} text-lg md:text-xl text-white/80 max-w-xl animate-fade-up animation-delay-100`}
           >
-            Experience the thrill of tennis on a pickleball court. Fast-paced, dynamic, and accessible to all.
+            Experience the thrill of tennis on a pickleball court. Fast-paced, dynamic, and fun for all.
           </p>
           <Link href="/about">
             <Button

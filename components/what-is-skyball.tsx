@@ -67,7 +67,7 @@ export default function WhatIsSkyBall() {
           className="text-lg text-center max-w-3xl mx-auto"
         >
           SkyBall™ emerged from a passion for innovative, accessible sports that bring people together. It combines the
-          excitement of tennis, the accessibility of pickleball, and the adaptability of street sports. Perfect for
+          excitement of tennis with the availability of pickleball. Perfect for
           urban environments and community centers, SkyBall™ offers instant playability for beginners while providing
           enough depth to challenge skilled athletes.
         </motion.p>
