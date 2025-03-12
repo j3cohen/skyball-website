@@ -46,7 +46,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                 </label>
                 <Input type="date" id="dob" name="dob" required className="mt-1" />
               </div>
-              <div>
+              {/* <div>
                 <label htmlFor="skill_level" className="block text-sm font-medium text-gray-700">
                   Skill Level
                 </label>
@@ -62,7 +62,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                   <option value="advanced">Advanced</option>
                   <option value="pro">Professional</option>
                 </select>
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Registration Fee: {tournament.registrationFee}
