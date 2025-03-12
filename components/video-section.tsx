@@ -10,9 +10,10 @@ import { Play, Pause, Volume2, VolumeX } from "lucide-react"
 interface VideoPlayerProps {
   src: string
   aspectRatio: "square" | "video"
+  objectFit?: "cover" | "contain"
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit = "cover" }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -39,17 +40,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio }) => {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl shadow-2xl cursor-pointer",
+        "relative overflow-hidden rounded-xl shadow-2xl cursor-pointer max-h-[70vh]",
         aspectRatio === "square" ? "aspect-square" : "aspect-video",
-        "max-h-[70vh] w-full", // Added w-full to ensure proper sizing
-        aspectRatio === "square" ? "max-w-[70vh]" : "", // Limit width for square video to maintain aspect ratio
       )}
-      onClick={handlePlayPause} // Make entire container clickable
+      onClick={handlePlayPause}
     >
       <video
         ref={videoRef}
         src={src}
-        className="absolute top-0 left-0 w-full h-full object-cover"
+        className={cn(
+          "absolute top-0 left-0 w-full h-full",
+          objectFit === "contain" ? "object-contain" : "object-cover",
+        )}
         playsInline
         loop
         muted={isMuted}
@@ -115,23 +117,36 @@ export default function VideoSection() {
           Experience SkyBall™
         </h2>
         <div className="flex flex-col lg:flex-row gap-8 items-center">
-          {" "}
-          {/* Added items-center for vertical centering */}
+          {/* Square video container */}
           <div
             className={cn(
-              "transition-all duration-700 delay-200 w-full lg:w-1/3 flex justify-center", // Added flex justify-center
+              "transition-all duration-700 delay-200 w-full lg:w-1/3 flex justify-center",
               inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <VideoPlayer src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/IMG_8016.mov" aspectRatio="square" />
+            <div className="w-full max-w-[min(100%,70vh)]">
+              <VideoPlayer
+                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/IMG_8016.mov"
+                aspectRatio="square"
+                objectFit="cover" // Use cover for the square video
+              />
+            </div>
           </div>
+
+          {/* 16:9 video container */}
           <div
             className={cn(
-              "transition-all duration-700 delay-300 w-full lg:w-2/3 flex justify-center", // Added flex justify-center
+              "transition-all duration-700 delay-300 w-full lg:w-2/3 flex justify-center",
               inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <VideoPlayer src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/rally.mov" aspectRatio="video" />
+            <div className="w-full">
+              <VideoPlayer
+                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/rally.mov"
+                aspectRatio="video"
+                objectFit="contain" // Use contain for the 16:9 video to preserve aspect ratio
+              />
+            </div>
           </div>
         </div>
       </div>
