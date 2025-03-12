@@ -14,7 +14,7 @@ import { usePathname } from "next/navigation"
 // Update the navItems array to replace Products dropdown with Shop link
 const navItems = [
   { name: "Home", href: "/" },
-  { name: "About", href: "/about" },
+  // { name: "About", href: "/about" },
   { name: "Shop", href: "/shop" }, // Changed from Products to Shop
   { name: "Rules", href: "/rules" },
   { name: "Tournaments", href: "/tournaments" },
