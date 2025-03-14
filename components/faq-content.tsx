@@ -1,4 +1,40 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import InfoRequestForm from "@/components/info-request-form"
+
 export default function FAQContent() {
+  const [showForm, setShowForm] = useState(false)
+
+  const LocationFormFields = () => (
+    <>
+      <div>
+        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+          City
+        </label>
+        <input
+          id="city"
+          name="city"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+          placeholder="Your city"
+        />
+      </div>
+      <div>
+        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+          State
+        </label>
+        <input
+          id="state"
+          name="state"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+          placeholder="Your state"
+        />
+      </div>
+    </>
+  )
+
   const faqs = [
     {
       question: "What equipment do I need to play SkyBall?",
@@ -7,12 +43,36 @@ export default function FAQContent() {
     },
     {
       question: "Where can I play SkyBall?",
-      answer:
-        "SkyBall can be played almost anywhere with a flat surface - indoor or outdoor. This includes public parks or playgrounds, school playgrounds, backyard spaces, and indoor gymnasiums.",
+      answer: (
+        <>
+          <p className="mb-4">
+            SkyBall can be played almost anywhere with a flat surface - indoor or outdoor. This includes public parks or
+            playgrounds, school playgrounds, backyard spaces, and indoor gymnasiums.
+          </p>
+          <div className="mt-4 p-4 bg-sky-50 rounded-lg">
+            <h3 className="font-semibold mb-2">Looking for SkyBall in your area?</h3>
+            <p className="mb-3">
+              Let us know where you're located, and we'll help you find or start a SkyBall community near you.
+            </p>
+            <Button onClick={() => setShowForm(true)} className="bg-sky-600 hover:bg-sky-700 text-white">
+              Find SkyBall Near Me
+            </Button>
+          </div>
+        </>
+      ),
     },
     {
       question: "How many players do I need for a game?",
-      answer: "SkyBall can be played in several formats: Singles (1v1) or Doubles (2v2).",
+      answer: (
+        <>
+          <p>SkyBall can be played in several formats: Singles (1v1) or Doubles (2v2).</p>
+          <p className="mt-2">
+            <Link href="/rules" className="text-sky-600 hover:underline">
+              View the full rules here
+            </Link>
+          </p>
+        </>
+      ),
     },
     {
       question: "Is SkyBall competitive?",
@@ -22,7 +82,7 @@ export default function FAQContent() {
     {
       question: "What makes SkyBall different from other racket sports?",
       answer:
-        "SkyBall combines the best elements of various racket sports while eliminating common barriers to entry. Our unique ball design and simplified rules make it easier to maintain rallies, while the smaller court size makes it more accessible. The sport emphasizes fun and fitness over technical complexity.",
+        "SkyBall combines the best elements of various racket sports while eliminating common barriers to entry. Our unique ball design and simplified rules make it easier to maintain rallies, while the smaller court size makes it more available. The sport emphasizes fun and strategic play with elements of placement, positioning, and control.",
     },
     {
       question: "Are there health benefits to playing SkyBall?",
@@ -31,8 +91,20 @@ export default function FAQContent() {
     },
     {
       question: "How can I start a SkyBall community in my area?",
-      answer:
-        "We support new SkyBall communities through starter kits for community organizers, online resources and guides, connection with existing SkyBall groups, support for setting up local leagues, social media promotion for new groups, and tournament organization guidance.",
+      answer: (
+        <>
+          <p className="mb-4">
+            We're excited to help you grow SkyBall in your community! We support new SkyBall communities through starter
+            kits for community organizers, online resources and guides, connection with existing SkyBall groups, support
+            for setting up local leagues, social media promotion for new groups, and tournament organization guidance.
+          </p>
+          <p>
+            <Link href="/become-a-host" className="text-sky-600 hover:underline">
+              Learn more about becoming a SkyBall host
+            </Link>
+          </p>
+        </>
+      ),
     },
   ]
 
@@ -44,11 +116,19 @@ export default function FAQContent() {
           {faqs.map((faq, index) => (
             <div key={index} className="mb-8">
               <h2 className="text-2xl font-semibold mb-2">{faq.question}</h2>
-              <p className="text-lg">{faq.answer}</p>
+              <div className="text-lg">{faq.answer}</div>
             </div>
           ))}
         </div>
       </div>
+
+      {showForm && (
+        <InfoRequestForm
+          subject="Where can I play?"
+          onClose={() => setShowForm(false)}
+          additionalFields={<LocationFormFields />}
+        />
+      )}
     </section>
   )
 }

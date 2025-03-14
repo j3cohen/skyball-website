@@ -1,7 +1,11 @@
+"use client"
+
+import { useState } from "react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, MapPinIcon, UsersIcon, TrophyIcon } from "lucide-react"
+import InfoRequestForm from "@/components/info-request-form"
 
 const steps = [
   {
@@ -27,6 +31,8 @@ const steps = [
 ]
 
 export default function BecomeAHostPage() {
+  const [showForm, setShowForm] = useState(false)
+
   return (
     <>
       <Navbar />
@@ -35,7 +41,7 @@ export default function BecomeAHostPage() {
           <h1 className="text-4xl font-bold text-center mb-8">Become a SkyBall Host</h1>
           <p className="text-center mb-12 max-w-2xl mx-auto">
             Hosting a SkyBall tournament is a great way to grow the sport in your community and create exciting events
-            for players. Follow these steps to organize your own tournament.
+            for players. We're committed to working with you every step of the way to ensure your event is successful.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
             {steps.map((step, index) => (
@@ -50,14 +56,30 @@ export default function BecomeAHostPage() {
               </div>
             ))}
           </div>
-          <div className="text-center">
-            <Button size="lg" className="bg-sky-600 hover:bg-sky-700 text-white">
-              Email play@skyball.us for more information!
-            </Button>
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Partner With Us</h2>
+            <p className="mb-4">
+              At SkyBall, we believe in building strong partnerships with our hosts. We're dedicated to making your
+              events successful, attractive, and profitable. Your success is our success, and we'll work closely with
+              you to:
+            </p>
+            <ul className="list-disc pl-6 mb-6">
+              <li>Provide marketing support to promote your events</li>
+              <li>Offer guidance on tournament structure and organization</li>
+              <li>Connect you with the broader SkyBall community</li>
+              <li>Help you build a sustainable local SkyBall presence</li>
+            </ul>
+            <div className="text-center">
+              <Button size="lg" className="bg-sky-600 hover:bg-sky-700 text-white" onClick={() => setShowForm(true)}>
+                Find Out More
+              </Button>
+            </div>
           </div>
         </div>
       </main>
       <Footer />
+
+      {showForm && <InfoRequestForm subject="Host Information Request" onClose={() => setShowForm(false)} />}
     </>
   )
 }

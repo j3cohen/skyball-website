@@ -1,7 +1,11 @@
+"use client"
+
+import { useState } from "react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { BookOpenIcon, UsersIcon, TrophyIcon, HeartIcon } from "lucide-react"
+import InfoRequestForm from "@/components/info-request-form"
 
 const benefits = [
   {
@@ -28,6 +32,8 @@ const benefits = [
 ]
 
 export default function SkyBallForSchoolsPage() {
+  const [showForm, setShowForm] = useState(false)
+
   return (
     <>
       <Navbar />
@@ -61,7 +67,7 @@ export default function SkyBallForSchoolsPage() {
               <li>Support for organizing intramural tournaments</li>
             </ul>
             <div className="text-center">
-              <Button size="lg" className="bg-sky-600 hover:bg-sky-700 text-white">
+              <Button size="lg" className="bg-sky-600 hover:bg-sky-700 text-white" onClick={() => setShowForm(true)}>
                 Request More Information
               </Button>
             </div>
@@ -69,6 +75,8 @@ export default function SkyBallForSchoolsPage() {
         </div>
       </main>
       <Footer />
+
+      {showForm && <InfoRequestForm subject="School Information Request" onClose={() => setShowForm(false)} />}
     </>
   )
 }
