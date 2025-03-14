@@ -3,13 +3,12 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { Menu, X, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { libreFranklin } from "@/app/fonts"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 // Update the navItems array to replace Products dropdown with Shop link
 const navItems = [
@@ -26,13 +25,37 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const pathname = usePathname()
+  const router = useRouter()
 
   // Check if we're on the home or about page
   const isTransparentNavbarPage = pathname === "/" || pathname === "/about"
 
+  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
+    e.preventDefault()
+
+    // If clicking on the current page's link, just scroll to top
+    if (pathname === href) {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } else {
+      // For navigation to a different page:
+      // 1. First scroll to top of current page
+      window.scrollTo({ top: 0, behavior: "auto" })
+      // 2. Then navigate to the new page
+      router.push(href)
+    }
+  }
+
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault()
-    window.scrollTo({ top: 0, behavior: "smooth" })
+
+    // If we're on the home page, just scroll to top
+    if (pathname === "/") {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } else {
+      // If we're on any other page, first scroll to top, then navigate to home
+      window.scrollTo({ top: 0, behavior: "auto" })
+      router.push("/")
+    }
   }
 
   useEffect(() => {
@@ -42,6 +65,11 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  // This effect ensures we start at the top when the route changes
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <motion.nav
@@ -59,7 +87,7 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
-          <Link href="/" className="transition-all duration-300 hover:scale-105" onClick={handleLogoClick}>
+          <a href="/" className="transition-all duration-300 hover:scale-105" onClick={handleLogoClick}>
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/SkyBall%20logo_B.jpg-dPdFMlGp5QkZiD1KMEEFeGXKxL28hh.jpeg"
               alt="SkyBall"
@@ -68,23 +96,24 @@ export default function Navbar() {
               className="h-10 w-auto"
               priority
             />
-          </Link>
+          </a>
           <div className="hidden md:flex space-x-8 items-center">
             {navItems.map((item) => (
               <div key={item.name} className="relative group">
-                <Link
+                <a
                   href={item.href}
+                  onClick={(e) => handleNavigation(e, item.href)}
                   className={cn(
                     `${libreFranklin.className} text-sm transition-colors duration-300 group-hover:text-sky-600`,
-                    isTransparentNavbarPage ? (isScrolled ? "text-gray-700" : "text-white") : "text-gray-700", // Dark text on white background, just like when scrolled
-                    "flex items-center",
+                    isTransparentNavbarPage ? (isScrolled ? "text-gray-700" : "text-white") : "text-gray-700",
+                    "flex items-center cursor-pointer",
                   )}
                   onMouseEnter={() => setActiveDropdown(item.name)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
                   {item.name}
                   {item.subItems && <ChevronDown className="ml-1 h-4 w-4" />}
-                </Link>
+                </a>
                 {item.subItems && (
                   <AnimatePresence>
                     {activeDropdown === item.name && (
@@ -99,13 +128,14 @@ export default function Navbar() {
                       >
                         <div className="py-1">
                           {item.subItems.map((subItem) => (
-                            <Link
+                            <a
                               key={subItem.name}
                               href={subItem.href}
+                              onClick={(e) => handleNavigation(e, subItem.href)}
                               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             >
                               {subItem.name}
-                            </Link>
+                            </a>
                           ))}
                         </div>
                       </motion.div>
@@ -139,24 +169,30 @@ export default function Navbar() {
             <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
               {navItems.map((item) => (
                 <div key={item.name}>
-                  <Link
+                  <a
                     href={item.href}
-                    className="text-gray-700 hover:text-sky-600 transition-colors duration-300 block"
-                    onClick={() => setIsOpen(false)}
+                    className="text-gray-700 hover:text-sky-600 transition-colors duration-300 block cursor-pointer"
+                    onClick={(e) => {
+                      handleNavigation(e, item.href)
+                      setIsOpen(false)
+                    }}
                   >
                     {item.name}
-                  </Link>
+                  </a>
                   {item.subItems && (
                     <div className="ml-4 mt-2 space-y-2">
                       {item.subItems.map((subItem) => (
-                        <Link
+                        <a
                           key={subItem.name}
                           href={subItem.href}
                           className="text-gray-600 hover:text-sky-600 transition-colors duration-300 block text-sm"
-                          onClick={() => setIsOpen(false)}
+                          onClick={(e) => {
+                            handleNavigation(e, subItem.href)
+                            setIsOpen(false)
+                          }}
                         >
                           {subItem.name}
-                        </Link>
+                        </a>
                       ))}
                     </div>
                   )}
