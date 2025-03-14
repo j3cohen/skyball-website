@@ -12,11 +12,11 @@ import Footer from "@/components/footer"
 import { submitRegistration } from "@/app/actions/registration"
 
 type ResponseState = {
-  success?: boolean
-  message?: string
-  fieldErrors?: Record<string, string[]>
-  isSystemError?: boolean
-} | null
+  success?: boolean;
+  message?: string;
+  fieldErrors?: Record<string, string[]>;
+  isSystemError?: boolean;
+} | null;
 
 export default function TournamentRegistrationPage({ params }: { params: { id: string } }) {
   const tournament = upcomingTournaments.find((t) => t.id === params.id)
@@ -125,7 +125,20 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
       updateHiddenDate()
 
       // Clear any error messages when user is typing
-      setResponse((prev) => (prev ? { ...prev, fieldErrors: { ...prev.fieldErrors, dob: null } } : prev))
+      setResponse((prev) => {
+        if (!prev) return prev;
+        
+        // Create a new object without the dob field error
+        const newFieldErrors = { ...prev.fieldErrors };
+        if (newFieldErrors && 'dob' in newFieldErrors) {
+          delete newFieldErrors.dob;
+        }
+        
+        return {
+          ...prev,
+          fieldErrors: newFieldErrors
+        };
+      });
     }
 
     return (
@@ -288,4 +301,3 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
     </>
   )
 }
-
