@@ -13,15 +13,17 @@ import { submitRegistration } from "@/app/actions/registration"
 
 type FieldErrors = Record<string, string[]>
 
+type ResponseState = {
+  success?: boolean
+  message?: string
+  fieldErrors?: Record<string, string[]>
+  isSystemError?: boolean
+} | null
+
 export default function TournamentRegistrationPage({ params }: { params: { id: string } }) {
   const tournament = upcomingTournaments.find((t) => t.id === params.id)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [response, setResponse] = useState<{
-    success?: boolean
-    message?: string
-    fieldErrors?: FieldErrors
-    isSystemError?: boolean
-  } | null>(null)
+  const [response, setResponse] = useState<ResponseState>(null)
 
   if (!tournament) {
     notFound()
@@ -76,7 +78,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
   }
 
   // Custom date input component with auto-advancing
-  function DateInput({ setResponse }: { setResponse: React.Dispatch<React.SetStateAction<any>> }) {
+  function DateInput({ setResponse }: { setResponse: React.Dispatch<React.SetStateAction<ResponseState>> }) {
     const monthRef = useRef<HTMLInputElement>(null)
     const dayRef = useRef<HTMLInputElement>(null)
     const yearRef = useRef<HTMLInputElement>(null)

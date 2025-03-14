@@ -110,13 +110,13 @@ export async function submitRegistration(formData: FormData) {
         )
 
         // Create a user-friendly message based on the validation errors
-        let message = "Please correct the following issues:"
+        let errorMessage = "Please correct the following issues:"
 
         // Add specific field errors to the message
-        if (fieldErrors.name) message += "\n• Name: " + fieldErrors.name[0]
-        if (fieldErrors.email) message += "\n• Email: " + fieldErrors.email[0]
-        if (fieldErrors.phone) message += "\n• Phone: " + fieldErrors.phone[0]
-        if (fieldErrors.dob) message += "\n• Date of Birth: " + fieldErrors.dob[0]
+        if (fieldErrors.name) errorMessage += "\n• Name: " + fieldErrors.name[0]
+        if (fieldErrors.email) errorMessage += "\n• Email: " + fieldErrors.email[0]
+        if (fieldErrors.phone) errorMessage += "\n• Phone: " + fieldErrors.phone[0]
+        if (fieldErrors.dob) errorMessage += "\n• Date of Birth: " + fieldErrors.dob[0]
 
         return {
           success: false,
