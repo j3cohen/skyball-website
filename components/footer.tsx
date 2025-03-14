@@ -31,8 +31,9 @@ export default function Footer() {
                   <Link href="/about">About</Link>
                 </li>
                 <li>
-                  <Link href="/rules">Rules</Link>
+                  <Link href="/tournaments">Tournaments</Link>
                 </li>
+                
                 <li>
                   <Link href="/rankings">Rankings</Link>
                 </li>
@@ -41,6 +42,9 @@ export default function Footer() {
             <div>
               <h3 className="text-lg font-semibold mb-2">Resources</h3>
               <ul className="space-y-1 text-sm">
+                <li>
+                  <Link href="/rules">Rules</Link>
+                </li>
                 <li>
                   <Link href="/faq">FAQ</Link>
                 </li>
