@@ -1,15 +1,78 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
 import { upcomingTournaments } from "@/data/tournaments"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import { submitRegistration } from "@/app/actions/registration"
+
+type FieldErrors = Record<string, string[]>
 
 export default function TournamentRegistrationPage({ params }: { params: { id: string } }) {
   const tournament = upcomingTournaments.find((t) => t.id === params.id)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [response, setResponse] = useState<{
+    success?: boolean
+    message?: string
+    fieldErrors?: FieldErrors
+    isSystemError?: boolean
+  } | null>(null)
 
   if (!tournament) {
     notFound()
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setResponse(null)
+
+    try {
+      // Get form data
+      const formData = new FormData(event.currentTarget)
+      // Add tournament ID to form data
+      formData.append("tournamentId", tournament.id)
+
+      // Submit the registration
+      const result = await submitRegistration(formData)
+
+      if (result.success) {
+        setResponse({
+          success: true,
+          message: result.message,
+        })
+
+        // Reset form if successful
+        if (event.currentTarget) {
+          event.currentTarget.reset()
+        }
+      } else {
+        setResponse({
+          success: false,
+          message: result.message,
+          fieldErrors: result.fieldErrors,
+          isSystemError: result.isSystemError,
+        })
+      }
+    } catch (error) {
+      // Log the error for debugging
+      console.error("Error submitting form:", error)
+
+      // Show a generic error message to the user
+      setResponse({
+        success: false,
+        message:
+          "We're experiencing technical difficulties. Please email info@skyball.us to register or try again later.",
+        isSystemError: true,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -19,50 +82,89 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8">Register for {tournament.name}</h1>
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <form className="space-y-6">
+            {response && (
+              <div
+                className={`mb-6 p-4 rounded-md ${
+                  response.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                }`}
+              >
+                <p className="mb-2">{response.message}</p>
+                {!response.success && response.isSystemError && (
+                  <p className="text-sm">
+                    If you continue to experience issues, please email{" "}
+                    <a href="mailto:info@skyball.us" className="underline font-medium">
+                      info@skyball.us
+                    </a>{" "}
+                    with your registration details.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Full Name
                 </label>
-                <Input type="text" id="name" name="name" required className="mt-1" />
+                <Input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  className={`mt-1 ${response?.fieldErrors?.name ? "border-red-500" : ""}`}
+                />
+                {response?.fieldErrors?.name && (
+                  <p className="mt-1 text-sm text-red-600">{response.fieldErrors.name[0]}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email
                 </label>
-                <Input type="email" id="email" name="email" required className="mt-1" />
+                <Input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  className={`mt-1 ${response?.fieldErrors?.email ? "border-red-500" : ""}`}
+                />
+                {response?.fieldErrors?.email && (
+                  <p className="mt-1 text-sm text-red-600">{response.fieldErrors.email[0]}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Phone Number
                 </label>
-                <Input type="tel" id="phone" name="phone" required className="mt-1" />
-                
-                <Input type="tel" id="phone" name="phone" required className="mt-1" />
+                <Input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  className={`mt-1 ${response?.fieldErrors?.phone ? "border-red-500" : ""}`}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter a 10-digit number (e.g., 5551234567) or international format with + (e.g., +1 555-123-4567)
+                </p>
+                {response?.fieldErrors?.phone && (
+                  <p className="mt-1 text-sm text-red-600">{response.fieldErrors.phone[0]}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
                   Date of Birth
                 </label>
-                <Input type="date" id="dob" name="dob" required className="mt-1" />
-              </div>
-              {/* <div>
-                <label htmlFor="skill_level" className="block text-sm font-medium text-gray-700">
-                  Skill Level
-                </label>
-                <select
-                  id="skill_level"
-                  name="skill_level"
+                <Input
+                  type="date"
+                  id="dob"
+                  name="dob"
                   required
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md"
-                >
-                  <option value="">Select your skill level</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="pro">Professional</option>
-                </select>
-              </div> */}
+                  className={`mt-1 ${response?.fieldErrors?.dob ? "border-red-500" : ""}`}
+                />
+                {response?.fieldErrors?.dob && (
+                  <p className="mt-1 text-sm text-red-600">{response.fieldErrors.dob[0]}</p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Registration Fee: {tournament.registrationFee}
@@ -70,8 +172,8 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                 <p className="text-sm text-gray-500">Payment will be collected at the tournament check-in.</p>
               </div>
               <div>
-                <Button type="submit" className="w-full">
-                  Register for Tournament
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Registering..." : "Register for Tournament"}
                 </Button>
               </div>
             </form>
