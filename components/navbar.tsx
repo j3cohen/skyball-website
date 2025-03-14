@@ -3,15 +3,22 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Menu, X, ChevronDown } from "lucide-react"
+import { Menu, X, ChevronDown } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { libreFranklin } from "@/app/fonts"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 
+// Define the type for navigation items
+interface NavItem {
+  name: string;
+  href: string;
+  subItems?: Array<{ name: string; href: string }>;
+}
+
 // Update the navItems array to replace Products dropdown with Shop link
-const navItems = [
+const navItems: NavItem[] = [
   { name: "Home", href: "/" },
   // { name: "About", href: "/about" },
   { name: "Shop", href: "/shop" }, // Changed from Products to Shop
@@ -205,4 +212,3 @@ export default function Navbar() {
     </motion.nav>
   )
 }
-
