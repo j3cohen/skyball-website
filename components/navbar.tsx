@@ -21,7 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Home", href: "/" },
   // { name: "About", href: "/about" },
-  { name: "Shop", href: "/shop" }, // Changed from Products to Shop
+  // { name: "Shop", href: "/shop" }, 
   { name: "Rules", href: "/rules" },
   { name: "Tournaments", href: "/tournaments" },
   { name: "Rankings", href: "/rankings" },
