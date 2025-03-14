@@ -23,9 +23,13 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [response, setResponse] = useState<ResponseState>(null)
 
+  // If tournament is not found, show 404 page
   if (!tournament) {
     notFound()
   }
+
+  // TypeScript non-null assertion to tell TypeScript that tournament is definitely not null at this point
+  const tournamentId = tournament!.id
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -36,7 +40,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
       // Get form data
       const formData = new FormData(event.currentTarget)
       // Add tournament ID to form data
-      formData.append("tournamentId", tournament.id)
+      formData.append("tournamentId", tournamentId)
 
       // Submit the registration
       const result = await submitRegistration(formData)
