@@ -30,7 +30,8 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
     console.error("Form error:", error)
     setResponse({
       success: false,
-      message: "We&apos;re experiencing technical difficulties. Please email info@skyball.us or try again later.",
+      message: 
+        errorMessage || "We&apos;re experiencing technical difficulties. Please email info@skyball.us or try again later.",
     })
     setIsSubmitting(false)
   }, [])
