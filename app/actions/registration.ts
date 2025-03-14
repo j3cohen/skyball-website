@@ -80,7 +80,8 @@ export async function submitRegistration(formData: FormData) {
         console.log("Telegram notification sent successfully")
         return {
           success: true,
-          message: "Registration successful! We'll see you at the tournament.",
+          message:
+            "Registration form submitted! Please complete your payment to secure your spot. Once payment is received, we will confirm your registration.",
         }
       } else {
         // If Telegram notification fails, return an error

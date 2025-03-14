@@ -256,7 +256,20 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Registration Fee: {tournament.registrationFee}
                 </label>
-                <p className="text-sm text-gray-500">Payment will be collected at the tournament check-in.</p>
+                <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                  <h3 className="font-medium text-yellow-800 mb-2">Payment Instructions</h3>
+                  <p className="text-sm text-yellow-800 mb-2">
+                    <strong>Important:</strong> Your registration is not confirmed until payment is received.
+                  </p>
+                  <p className="text-sm text-yellow-800 mb-2">Please send your payment to one of the following:</p>
+                  <ul className="list-disc list-inside text-sm text-yellow-800 mb-2">
+                    <li>PayPal: jbc@jbcventures.xyz</li>
+                    <li>Zelle: jb@jbcventures.xyz</li>
+                  </ul>
+                  <p className="text-sm text-yellow-800">
+                    Once payment is received, we will reach out to confirm your spot in the tournament.
+                  </p>
+                </div>
               </div>
               <div>
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
