@@ -11,8 +11,6 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { submitRegistration } from "@/app/actions/registration"
 
-type FieldErrors = Record<string, string[]>
-
 type ResponseState = {
   success?: boolean
   message?: string

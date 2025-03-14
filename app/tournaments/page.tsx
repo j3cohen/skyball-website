@@ -1,6 +1,5 @@
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import TournamentList from "@/components/tournament-list"
 import UpcomingTournaments from "@/components/upcoming-tournaments"
 
 export default function TournamentsPage() {
