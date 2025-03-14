@@ -34,9 +34,22 @@ const registrationSchema = z.object({
       message: "Phone number must be either 10 digits or international format starting with +",
     },
   ),
-  dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Please enter a valid date of birth",
-  }),
+  dob: z.string().refine(
+    (val) => {
+      // Check if the date is valid
+      const isValidDate = !isNaN(Date.parse(val))
+
+      if (!isValidDate) return false
+
+      // Check if the date is not in the future
+      const dobDate = new Date(val)
+      const today = new Date()
+      return dobDate <= today
+    },
+    {
+      message: "Please enter a valid date of birth (not in the future)",
+    },
+  ),
   tournamentId: z.string(),
 })
 

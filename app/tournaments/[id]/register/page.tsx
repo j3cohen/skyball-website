@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { upcomingTournaments } from "@/data/tournaments"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -73,6 +73,97 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Custom date input component with auto-advancing
+  function DateInput({ setResponse }: { setResponse: React.Dispatch<React.SetStateAction<any>> }) {
+    const monthRef = useRef<HTMLInputElement>(null)
+    const dayRef = useRef<HTMLInputElement>(null)
+    const yearRef = useRef<HTMLInputElement>(null)
+    const hiddenDateRef = useRef<HTMLInputElement>(null)
+
+    // Update the hidden input whenever month, day, or year changes
+    const updateHiddenDate = () => {
+      if (!monthRef.current || !dayRef.current || !yearRef.current || !hiddenDateRef.current) return
+
+      const month = monthRef.current.value.padStart(2, "0")
+      const day = dayRef.current.value.padStart(2, "0")
+      const year = yearRef.current.value
+
+      if (month && day && year && year.length === 4) {
+        hiddenDateRef.current.value = `${year}-${month}-${day}`
+      } else {
+        hiddenDateRef.current.value = ""
+      }
+    }
+
+    // Handle input for month, day, and year fields
+    const handleInput = (
+      e: React.ChangeEvent<HTMLInputElement>,
+      maxLength: number,
+      nextRef?: React.RefObject<HTMLInputElement>,
+    ) => {
+      const input = e.target
+      const value = input.value
+
+      // Only allow numbers
+      if (!/^\d*$/.test(value)) {
+        input.value = value.replace(/\D/g, "")
+        return
+      }
+
+      // Auto-advance to next field when max length is reached
+      if (value.length === maxLength && nextRef?.current) {
+        nextRef.current.focus()
+      }
+
+      // Update the hidden date input
+      updateHiddenDate()
+
+      // Clear any error messages when user is typing
+      setResponse((prev) => (prev ? { ...prev, fieldErrors: { ...prev.fieldErrors, dob: null } } : prev))
+    }
+
+    return (
+      <>
+        <div className="flex items-center gap-2">
+          <Input
+            ref={monthRef}
+            type="text"
+            id="dob-month"
+            placeholder="MM"
+            maxLength={2}
+            className="w-16 text-center"
+            onChange={(e) => handleInput(e, 2, dayRef)}
+            aria-label="Month"
+          />
+          <span className="text-gray-500">/</span>
+          <Input
+            ref={dayRef}
+            type="text"
+            id="dob-day"
+            placeholder="DD"
+            maxLength={2}
+            className="w-16 text-center"
+            onChange={(e) => handleInput(e, 2, yearRef)}
+            aria-label="Day"
+          />
+          <span className="text-gray-500">/</span>
+          <Input
+            ref={yearRef}
+            type="text"
+            id="dob-year"
+            placeholder="YYYY"
+            maxLength={4}
+            className="w-24 text-center"
+            onChange={(e) => handleInput(e, 4)}
+            aria-label="Year"
+          />
+        </div>
+        {/* Hidden input that will be submitted with the form */}
+        <input ref={hiddenDateRef} type="date" id="dob" name="dob" required className="hidden" />
+      </>
+    )
   }
 
   return (
@@ -151,16 +242,12 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                 )}
               </div>
               <div>
-                <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="dob-month" className="block text-sm font-medium text-gray-700">
                   Date of Birth
                 </label>
-                <Input
-                  type="date"
-                  id="dob"
-                  name="dob"
-                  required
-                  className={`mt-1 ${response?.fieldErrors?.dob ? "border-red-500" : ""}`}
-                />
+                <div className="flex gap-2 mt-1">
+                  <DateInput setResponse={setResponse} />
+                </div>
                 {response?.fieldErrors?.dob && (
                   <p className="mt-1 text-sm text-red-600">{response.fieldErrors.dob[0]}</p>
                 )}
