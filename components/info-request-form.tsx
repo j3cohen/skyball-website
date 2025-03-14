@@ -30,8 +30,7 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
     console.error("Form error:", error)
     setResponse({
       success: false,
-      message:
-        errorMessage || "We're experiencing technical difficulties. Please email info@skyball.us or try again later.",
+      message: "We&apos;re experiencing technical difficulties. Please email info@skyball.us or try again later.",
     })
     setIsSubmitting(false)
   }, [])
@@ -98,73 +97,6 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
     }
   }
 
-  // Safe render function to prevent UI errors
-  const renderForm = () => {
-    try {
-      return (
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
-            <Input id="name" name="name" required placeholder="Your name" />
-            {response?.fieldErrors?.name && <p className="mt-1 text-sm text-red-600">{response.fieldErrors.name[0]}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <Input id="email" name="email" type="email" placeholder="Your email address" />
-            {response?.fieldErrors?.email && (
-              <p className="mt-1 text-sm text-red-600">{response.fieldErrors.email[0]}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
-            <Input id="phone" name="phone" type="tel" placeholder="Your phone number" />
-            {response?.fieldErrors?.phone && (
-              <p className="mt-1 text-sm text-red-600">{response.fieldErrors.phone[0]}</p>
-            )}
-          </div>
-
-          {/* Display error if neither email nor phone is provided */}
-          {emailOrPhoneError && <div className="text-sm text-red-600">{emailOrPhoneError}</div>}
-
-          {additionalFields}
-
-          <div>
-            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-              Message (Optional)
-            </label>
-            <Textarea id="message" name="message" placeholder="Any additional information or questions" rows={3} />
-          </div>
-
-          <Button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 text-white" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Request"}
-          </Button>
-        </form>
-      )
-    } catch (renderError) {
-      console.error("Error rendering form:", renderError)
-      return (
-        <div className="p-4 bg-red-50 text-red-700 rounded-md">
-          <p>We're experiencing technical difficulties with this form.</p>
-          <p>
-            Please email your request to{" "}
-            <a href="mailto:info@skyball.us" className="underline">
-              info@skyball.us
-            </a>{" "}
-            instead.
-          </p>
-        </div>
-      )
-    }
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -184,7 +116,60 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
             </div>
           )}
 
-          {renderForm()}
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Name *
+              </label>
+              <Input id="name" name="name" required placeholder="Your name" />
+              {response?.fieldErrors?.name && (
+                <p className="mt-1 text-sm text-red-600">{response.fieldErrors.name[0]}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <Input id="email" name="email" type="email" placeholder="Your email address" />
+              {response?.fieldErrors?.email && (
+                <p className="mt-1 text-sm text-red-600">{response.fieldErrors.email[0]}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone
+              </label>
+              <Input id="phone" name="phone" type="tel" placeholder="Your phone number" />
+              {response?.fieldErrors?.phone && (
+                <p className="mt-1 text-sm text-red-600">{response.fieldErrors.phone[0]}</p>
+              )}
+            </div>
+
+            {/* Display error if neither email nor phone is provided */}
+            {emailOrPhoneError && <div className="text-sm text-red-600">{emailOrPhoneError}</div>}
+
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                City, State
+              </label>
+              <Input id="location" name="location" placeholder="e.g., Brooklyn, NY" />
+            </div>
+
+            {additionalFields}
+
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                Message (Optional)
+              </label>
+              <Textarea id="message" name="message" placeholder="Any additional information or questions" rows={3} />
+            </div>
+
+            <Button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 text-white" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>

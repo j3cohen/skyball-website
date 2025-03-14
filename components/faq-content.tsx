@@ -8,33 +8,6 @@ import InfoRequestForm from "@/components/info-request-form"
 export default function FAQContent() {
   const [showForm, setShowForm] = useState(false)
 
-  const LocationFormFields = () => (
-    <>
-      <div>
-        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-          City
-        </label>
-        <input
-          id="city"
-          name="city"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-          placeholder="Your city"
-        />
-      </div>
-      <div>
-        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-          State
-        </label>
-        <input
-          id="state"
-          name="state"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-          placeholder="Your state"
-        />
-      </div>
-    </>
-  )
-
   const faqs = [
     {
       question: "What equipment do I need to play SkyBall?",
@@ -52,7 +25,7 @@ export default function FAQContent() {
           <div className="mt-4 p-4 bg-sky-50 rounded-lg">
             <h3 className="font-semibold mb-2">Looking for SkyBall in your area?</h3>
             <p className="mb-3">
-              Let us know where you're located, and we'll help you find or start a SkyBall community near you.
+              Let us know where you&apos;re located, and we&apos;ll help you find or start a SkyBall community near you.
             </p>
             <Button onClick={() => setShowForm(true)} className="bg-sky-600 hover:bg-sky-700 text-white">
               Find SkyBall Near Me
@@ -94,9 +67,10 @@ export default function FAQContent() {
       answer: (
         <>
           <p className="mb-4">
-            We're excited to help you grow SkyBall in your community! We support new SkyBall communities through starter
-            kits for community organizers, online resources and guides, connection with existing SkyBall groups, support
-            for setting up local leagues, social media promotion for new groups, and tournament organization guidance.
+            We&apos;re excited to help you grow SkyBall in your community! We support new SkyBall communities through
+            starter kits for community organizers, online resources and guides, connection with existing SkyBall groups,
+            support for setting up local leagues, social media promotion for new groups, and tournament organization
+            guidance.
           </p>
           <p>
             <Link href="/become-a-host" className="text-sky-600 hover:underline">
@@ -122,13 +96,7 @@ export default function FAQContent() {
         </div>
       </div>
 
-      {showForm && (
-        <InfoRequestForm
-          subject="Where can I play?"
-          onClose={() => setShowForm(false)}
-          additionalFields={<LocationFormFields />}
-        />
-      )}
+      {showForm && <InfoRequestForm subject="Where can I play?" onClose={() => setShowForm(false)} />}
     </section>
   )
 }

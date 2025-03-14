@@ -6,6 +6,7 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { BookOpenIcon, UsersIcon, TrophyIcon, HeartIcon } from "lucide-react"
 import InfoRequestForm from "@/components/info-request-form"
+import { Input } from "@/components/ui/input"
 
 const benefits = [
   {
@@ -33,6 +34,15 @@ const benefits = [
 
 export default function SkyBallForSchoolsPage() {
   const [showForm, setShowForm] = useState(false)
+
+  const SchoolInfoField = () => (
+    <div>
+      <label htmlFor="schoolInfo" className="block text-sm font-medium text-gray-700 mb-1">
+        School Name, City, State
+      </label>
+      <Input id="schoolInfo" name="schoolInfo" placeholder="e.g., Lincoln High School, Portland, OR" />
+    </div>
+  )
 
   return (
     <>
@@ -76,7 +86,13 @@ export default function SkyBallForSchoolsPage() {
       </main>
       <Footer />
 
-      {showForm && <InfoRequestForm subject="School Information Request" onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <InfoRequestForm
+          subject="School Information Request"
+          onClose={() => setShowForm(false)}
+          additionalFields={<SchoolInfoField />}
+        />
+      )}
     </>
   )
 }

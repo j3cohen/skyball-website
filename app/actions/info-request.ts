@@ -10,8 +10,8 @@ const infoRequestSchema = z
     phone: z.string().optional(),
     message: z.string().optional(),
     subject: z.string(),
-    city: z.string().optional(),
-    state: z.string().optional(),
+    location: z.string().optional(),
+    schoolInfo: z.string().optional(),
   })
   .refine((data) => data.email || data.phone, {
     message: "Either email or phone is required",
@@ -19,6 +19,14 @@ const infoRequestSchema = z
   })
 
 type InfoRequestData = z.infer<typeof infoRequestSchema>
+
+// Map of subject types to emojis for Telegram messages
+const subjectEmojis: Record<string, string> = {
+  "School Information Request": "🏫",
+  "Host Information Request": "🏆",
+  "Where can I play?": "🗺️",
+  "General Information Request": "ℹ️",
+}
 
 export async function submitInfoRequest(formData: FormData) {
   try {
@@ -29,8 +37,8 @@ export async function submitInfoRequest(formData: FormData) {
       phone: (formData.get("phone") as string) || undefined,
       message: (formData.get("message") as string) || "",
       subject: (formData.get("subject") as string) || "Information Request",
-      city: (formData.get("city") as string) || "",
-      state: (formData.get("state") as string) || "",
+      location: (formData.get("location") as string) || "",
+      schoolInfo: (formData.get("schoolInfo") as string) || "",
     }
 
     console.log(`Processing ${data.subject} request for:`, data.name)
@@ -122,9 +130,12 @@ async function sendTelegramNotification(data: InfoRequestData) {
       return false
     }
 
+    // Get the appropriate emoji for the subject
+    const emoji = subjectEmojis[data.subject] || "📝"
+
     // Format the message based on the data available
     let message = `
-📬 *${data.subject}*
+${emoji} *${data.subject}*
 
 *Name:* ${data.name}
 `
@@ -137,12 +148,12 @@ async function sendTelegramNotification(data: InfoRequestData) {
       message += `*Phone:* ${data.phone}\n`
     }
 
-    if (data.city && data.state) {
-      message += `*Location:* ${data.city}, ${data.state}\n`
-    } else if (data.city) {
-      message += `*City:* ${data.city}\n`
-    } else if (data.state) {
-      message += `*State:* ${data.state}\n`
+    if (data.location) {
+      message += `*Location:* ${data.location}\n`
+    }
+
+    if (data.schoolInfo) {
+      message += `*School:* ${data.schoolInfo}\n`
     }
 
     if (data.message) {
