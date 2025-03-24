@@ -2,6 +2,7 @@ import { libreFranklin, jetbrainsMono, poppins } from "./fonts"
 import "./globals.css"
 import type { Metadata } from "next"
 import type React from "react"
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: "SkyBall - Rally Ready",
@@ -15,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${libreFranklin.variable} ${jetbrainsMono.variable} ${poppins.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">{children} <Analytics /> </body>
     </html>
   )
 }
