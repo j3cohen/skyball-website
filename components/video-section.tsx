@@ -126,7 +126,7 @@ export default function VideoSection() {
           >
             <div className="w-full max-w-[min(100%,70vh)]">
               <VideoPlayer
-                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/IMG_8016.mov"
+                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball_promo_aws1.mov"
                 aspectRatio="square"
                 objectFit="cover" // Use cover for the square video
               />
