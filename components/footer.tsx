@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { FaYoutube, FaInstagram, FaTiktok } from "react-icons/fa"
 
 export default function Footer() {
   return (
@@ -19,6 +20,32 @@ export default function Footer() {
               />
             </Link>
             <p className="mt-2 text-sm">Where the Rally Never Ends.</p>
+            <div className="flex mt-3 space-x-4">
+              <a
+                href="https://youtube.com/@skyball.usofficial"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+              >
+                <FaYoutube className="text-xl hover:text-red-500 transition" />
+              </a>
+              <a
+                href="https://instagram.com/skyball.us"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+              >
+                <FaInstagram className="text-xl hover:text-pink-500 transition" />
+              </a>
+              <a
+                href="https://tiktok.com/@skyball.us"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+              >
+                <FaTiktok className="text-xl hover:text-gray-400 transition" />
+              </a>
+            </div>
           </div>
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
