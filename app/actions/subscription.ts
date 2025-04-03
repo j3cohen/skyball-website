@@ -66,7 +66,7 @@ async function sendTelegramNotification(data: SubscriptionData) {
 *Email:* ${data.email}
 ${data.zip ? `*Zip Code:* ${data.zip}` : ""}
 
-_Submitted at ${new Date().toLocaleString()}_
+_Submitted at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_
 `
     console.log("Attempting to send Telegram subscription notification")
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

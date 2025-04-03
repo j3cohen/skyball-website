@@ -160,7 +160,7 @@ ${emoji} *${data.subject}*
       message += `\n*Message:*\n${data.message}\n`
     }
 
-    message += `\n_Submitted at ${new Date().toLocaleString()}_`
+    message += `\n_Submitted at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_`
 
     console.log("Attempting to send Telegram notification")
 
