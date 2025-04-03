@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useInView } from "react-intersection-observer"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Play, Pause, Volume2, VolumeX } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-react"
 
 interface VideoPlayerProps {
   src: string
@@ -16,6 +16,11 @@ interface VideoPlayerProps {
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit = "cover" }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Container ref for requestFullscreen()
+  const containerRef = useRef<HTMLDivElement>(null)
+  // Video ref for play/pause
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const handlePlayPause = () => {
@@ -30,18 +35,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
   }
 
   const handleMuteUnmute = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering play/pause
+    e.stopPropagation()
     if (videoRef.current) {
       videoRef.current.muted = !isMuted
       setIsMuted(!isMuted)
     }
   }
 
+  // Toggle fullscreen for containerRef
+  const handleToggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!document.fullscreenElement && containerRef.current) {
+      // Enter fullscreen
+      containerRef.current.requestFullscreen?.()
+    } else {
+      // Exit fullscreen
+      document.exitFullscreen?.()
+    }
+  }
+
+  // Listen for changes in fullscreen state so we can update the icon or do other side effects
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      // If no element is in fullscreen, set isFullscreen to false
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener("fullscreenchange", onFullscreenChange)
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange)
+    }
+  }, [])
+
   return (
     <div
+      ref={containerRef}
       className={cn(
         "relative overflow-hidden rounded-xl shadow-2xl cursor-pointer max-h-[70vh]",
-        aspectRatio === "square" ? "aspect-square" : "aspect-video",
+        aspectRatio === "square" ? "aspect-square" : "aspect-video"
       )}
       onClick={handlePlayPause}
     >
@@ -50,19 +82,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
         src={src}
         className={cn(
           "absolute top-0 left-0 w-full h-full",
-          objectFit === "contain" ? "object-contain" : "object-cover",
+          objectFit === "contain" ? "object-contain" : "object-cover"
         )}
         playsInline
         loop
         muted={isMuted}
       />
+
+      {/* Overlay for dimming + controls */}
       <div className="absolute inset-0 bg-black bg-opacity-40 transition-opacity duration-300 ease-in-out">
-        {/* Show large centered play button only when paused */}
+        {/* Large center play button if paused */}
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Button
               onClick={(e) => {
-                e.stopPropagation() // Prevent double triggering
+                e.stopPropagation()
                 handlePlayPause()
               }}
               className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-16 h-16 flex items-center justify-center transition-transform duration-300 hover:scale-110"
@@ -72,13 +106,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
           </div>
         )}
 
-        {/* Controls container at the bottom */}
+        {/* Bottom-right controls */}
         <div className="absolute bottom-4 right-4 flex items-center space-x-2">
-          {/* Show small play/pause button next to volume when playing */}
+          {/* Small play/pause button if currently playing */}
           {isPlaying && (
             <Button
               onClick={(e) => {
-                e.stopPropagation() // Prevent double triggering
+                e.stopPropagation()
                 handlePlayPause()
               }}
               className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-transform duration-300 hover:scale-110"
@@ -87,11 +121,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
             </Button>
           )}
 
+          {/* Mute/unmute */}
           <Button
             onClick={handleMuteUnmute}
             className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-transform duration-300 hover:scale-110"
           >
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </Button>
+
+          {/* Fullscreen toggle */}
+          <Button
+            onClick={handleToggleFullscreen}
+            className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-transform duration-300 hover:scale-110"
+          >
+            {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
           </Button>
         </div>
       </div>
@@ -100,10 +143,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
 }
 
 export default function VideoSection() {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 })
 
   return (
     <section ref={ref} className="py-16 bg-white">
@@ -111,40 +151,38 @@ export default function VideoSection() {
         <h2
           className={cn(
             "text-3xl md:text-4xl font-bold text-center mb-12",
-            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           )}
         >
           Experience SkyBall™
         </h2>
         <div className="flex flex-col lg:flex-row gap-8 items-center">
-          {/* Square video container */}
           <div
             className={cn(
               "transition-all duration-700 delay-200 w-full lg:w-1/3 flex justify-center",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
           >
             <div className="w-full max-w-[min(100%,70vh)]">
               <VideoPlayer
                 src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball_promo_aws1.mov"
                 aspectRatio="square"
-                objectFit="cover" // Use cover for the square video
+                objectFit="cover"
               />
             </div>
           </div>
 
-          {/* 16:9 video container */}
           <div
             className={cn(
               "transition-all duration-700 delay-300 w-full lg:w-2/3 flex justify-center",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
           >
             <div className="w-full">
               <VideoPlayer
                 src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/rally.mov"
                 aspectRatio="video"
-                objectFit="contain" // Use contain for the 16:9 video to preserve aspect ratio
+                objectFit="contain"
               />
             </div>
           </div>
@@ -153,4 +191,3 @@ export default function VideoSection() {
     </section>
   )
 }
-
