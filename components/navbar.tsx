@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { name: "Rules", href: "/rules" },
   { name: "Tournaments", href: "/tournaments" },
   { name: "Rankings", href: "/rankings" },
+  { name: "Products", href:"/products" },
 ]
 
 export default function Navbar() {
