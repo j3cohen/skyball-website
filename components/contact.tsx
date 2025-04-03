@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { Send, Mail, ArrowRight } from "lucide-react"
 import { FaYoutube, FaInstagram, FaTiktok } from "react-icons/fa"
@@ -13,29 +13,27 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [response, setResponse] = useState<{ success?: boolean; message?: string } | null>(null)
 
-
   async function handleSubscriptionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
     setResponse(null)
-    
+
     // Capture a reference to the form before any async work.
     const form = event.currentTarget
-  
     const formData = new FormData(form)
     formData.append("subject", "Subscription! New Subscriber")
-  
+
     try {
       console.log("Submitting to submitSubscription in try block:")
       const result = await submitSubscription(formData)
       console.log("Raw result from submitSubscription:", result)
-  
+
       // Unwrap the result if wrapped in an array.
       const data =
         Array.isArray(result) && result.length === 2 && result[0] === "$ACTION"
           ? result[1]
           : result
-  
+
       console.log("Unwrapped subscription result:", data, typeof data.success)
       if (data.success === true) {
         setResponse({
@@ -44,7 +42,7 @@ export default function Contact() {
         })
         // Use the stored reference to reset the form.
         form.reset()
-        // After 3 seconds, hide the form and clear the response to revert to the original state.
+        // After 1 second, hide the form and clear the response.
         setTimeout(() => {
           setShowForm(false)
           setResponse(null)
@@ -65,7 +63,7 @@ export default function Contact() {
       setIsSubmitting(false)
     }
   }
-  
+
   return (
     <section id="contact" className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
