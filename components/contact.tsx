@@ -13,15 +13,6 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [response, setResponse] = useState<{ success?: boolean; message?: string } | null>(null)
 
-  // Generic error handler
-  const handleError = useCallback((error: unknown, errorMessage?: string) => {
-    console.error("Form error:", error)
-    setResponse({
-      success: false,
-      message: errorMessage || "We're experiencing technical difficulties. Please email info@skyball.us or try again later.",
-    })
-    setIsSubmitting(false)
-  }, [])
 
   async function handleSubscriptionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -68,7 +59,7 @@ export default function Contact() {
       console.error("Error submitting subscription:", error)
       setResponse({
         success: false,
-        message: "Something went wrong. Please try again later.",
+        message: "Something went wrong. Please email info@skyball.us or try again later.",
       })
     } finally {
       setIsSubmitting(false)
