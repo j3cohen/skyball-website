@@ -168,8 +168,7 @@ async function sendTelegramNotification(data: RegistrationData) {
 *Phone:* ${data.phone}
 *Date of Birth:* ${data.dob}
 
-_Registration received at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}_
-`
+_Registration received at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_`
 
     console.log("Attempting to send Telegram notification to:", chatId)
 
