@@ -20,7 +20,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
 
   // Container ref for requestFullscreen()
   const containerRef = useRef<HTMLDivElement>(null)
-  // Video ref for play/pause
+  // Video ref for play/pause and fullscreen on iOS
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const handlePlayPause = () => {
@@ -42,23 +42,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
     }
   }
 
-  // Toggle fullscreen for containerRef
+  // Toggle fullscreen for containerRef (and use iOS-specific API when applicable)
   const handleToggleFullscreen = (e: React.MouseEvent) => {
     e.stopPropagation()
-
-    if (!document.fullscreenElement && containerRef.current) {
-      // Enter fullscreen
-      containerRef.current.requestFullscreen?.()
+  
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+  
+    if (isIOS && videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
+      // iOS-specific: trigger fullscreen for video
+      (videoRef.current as any).webkitEnterFullscreen()
     } else {
-      // Exit fullscreen
-      document.exitFullscreen?.()
+      // Standard Fullscreen API for other browsers
+      if (!document.fullscreenElement && containerRef.current) {
+        containerRef.current.requestFullscreen?.()
+      } else {
+        document.exitFullscreen?.()
+      }
     }
   }
+  
 
-  // Listen for changes in fullscreen state so we can update the icon or do other side effects
+  // Listen for changes in fullscreen state so we can update the icon or perform side effects
   useEffect(() => {
     const onFullscreenChange = () => {
-      // If no element is in fullscreen, set isFullscreen to false
       setIsFullscreen(!!document.fullscreenElement)
     }
 
