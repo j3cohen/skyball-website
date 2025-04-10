@@ -62,7 +62,7 @@ export default function Footer() {
                 </li>
                 
                 <li>
-                  <Link href="/rankings">Rankings</Link>
+                  <Link href="/products">Shop</Link>
                 </li>
               </ul>
             </div>
