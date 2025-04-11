@@ -285,7 +285,7 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
                   <p className="text-sm text-yellow-800 mb-2">Please send your payment to one of the following:</p>
                   <ul className="list-disc list-inside text-sm text-yellow-800 mb-2">
                     <li>PayPal: jbc@jbcventures.xyz</li>
-                    <li>Zelle: jb@jbcventures.xyz</li>
+                    <li>Zelle: jbc@jbcventures.xyz</li>
                   </ul>
                   <p className="text-sm text-yellow-800">
                     Once payment is received, we will reach out to confirm your spot in the tournament.
