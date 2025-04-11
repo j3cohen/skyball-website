@@ -19,7 +19,7 @@ export interface Tournament {
 export const upcomingTournaments: Tournament[] = [
   {
     id: "1",
-    name: "SkyBall™ Open: Launched",
+    name: "SkyBall™ Open: Lift Off",
     date: "April 24, 2025",
     location: "The Ten, 230 Bogart St, Brooklyn, NY",
     registrationFee: "$20",
