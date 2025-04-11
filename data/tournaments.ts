@@ -20,14 +20,14 @@ export const upcomingTournaments: Tournament[] = [
   {
     id: "1",
     name: "SkyBall™ Open: Launched",
-    date: "March 23, 2024",
-    location: "The Ten, Brooklyn, New York City",
+    date: "April 24, 2025",
+    location: "The Ten, 230 Bogart St, Brooklyn, NY",
     registrationFee: "$20",
     description:
-      "Join us for the first ever SkyBall tournament – the best ever opportunity to become the number one SkyBall player in the world!",
+      "Join us for the first ever SkyBall tournament – compete to win rankings points in the best ever opportunity to become the number one SkyBall player in the world!",
     registrationLink: "/tournaments/1/register",
     // Additional details
-    startTime: "3:30 PM",
+    startTime: "7:00 PM",
     prizePool: "$100",
     pointsAwarded: 100,
     format: "Single Elimination Bracket",

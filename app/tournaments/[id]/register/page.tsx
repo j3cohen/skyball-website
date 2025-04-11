@@ -20,6 +20,8 @@ type ResponseState = {
 
 export default function TournamentRegistrationPage({ params }: { params: { id: string } }) {
   const tournament = upcomingTournaments.find((t) => t.id === params.id)
+  const tName = tournament?.name ?? "Unknown Tournament"
+  const tDate = tournament?.date ?? "Unknown Date"
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [response, setResponse] = useState<ResponseState>(null)
 
@@ -41,6 +43,8 @@ export default function TournamentRegistrationPage({ params }: { params: { id: s
       const formData = new FormData(event.currentTarget)
       // Add tournament ID to form data
       formData.append("tournamentId", tournamentId)
+      formData.append("tournamentName", tName)
+      formData.append("tournamentDate", tDate)
 
       // Submit the registration
       const result = await submitRegistration(formData)

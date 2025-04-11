@@ -51,6 +51,8 @@ const registrationSchema = z.object({
     },
   ),
   tournamentId: z.string(),
+  tournamentName: z.string(),
+  tournamentDate: z.string(),
 })
 
 type RegistrationData = z.infer<typeof registrationSchema>
@@ -64,6 +66,8 @@ export async function submitRegistration(formData: FormData) {
       phone: formData.get("phone") as string,
       dob: formData.get("dob") as string,
       tournamentId: formData.get("tournamentId") as string,
+      tournamentName: formData.get("tournamentName") as string,
+      tournamentDate: formData.get("tournamentDate") as string,
     }
 
     console.log("Processing registration for:", data.name)
@@ -162,7 +166,10 @@ async function sendTelegramNotification(data: RegistrationData) {
     const message = `
 🏆 *New Tournament Registration* 🏆
 
-*Tournament:* ID ${data.tournamentId}
+*Tournament:* ${data.tournamentName}
+*Tournament ID:* ${data.tournamentId}
+*Tournament Date:* ${data.tournamentDate}
+
 *Name:* ${data.name}
 *Email:* ${data.email}
 *Phone:* ${data.phone}
