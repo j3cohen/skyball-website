@@ -15,7 +15,7 @@ export function SkyBallCourtAnimation({
   showSingles,
   quickAnimation = false,
 }: SkyBallCourtAnimationProps) {
-  // Mobile detection: if viewport width is less than 768px, treat as mobile.
+  // Mobile detection: if viewport width is less than 768px
   const [isMobile, setIsMobile] = useState<boolean>(false)
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -24,47 +24,44 @@ export function SkyBallCourtAnimation({
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // When quickAnimation is active, force the final state.
+  const effectiveStep = quickAnimation ? 4 : step
+  const effectiveShowSingles = quickAnimation ? true : showSingles
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 450 })
   const dimensionsRef = useRef({ width: 800, height: 450 })
 
-  // Court dimensions (in feet, will be scaled to pixels)
+  // Court dimensions (in feet)
   const courtWidth = 20 // Standard pickleball court width
   const courtLength = 44 // Standard pickleball court length
-  const kitchenDepth = 7 // Non-volley zone depth (distance from net)
-  const serviceLineDistance = 13.5 // Distance from net to service line
+  const kitchenDepth = 7 // 7ft from net (non-volley zone)
+  const serviceLineDistance = 13.5 // 13.5ft from net (service line)
 
-  // Calculate positions for overlay elements
+  // Helper: calculate a canvas position for a given court coordinate.
   const getPosition = (x: number, y: number) => {
-    const scale = Math.min(
-      dimensions.width / (courtWidth + 10),
-      dimensions.height / (courtLength + 10),
-    )
+    const scale = Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10))
     const offsetX = (dimensions.width - courtWidth * scale) / 2
     const offsetY = (dimensions.height - courtLength * scale) / 2
-
-    return {
-      x: offsetX + x * scale,
-      y: offsetY + y * scale,
-    }
+    return { x: offsetX + x * scale, y: offsetY + y * scale }
   }
 
-  // Court positions
+  // Pre-calculate positions.
   const netPosition = getPosition(courtWidth / 2, courtLength / 2)
   const topKitchenPosition = getPosition(courtWidth / 2, courtLength / 2 - kitchenDepth)
   const bottomKitchenPosition = getPosition(courtWidth / 2, courtLength / 2 + kitchenDepth)
   const topServicePosition = getPosition(courtWidth / 2, courtLength / 2 - serviceLineDistance)
   const bottomServicePosition = getPosition(courtWidth / 2, courtLength / 2 + serviceLineDistance)
 
-  // Singles line positions
-  const singlesInset = 2 // 2 feet in from sidelines
+  // Singles line positions.
+  const singlesInset = 2
   const leftSinglesPosition = getPosition(singlesInset, courtLength / 2)
   const rightSinglesPosition = getPosition(courtWidth - singlesInset, courtLength / 2)
   const sidelinePosition = getPosition(0, courtLength / 2)
   const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
 
-  // Handle resize events to update dimensions
+  // Update dimensions on container resize.
   useEffect(() => {
     const updateDimensions = () => {
       const container = containerRef.current
@@ -74,61 +71,41 @@ export function SkyBallCourtAnimation({
         setDimensions({ width, height })
       }
     }
-
-    // Initial update
     updateDimensions()
-
-    // Add resize listener
     window.addEventListener("resize", updateDimensions)
     return () => window.removeEventListener("resize", updateDimensions)
   }, [])
 
-  // Draw the court
+  // Draw the court on canvas.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // Set canvas dimensions
+    // Set canvas dimensions.
     canvas.width = dimensionsRef.current.width
     canvas.height = dimensionsRef.current.height
-
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Clear canvas
+    // Clear.
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Scale factors to convert feet to pixels
-    const scale = Math.min(
-      canvas.width / (courtWidth + 10),
-      canvas.height / (courtLength + 10),
-    )
+    // Scale factors.
+    const scale = Math.min(canvas.width / (courtWidth + 10), canvas.height / (courtLength + 10))
     const offsetX = (canvas.width - courtWidth * scale) / 2
     const offsetY = (canvas.height - courtLength * scale) / 2
+    const courtToCanvas = (x: number, y: number) => ({ x: offsetX + x * scale, y: offsetY + y * scale })
 
-    // Function to convert court coordinates to canvas coordinates
-    const courtToCanvas = (x: number, y: number) => ({
-      x: offsetX + x * scale,
-      y: offsetY + y * scale,
-    })
-
-    // Draw court with gradient background
+    // Draw the court background.
     const courtCorners = [
       courtToCanvas(0, 0),
       courtToCanvas(courtWidth, 0),
       courtToCanvas(courtWidth, courtLength),
       courtToCanvas(0, courtLength),
     ]
-
-    const gradient = ctx.createLinearGradient(
-      courtCorners[0].x,
-      courtCorners[0].y,
-      courtCorners[2].x,
-      courtCorners[2].y,
-    )
+    const gradient = ctx.createLinearGradient(courtCorners[0].x, courtCorners[0].y, courtCorners[2].x, courtCorners[2].y)
     gradient.addColorStop(0, "#e9f5db")
     gradient.addColorStop(1, "#cfe1b9")
-
     ctx.fillStyle = gradient
     ctx.beginPath()
     ctx.moveTo(courtCorners[0].x, courtCorners[0].y)
@@ -138,28 +115,22 @@ export function SkyBallCourtAnimation({
     ctx.closePath()
     ctx.fill()
 
-    // Draw court outline
+    // Draw court outline.
     ctx.strokeStyle = "#588157"
     ctx.lineWidth = 3
     ctx.stroke()
 
-    // Draw centerline (stopping at the kitchen)
+    // Centerline (stopping at the kitchen).
     ctx.beginPath()
     ctx.moveTo(courtToCanvas(courtWidth / 2, 0).x, courtToCanvas(courtWidth / 2, 0).y)
-    ctx.lineTo(
-      courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x,
-      courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
-    )
-    ctx.moveTo(
-      courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x,
-      courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y,
-    )
+    ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y)
+    ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y)
     ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength).x, courtToCanvas(courtWidth / 2, courtLength).y)
     ctx.strokeStyle = "#588157"
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // Draw net as a dotted line
+    // Net as a dotted line.
     ctx.beginPath()
     ctx.moveTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
     ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
@@ -169,399 +140,206 @@ export function SkyBallCourtAnimation({
     ctx.stroke()
     ctx.setLineDash([])
 
-    // Draw kitchen lines (7ft from net)
+    // Kitchen lines.
     ctx.beginPath()
     ctx.moveTo(courtToCanvas(0, courtLength / 2 - kitchenDepth).x, courtToCanvas(0, courtLength / 2 - kitchenDepth).y)
-    ctx.lineTo(
-      courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).x,
-      courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).y,
-    )
+    ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).y)
     ctx.moveTo(courtToCanvas(0, courtLength / 2 + kitchenDepth).x, courtToCanvas(0, courtLength / 2 + kitchenDepth).y)
-    ctx.lineTo(
-      courtToCanvas(courtWidth, courtLength / 2 + kitchenDepth).x,
-      courtToCanvas(courtWidth, courtLength / 2 + kitchenDepth).y,
-    )
+    ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth, courtLength / 2 + kitchenDepth).y)
     ctx.strokeStyle = "#3a5a40"
     ctx.lineWidth = 3
     ctx.stroke()
 
-    // Step 2+: Draw service lines
-    if (step >= 1 && step < 3) {
+    // Draw service lines (for effectiveStep in [1,2)).
+    if (effectiveStep >= 1 && effectiveStep < 3) {
       ctx.strokeStyle = "#bc4749"
       ctx.lineWidth = 3
 
-      // Top service line (13.5ft from net)
+      // Top service line.
       ctx.beginPath()
-      if (step >= 3 && showSingles) {
-        ctx.moveTo(
-          courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y,
-        )
+      if (effectiveStep >= 3 && effectiveShowSingles) {
+        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
       } else {
-        ctx.moveTo(
-          courtToCanvas(0, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(0, courtLength / 2 - serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
       }
       ctx.stroke()
 
-      // Bottom service line (13.5ft from net)
+      // Bottom service line.
       ctx.beginPath()
-      if (step >= 3 && showSingles) {
-        ctx.moveTo(
-          courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y,
-        )
+      if (effectiveStep >= 3 && effectiveShowSingles) {
+        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
       } else {
-        ctx.moveTo(
-          courtToCanvas(0, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(0, courtLength / 2 + serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
       }
       ctx.stroke()
 
-      // Draw measurement lines (only in step 1)
-      if (step === 1) {
+      // In step 1, draw measurement lines.
+      if (effectiveStep === 1) {
         ctx.setLineDash([5, 5])
         ctx.strokeStyle = "#bc4749"
         ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.moveTo(
-          courtToCanvas(courtWidth - 2, courtLength / 2 - kitchenDepth).x,
-          courtToCanvas(courtWidth - 2, courtLength / 2 - kitchenDepth).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - 2, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(courtWidth - 2, courtLength / 2 - serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(courtWidth - 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth - 2, courtLength / 2 - kitchenDepth).y)
+        ctx.lineTo(courtToCanvas(courtWidth - 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - 2, courtLength / 2 - serviceLineDistance).y)
         ctx.stroke()
         ctx.beginPath()
-        ctx.moveTo(
-          courtToCanvas(courtWidth - 2, courtLength / 2 + kitchenDepth).x,
-          courtToCanvas(courtWidth - 2, courtLength / 2 + kitchenDepth).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - 2, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(courtWidth - 2, courtLength / 2 + serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(courtWidth - 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth - 2, courtLength / 2 + kitchenDepth).y)
+        ctx.lineTo(courtToCanvas(courtWidth - 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - 2, courtLength / 2 + serviceLineDistance).y)
         ctx.stroke()
         ctx.setLineDash([])
       }
     }
 
-    // Step 2: (Animation overlays for blue service box lines are handled separately)
-
-    // Step 3+: Draw service boxes with bold red lines
-    if (step >= 3) {
+    // For effectiveStep >= 3, draw the service box outlines and centerline extensions.
+    if (effectiveStep >= 3) {
       ctx.strokeStyle = "#bc4749"
       ctx.lineWidth = 4
 
-      // Top service line
+      // Top service line.
       ctx.beginPath()
-      if (showSingles) {
-        ctx.moveTo(
-          courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y,
-        )
+      if (effectiveShowSingles) {
+        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
       } else {
-        ctx.moveTo(
-          courtToCanvas(0, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(0, courtLength / 2 - serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x,
-          courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
       }
       ctx.stroke()
 
-      // Bottom service line
+      // Bottom service line.
       ctx.beginPath()
-      if (showSingles) {
-        ctx.moveTo(
-          courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y,
-        )
+      if (effectiveShowSingles) {
+        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
       } else {
-        ctx.moveTo(
-          courtToCanvas(0, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(0, courtLength / 2 + serviceLineDistance).y,
-        )
-        ctx.lineTo(
-          courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x,
-          courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y,
-        )
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
       }
       ctx.stroke()
 
-      // Draw centerline extensions from service lines to kitchen
+      // Centerline extensions from service line to kitchen.
       ctx.beginPath()
-      ctx.moveTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
-      )
-      ctx.lineTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
-      )
+      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y)
       ctx.stroke()
       ctx.beginPath()
-      ctx.moveTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
-      )
-      ctx.lineTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y,
-      )
+      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y)
       ctx.stroke()
 
-      // Redraw centerline extensions from kitchen to net
+      // Redraw centerline extensions from kitchen to net.
       ctx.beginPath()
-      ctx.moveTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
-      )
-      ctx.lineTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2).y,
-      )
+      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y)
+      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
       ctx.stroke()
       ctx.beginPath()
-      ctx.moveTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y,
-      )
-      ctx.lineTo(
-        courtToCanvas(courtWidth / 2, courtLength / 2).x,
-        courtToCanvas(courtWidth / 2, courtLength / 2).y,
-      )
+      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y)
+      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
       ctx.stroke()
 
-      // Draw complete service box outlines (for step 3/4)
-      if (step === 3 || step === 4) {
+      // Draw complete service box outlines.
+      if (effectiveStep === 3 || effectiveStep === 4) {
         ctx.strokeStyle = "#bc4749"
         ctx.lineWidth = 4
 
-        // Top left service box
+        // Top left service box.
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(
-            courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(singlesInset, courtLength / 2).x,
-            courtToCanvas(singlesInset, courtLength / 2).y,
-          )
+        if (effectiveShowSingles) {
+          ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
         } else {
-          ctx.moveTo(
-            courtToCanvas(0, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(0, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(0, courtLength / 2).x,
-            courtToCanvas(0, courtLength / 2).y,
-          )
+          ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
         }
         ctx.closePath()
         ctx.stroke()
 
-        // Top right service box
+        // Top right service box.
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2).x,
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
+        if (effectiveShowSingles) {
+          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
         } else {
-          ctx.moveTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x,
-            courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth, courtLength / 2).x,
-            courtToCanvas(courtWidth, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
+          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
         }
         ctx.closePath()
         ctx.stroke()
 
-        // Bottom left service box
+        // Bottom left service box.
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(
-            courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(singlesInset, courtLength / 2).x,
-            courtToCanvas(singlesInset, courtLength / 2).y,
-          )
+        if (effectiveShowSingles) {
+          ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
         } else {
-          ctx.moveTo(
-            courtToCanvas(0, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(0, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(0, courtLength / 2).x,
-            courtToCanvas(0, courtLength / 2).y,
-          )
+          ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
         }
         ctx.closePath()
         ctx.stroke()
 
-        // Bottom right service box
+        // Bottom right service box.
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2).x,
-            courtToCanvas(courtWidth - singlesInset, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
+        if (effectiveShowSingles) {
+          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
         } else {
-          ctx.moveTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x,
-            courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth, courtLength / 2).x,
-            courtToCanvas(courtWidth, courtLength / 2).y,
-          )
-          ctx.lineTo(
-            courtToCanvas(courtWidth / 2, courtLength / 2).x,
-            courtToCanvas(courtWidth / 2, courtLength / 2).y,
-          )
+          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
+          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
+          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
         }
         ctx.closePath()
         ctx.stroke()
       }
     }
 
-    // Step 4 (optional): Draw singles lines
-    if (step === 4 || (quickAnimation && showSingles)) {
+    // Step 4 (and quickAnimation) - Draw singles lines if appropriate.
+    if (effectiveStep === 4 || (quickAnimation && effectiveShowSingles)) {
       ctx.strokeStyle = "#2a9d8f"
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
-      // Left singles line
       ctx.beginPath()
       ctx.moveTo(courtToCanvas(singlesInset, 0).x, courtToCanvas(singlesInset, 0).y)
       ctx.lineTo(courtToCanvas(singlesInset, courtLength).x, courtToCanvas(singlesInset, courtLength).y)
       ctx.stroke()
-      // Right singles line
       ctx.beginPath()
       ctx.moveTo(courtToCanvas(courtWidth - singlesInset, 0).x, courtToCanvas(courtWidth - singlesInset, 0).y)
-      ctx.lineTo(
-        courtToCanvas(courtWidth - singlesInset, courtLength).x,
-        courtToCanvas(courtWidth - singlesInset, courtLength).y,
-      )
+      ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength).x, courtToCanvas(courtWidth - singlesInset, courtLength).y)
       ctx.stroke()
       ctx.setLineDash([])
     }
-  }, [step, showSingles, dimensions])
+  }, [effectiveStep, effectiveShowSingles, dimensions])
 
   return (
     <div
       ref={containerRef}
-      // Use a responsive class: on mobile remove the fixed aspect ratio so that the container grows vertically.
+      // On mobile, use full-screen height; otherwise, use a fixed aspect ratio.
       className={`relative w-full ${isMobile ? "h-screen" : "aspect-[16/7]"} bg-gray-50 rounded-lg overflow-hidden shadow-lg`}
     >
       <canvas ref={canvasRef} className="w-full h-full" />
-      {/* On mobile, omit the overlay labels so that the diagram remains uncluttered. */}
-      {!isMobile && quickAnimation && (
+      {/* Quick Convert overlays: always render when quickAnimation is active */}
+      {quickAnimation && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* Left side labels container */}
+          {/* You can restore all overlay animations here as before */}
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 items-start">
             <motion.div
               className="flex items-center justify-start"
@@ -594,6 +372,8 @@ export function SkyBallCourtAnimation({
               </div>
             </motion.div>
           </div>
+
+          {/* Example measurement indicators */}
           <motion.div
             className="absolute flex flex-col items-center justify-center z-50"
             style={{
@@ -656,72 +436,9 @@ export function SkyBallCourtAnimation({
           >
             <div className="w-full h-full bg-red-600"></div>
           </motion.div>
-          <motion.div
-            className="absolute"
-            style={{
-              left: topKitchenPosition.x - 1.5,
-              top: topKitchenPosition.y,
-              width: 3,
-              height:
-                kitchenDepth * Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-              transformOrigin: "top",
-            }}
-            initial={{ scaleY: 0, backgroundColor: "#3b82f6" }}
-            animate={{ scaleY: 1, backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"] }}
-            transition={{
-              scaleY: { duration: 0.8, delay: 1.3, ease: "easeOut" },
-              backgroundColor: { duration: 0.3, delay: 2.8, times: [0, 0.9, 1] },
-            }}
-          />
-          <motion.div
-            className="absolute"
-            style={{
-              left: bottomKitchenPosition.x - 1.5,
-              top: netPosition.y,
-              width: 3,
-              height:
-                kitchenDepth * Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-              transformOrigin: "bottom",
-            }}
-            initial={{ scaleY: 0, backgroundColor: "#3b82f6" }}
-            animate={{ scaleY: 1, backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"] }}
-            transition={{
-              scaleY: { duration: 0.8, delay: 1.5, ease: "easeOut" },
-              backgroundColor: { duration: 0.3, delay: 2.8, times: [0, 0.9, 1] },
-            }}
-          />
-          <motion.div
-            className="absolute bg-red-600"
-            style={{
-              left: topServicePosition.x - 1.5,
-              top: topServicePosition.y,
-              width: 3,
-              height:
-                (serviceLineDistance - kitchenDepth) *
-                Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-              transformOrigin: "top",
-            }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 0.8, delay: 1.9, ease: "easeOut" }}
-          />
-          <motion.div
-            className="absolute bg-red-600"
-            style={{
-              left: bottomServicePosition.x - 1.5,
-              top: bottomKitchenPosition.y,
-              width: 3,
-              height:
-                (serviceLineDistance - kitchenDepth) *
-                Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-              transformOrigin: "bottom",
-            }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 0.8, delay: 2.1, ease: "easeOut" }}
-          />
+          {/* Singles lines overlay */}
           <AnimatePresence>
-            {(step === 4 || (quickAnimation && showSingles)) && (
+            {(effectiveStep === 4) && (
               <>
                 <motion.div
                   className="absolute bg-teal-500"
@@ -734,7 +451,7 @@ export function SkyBallCourtAnimation({
                   }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, delay: 2.3, ease: "easeOut" }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 2.3 }}
                 />
                 <motion.div
                   className="absolute bg-teal-500"
@@ -747,19 +464,19 @@ export function SkyBallCourtAnimation({
                   }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, delay: 2.5, ease: "easeOut" }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 2.5 }}
                 />
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.08,
+                    top: dimensions.height * 0.25,
                     width: 60,
                     height: 30,
                   }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 2.7 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 1.2 }}
                 >
                   <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
                   <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
@@ -770,13 +487,13 @@ export function SkyBallCourtAnimation({
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.08,
+                    top: dimensions.height * 0.25,
                     width: 60,
                     height: 30,
                   }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 2.7 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 1.2 }}
                 >
                   <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
                     2ft
@@ -788,10 +505,11 @@ export function SkyBallCourtAnimation({
           </AnimatePresence>
         </div>
       )}
+      {/* Desktop (or non-quick) overlays */}
       {!quickAnimation && (
         <div className="absolute inset-0 pointer-events-none">
           <AnimatePresence>
-            {step === 0 && (
+            {effectiveStep === 0 && (
               <motion.div
                 className="absolute flex items-center justify-center"
                 style={{
@@ -812,7 +530,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 0 && (
+            {effectiveStep === 0 && (
               <>
                 <motion.div
                   className="absolute flex items-center justify-center"
@@ -852,7 +570,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 1 && !showSingles && (
+            {effectiveStep === 1 && !effectiveShowSingles && (
               <>
                 <motion.div
                   className="absolute flex items-center justify-center"
@@ -892,7 +610,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 1 && (
+            {effectiveStep === 1 && (
               <>
                 <motion.div
                   className="absolute flex flex-col items-center justify-center"
@@ -934,7 +652,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 2 && (
+            {effectiveStep === 2 && (
               <motion.div
                 className="absolute flex items-center justify-center"
                 style={{
@@ -955,7 +673,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 3 && !showSingles && (
+            {effectiveStep === 3 && !effectiveShowSingles && (
               <motion.div
                 className="absolute flex items-center justify-center"
                 style={{
@@ -973,178 +691,6 @@ export function SkyBallCourtAnimation({
                   Service Boxes Created
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 2 && (
-              <>
-                <motion.div
-                  className="absolute bg-blue-600"
-                  style={{
-                    left: topKitchenPosition.x - 1.5,
-                    top: topKitchenPosition.y,
-                    width: 3,
-                    height:
-                      kitchenDepth *
-                      Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                />
-                <motion.div
-                  className="absolute bg-blue-600"
-                  style={{
-                    left: bottomKitchenPosition.x - 1.5,
-                    top: netPosition.y,
-                    width: 3,
-                    height:
-                      kitchenDepth *
-                      Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-                    transformOrigin: "bottom",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                />
-              </>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 3 && (
-              <>
-                <motion.div
-                  className="absolute bg-red-600"
-                  style={{
-                    left: topServicePosition.x - 1.5,
-                    top: topServicePosition.y,
-                    width: 3,
-                    height:
-                      (serviceLineDistance - kitchenDepth) *
-                      Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
-                />
-                <motion.div
-                  className="absolute bg-red-600"
-                  style={{
-                    left: bottomServicePosition.x - 1.5,
-                    top: bottomKitchenPosition.y,
-                    width: 3,
-                    height:
-                      (serviceLineDistance - kitchenDepth) *
-                      Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)),
-                    transformOrigin: "bottom",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.6 }}
-                />
-              </>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {(step === 4 || (quickAnimation && showSingles)) && (
-              <>
-                <motion.div
-                  className="absolute bg-teal-500"
-                  style={{
-                    left: leftSinglesPosition.x - 1,
-                    top: 0,
-                    width: 2,
-                    height: dimensions.height,
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                />
-                <motion.div
-                  className="absolute bg-teal-500"
-                  style={{
-                    left: rightSinglesPosition.x - 1,
-                    top: 0,
-                    width: 2,
-                    height: dimensions.height,
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                />
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                  <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                  <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
-                </motion.div>
-              </>
             )}
           </AnimatePresence>
         </div>
