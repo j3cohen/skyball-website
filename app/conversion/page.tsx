@@ -74,7 +74,7 @@ export default function ConversionPage() {
             {/* Animation stacked on top */}
             <div>
               <Card className="p-4 bg-white/80 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden border-sky-100">
-                <div className="max-h-[80vh]">
+                <div className="max-h-[80vh] flex items-center justify-center">
                   <SkyBallCourtAnimation step={step} showSingles={step === 4} quickAnimation={quickAnimation} />
                 </div>
               </Card>
