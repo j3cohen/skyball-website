@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BellIcon as Whistle, Ruler, Trophy, Users, AlertTriangle, Info } from "lucide-react"
+import Link from "next/link"
 
 const rulesSections = [
   {
@@ -7,10 +8,19 @@ const rulesSections = [
     icon: Ruler,
     content: [
       "Court Size: 44 feet long and 20 feet wide for doubles (16 feet wide for singles)",
+      "Service Line: 16 feet wide and positioned 13.5 feet from the net and 8.5 ft from the basaeline", 
+      "Service Box: Service boxes are created by drawing a line from the center of the service line to the net",
       "Net Height: 34 inches at the center, 36 inches at the sidelines",
       "Racquets: 21-inch stringed racquets (textured or hexagonal strings are prohibited)",
       "Balls: High-density foam balls approved by SkyBall™",
     ],
+    footer: (
+      <div className="mt-4 pt-3 border-t border-gray-200">
+        <Link href="/conversion" className="text-sky-600 hover:text-sky-800 flex items-center">
+          <span className="mr-2">→</span> View our interactive court conversion guide
+        </Link>
+      </div>
+    ),
   },
   {
     title: "Serving Rules",

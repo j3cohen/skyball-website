@@ -43,6 +43,8 @@ export default function Hero() {
           >
             Experience the thrill of tennis on a pickleball court. Fast-paced, dynamic, and fun for all.
           </p>
+          <div className="mt-2" />
+
           <Link href="/about">
             <Button
               className={`${jetbrainsMono.className} bg-white text-sky-600 hover:bg-white/90 transition-colors animate-fade-up animation-delay-200`}

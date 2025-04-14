@@ -6,6 +6,7 @@ import VideoSection from "@/components/video-section"
 import Contact from "@/components/contact"
 import BackToTop from "@/components/back-to-top"
 import Footer from "@/components/footer"
+import CourtConversionCallout from "@/components/court-conversion-callout"
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <main className="overflow-hidden">
         <Hero />
         <WhatIsSkyBall />
+        <CourtConversionCallout />
         <RulesOverview />
         <VideoSection />
         <Contact />

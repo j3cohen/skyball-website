@@ -8,8 +8,8 @@ import Link from "next/link"
 const rules = [
   "Played on a 44 feet long and 20 feet wide court (16 feet for singles)",
   "One serve only (lets are replayed)",
-  "Deuce is a winner-take-all point",
-  "Sets are played to 4 games, with a tiebreak to 5 points (win by 2)",
+  "Games are played to 11 points (win by 2)",
+  "Matches are typically played best of 3 games",
 ]
 
 export default function RulesOverview() {
