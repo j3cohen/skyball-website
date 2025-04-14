@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from "lucide-react"
-import { off } from "process"
 
 interface SkyBallCourtAnimationProps {
   step: number
