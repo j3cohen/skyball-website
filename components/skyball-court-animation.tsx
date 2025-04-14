@@ -306,7 +306,7 @@ export function SkyBallCourtAnimation({
     }
 
     // Step 4: Draw singles lines.
-    if (step === 4 || (quickAnimation && showSingles)) {
+    if (step === 4 || (quickAnimation)) {
       ctx.strokeStyle = "#2a9d8f"
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
@@ -374,7 +374,7 @@ export function SkyBallCourtAnimation({
           <motion.div className="absolute bg-red-600" style={{ left: bottomServicePosition.x - 1.5, top: bottomKitchenPosition.y, width: 3, height: (serviceLineDistance - kitchenDepth) * Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)), transformOrigin: "bottom" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.8, delay: 2.1, ease: "easeOut" }} />
           {/* Singles lines overlay (step 4) */}
           <AnimatePresence>
-            {(step === 4 || (quickAnimation && showSingles)) && (
+            {(step === 4 || (quickAnimation)) && (
               <>
                 <motion.div className="absolute bg-teal-500" style={{ left: leftSinglesPosition.x - 1, top: 0, width: 2, height: dimensions.height, transformOrigin: "top" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 1, ease: "easeOut", delay: 2.3 }} />
                 <motion.div className="absolute bg-teal-500" style={{ left: rightSinglesPosition.x - 1, top: 0, width: 2, height: dimensions.height, transformOrigin: "top" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 1, ease: "easeOut", delay: 2.5 }} />
@@ -618,7 +618,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {(step === 4 || (quickAnimation && showSingles)) && (
+            {(step === 4 || (quickAnimation)) && (
               <>
                 {/* Singles lines overlay */}
                 <motion.div
