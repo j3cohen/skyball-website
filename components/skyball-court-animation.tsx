@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from "lucide-react"
+import { off } from "process"
 
 interface SkyBallCourtAnimationProps {
   step: number
@@ -55,6 +56,16 @@ export function SkyBallCourtAnimation({
   const rightSinglesPosition = getPosition(courtWidth - singlesInset, courtLength / 2)
   const sidelinePosition = getPosition(0, courtLength / 2)
   const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
+
+    // Also define the scale and offsets for the overlay singles lines
+
+    const scale = Math.min(
+      dimensions.width / (courtWidth + 10),
+      dimensions.height / (courtLength + 10),
+    )
+  
+    const offsetY = (dimensions.height - courtLength * scale) / 2
+    const courtPixelHeight = courtLength * scale
 
   // Update canvas dimensions when the container resizes.
   useEffect(() => {
@@ -625,27 +636,27 @@ export function SkyBallCourtAnimation({
                   className="absolute bg-teal-500"
                   style={{
                     left: leftSinglesPosition.x - 1,
-                    top: 0,
+                    top: offsetY,
                     width: 2,
-                    height: dimensions.height,
+                    height: courtPixelHeight,
                     transformOrigin: "top",
                   }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 2.3 }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 2 }}
                 />
                 <motion.div
                   className="absolute bg-teal-500"
                   style={{
                     left: rightSinglesPosition.x - 1,
-                    top: 0,
+                    top: offsetY,
                     width: 2,
-                    height: dimensions.height,
+                    height: courtPixelHeight,
                     transformOrigin: "top",
                   }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 2.5 }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 2 }}
                 />
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
