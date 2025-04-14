@@ -32,7 +32,7 @@ export const upcomingTournaments: Tournament[] = [
     pointsAwarded: 100,
     format: "Single Elimination Bracket",
     maxParticipants: 8,
-    currentParticipants: 0,
+    currentParticipants: 4,
     contactEmail: "play@skyball.us",
   },
   // You can add more tournaments here
