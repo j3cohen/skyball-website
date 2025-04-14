@@ -10,7 +10,20 @@ interface SkyBallCourtAnimationProps {
   quickAnimation?: boolean
 }
 
-export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = false }: SkyBallCourtAnimationProps) {
+export function SkyBallCourtAnimation({
+  step,
+  showSingles,
+  quickAnimation = false,
+}: SkyBallCourtAnimationProps) {
+  // Mobile detection: if viewport width is less than 768px, treat as mobile.
+  const [isMobile, setIsMobile] = useState<boolean>(false)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 450 })
@@ -24,7 +37,10 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
 
   // Calculate positions for overlay elements
   const getPosition = (x: number, y: number) => {
-    const scale = Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10))
+    const scale = Math.min(
+      dimensions.width / (courtWidth + 10),
+      dimensions.height / (courtLength + 10),
+    )
     const offsetX = (dimensions.width - courtWidth * scale) / 2
     const offsetY = (dimensions.height - courtLength * scale) / 2
 
@@ -48,7 +64,7 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
   const sidelinePosition = getPosition(0, courtLength / 2)
   const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
 
-  // Handle resize events
+  // Handle resize events to update dimensions
   useEffect(() => {
     const updateDimensions = () => {
       const container = containerRef.current
@@ -64,12 +80,8 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
 
     // Add resize listener
     window.addEventListener("resize", updateDimensions)
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", updateDimensions)
-    }
-  }, []) // Empty dependency array - only run on mount and unmount
+    return () => window.removeEventListener("resize", updateDimensions)
+  }, [])
 
   // Draw the court
   useEffect(() => {
@@ -87,7 +99,10 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Scale factors to convert feet to pixels
-    const scale = Math.min(canvas.width / (courtWidth + 10), canvas.height / (courtLength + 10))
+    const scale = Math.min(
+      canvas.width / (courtWidth + 10),
+      canvas.height / (courtLength + 10),
+    )
     const offsetX = (canvas.width - courtWidth * scale) / 2
     const offsetY = (canvas.height - courtLength * scale) / 2
 
@@ -105,7 +120,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
       courtToCanvas(0, courtLength),
     ]
 
-    // Create court background gradient - using green tones
     const gradient = ctx.createLinearGradient(
       courtCorners[0].x,
       courtCorners[0].y,
@@ -115,7 +129,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
     gradient.addColorStop(0, "#e9f5db")
     gradient.addColorStop(1, "#cfe1b9")
 
-    // Fill court background
     ctx.fillStyle = gradient
     ctx.beginPath()
     ctx.moveTo(courtCorners[0].x, courtCorners[0].y)
@@ -130,21 +143,18 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
     ctx.lineWidth = 3
     ctx.stroke()
 
-    // Draw centerline (that stops at the kitchen)
+    // Draw centerline (stopping at the kitchen)
     ctx.beginPath()
-    // Top half centerline (from top baseline to top kitchen)
     ctx.moveTo(courtToCanvas(courtWidth / 2, 0).x, courtToCanvas(courtWidth / 2, 0).y)
     ctx.lineTo(
       courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x,
       courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
     )
-    // Bottom half centerline (from bottom kitchen to bottom baseline)
     ctx.moveTo(
       courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x,
       courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y,
     )
     ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength).x, courtToCanvas(courtWidth / 2, courtLength).y)
-
     ctx.strokeStyle = "#588157"
     ctx.lineWidth = 2
     ctx.stroke()
@@ -155,19 +165,17 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
     ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
     ctx.strokeStyle = "#344e41"
     ctx.lineWidth = 4
-    ctx.setLineDash([8, 4]) // Make the net line dotted
+    ctx.setLineDash([8, 4])
     ctx.stroke()
-    ctx.setLineDash([]) // Reset line dash
+    ctx.setLineDash([])
 
-    // Draw kitchen lines (non-volley zone) - 7ft from net
+    // Draw kitchen lines (7ft from net)
     ctx.beginPath()
-    // Top kitchen
     ctx.moveTo(courtToCanvas(0, courtLength / 2 - kitchenDepth).x, courtToCanvas(0, courtLength / 2 - kitchenDepth).y)
     ctx.lineTo(
       courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).x,
       courtToCanvas(courtWidth, courtLength / 2 - kitchenDepth).y,
     )
-    // Bottom kitchen
     ctx.moveTo(courtToCanvas(0, courtLength / 2 + kitchenDepth).x, courtToCanvas(0, courtLength / 2 + kitchenDepth).y)
     ctx.lineTo(
       courtToCanvas(courtWidth, courtLength / 2 + kitchenDepth).x,
@@ -179,15 +187,12 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
 
     // Step 2+: Draw service lines
     if (step >= 1 && step < 3) {
-      // Only draw service lines in steps 1 and 2, they're replaced by service boxes in step 3+
       ctx.strokeStyle = "#bc4749"
       ctx.lineWidth = 3
 
       // Top service line (13.5ft from net)
       ctx.beginPath()
-
       if (step >= 3 && showSingles) {
-        // If singles mode is active, only draw between singles lines
         ctx.moveTo(
           courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x,
           courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y,
@@ -197,7 +202,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y,
         )
       } else {
-        // Otherwise draw full width
         ctx.moveTo(
           courtToCanvas(0, courtLength / 2 - serviceLineDistance).x,
           courtToCanvas(0, courtLength / 2 - serviceLineDistance).y,
@@ -211,9 +215,7 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
 
       // Bottom service line (13.5ft from net)
       ctx.beginPath()
-
       if (step >= 3 && showSingles) {
-        // If singles mode is active, only draw between singles lines
         ctx.moveTo(
           courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x,
           courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y,
@@ -223,7 +225,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y,
         )
       } else {
-        // Otherwise draw full width
         ctx.moveTo(
           courtToCanvas(0, courtLength / 2 + serviceLineDistance).x,
           courtToCanvas(0, courtLength / 2 + serviceLineDistance).y,
@@ -235,13 +236,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
       }
       ctx.stroke()
 
-      // Draw a measurement line to show 6.5ft distance
+      // Draw measurement lines (only in step 1)
       if (step === 1) {
         ctx.setLineDash([5, 5])
         ctx.strokeStyle = "#bc4749"
         ctx.lineWidth = 2
-
-        // Top measurement line
         ctx.beginPath()
         ctx.moveTo(
           courtToCanvas(courtWidth - 2, courtLength / 2 - kitchenDepth).x,
@@ -252,8 +251,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           courtToCanvas(courtWidth - 2, courtLength / 2 - serviceLineDistance).y,
         )
         ctx.stroke()
-
-        // Bottom measurement line
         ctx.beginPath()
         ctx.moveTo(
           courtToCanvas(courtWidth - 2, courtLength / 2 + kitchenDepth).x,
@@ -264,25 +261,17 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           courtToCanvas(courtWidth - 2, courtLength / 2 + serviceLineDistance).y,
         )
         ctx.stroke()
-
-        // Reset line dash
         ctx.setLineDash([])
       }
     }
 
-    // Step 2: Draw service box lines (extend centerline to net) in blue for animation
-    if (step === 2) {
-      // In step 2, we only show the blue animation lines, not the red service box lines
-      // This will be handled by the animation overlay
-    }
+    // Step 2: (Animation overlays for blue service box lines are handled separately)
 
-    // Step 3+: Highlight service boxes with a single color and bold lines
+    // Step 3+: Draw service boxes with bold red lines
     if (step >= 3) {
-      // Use a consistent color for all service box lines
-      ctx.strokeStyle = "#bc4749" // Red to match service line
-      ctx.lineWidth = 4 // Make lines bolder
+      ctx.strokeStyle = "#bc4749"
+      ctx.lineWidth = 4
 
-      // Draw service lines (which were removed in step 3+)
       // Top service line
       ctx.beginPath()
       if (showSingles) {
@@ -329,7 +318,7 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
       }
       ctx.stroke()
 
-      // Draw centerline from service line to kitchen line (top)
+      // Draw centerline extensions from service lines to kitchen
       ctx.beginPath()
       ctx.moveTo(
         courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
@@ -340,8 +329,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
         courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
       )
       ctx.stroke()
-
-      // Draw centerline from service line to kitchen line (bottom)
       ctx.beginPath()
       ctx.moveTo(
         courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
@@ -353,35 +340,36 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
       )
       ctx.stroke()
 
-      // Redraw centerline extensions with the same color and width
-      // Top centerline extension (from kitchen to net)
+      // Redraw centerline extensions from kitchen to net
       ctx.beginPath()
       ctx.moveTo(
         courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x,
         courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y,
       )
-      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+      ctx.lineTo(
+        courtToCanvas(courtWidth / 2, courtLength / 2).x,
+        courtToCanvas(courtWidth / 2, courtLength / 2).y,
+      )
       ctx.stroke()
-
-      // Bottom centerline extension (from kitchen to net)
       ctx.beginPath()
       ctx.moveTo(
         courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x,
         courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y,
       )
-      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+      ctx.lineTo(
+        courtToCanvas(courtWidth / 2, courtLength / 2).x,
+        courtToCanvas(courtWidth / 2, courtLength / 2).y,
+      )
       ctx.stroke()
 
-      // Draw complete service box outlines
-      // For step 4, highlight the service boxes with outlines including the sidelines
+      // Draw complete service box outlines (for step 3/4)
       if (step === 3 || step === 4) {
-        ctx.strokeStyle = "#bc4749" // Red to match service line
-        ctx.lineWidth = 4 // Make lines bolder
+        ctx.strokeStyle = "#bc4749"
+        ctx.lineWidth = 4
 
         // Top left service box
         ctx.beginPath()
         if (showSingles) {
-          // If singles mode is active, only draw between singles lines
           ctx.moveTo(
             courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y,
@@ -390,10 +378,15 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(singlesInset, courtLength / 2).x,
+            courtToCanvas(singlesInset, courtLength / 2).y,
+          )
         } else {
-          // Otherwise draw full width
           ctx.moveTo(
             courtToCanvas(0, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(0, courtLength / 2 - serviceLineDistance).y,
@@ -402,8 +395,14 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(0, courtLength / 2).x,
+            courtToCanvas(0, courtLength / 2).y,
+          )
         }
         ctx.closePath()
         ctx.stroke()
@@ -411,7 +410,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
         // Top right service box
         ctx.beginPath()
         if (showSingles) {
-          // If singles mode is active, only draw between singles lines
           ctx.moveTo(
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
@@ -424,9 +422,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth - singlesInset, courtLength / 2).x,
             courtToCanvas(courtWidth - singlesInset, courtLength / 2).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
         } else {
-          // Otherwise draw full width
           ctx.moveTo(
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y,
@@ -435,8 +435,14 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x,
             courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth, courtLength / 2).x,
+            courtToCanvas(courtWidth, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
         }
         ctx.closePath()
         ctx.stroke()
@@ -444,7 +450,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
         // Bottom left service box
         ctx.beginPath()
         if (showSingles) {
-          // If singles mode is active, only draw between singles lines
           ctx.moveTo(
             courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y,
@@ -453,10 +458,15 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(singlesInset, courtLength / 2).x,
+            courtToCanvas(singlesInset, courtLength / 2).y,
+          )
         } else {
-          // Otherwise draw full width
           ctx.moveTo(
             courtToCanvas(0, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(0, courtLength / 2 + serviceLineDistance).y,
@@ -465,8 +475,14 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(0, courtLength / 2).x,
+            courtToCanvas(0, courtLength / 2).y,
+          )
         }
         ctx.closePath()
         ctx.stroke()
@@ -474,7 +490,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
         // Bottom right service box
         ctx.beginPath()
         if (showSingles) {
-          // If singles mode is active, only draw between singles lines
           ctx.moveTo(
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
@@ -487,9 +502,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth - singlesInset, courtLength / 2).x,
             courtToCanvas(courtWidth - singlesInset, courtLength / 2).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
         } else {
-          // Otherwise draw full width
           ctx.moveTo(
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y,
@@ -498,8 +515,14 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x,
             courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y,
           )
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+          ctx.lineTo(
+            courtToCanvas(courtWidth, courtLength / 2).x,
+            courtToCanvas(courtWidth, courtLength / 2).y,
+          )
+          ctx.lineTo(
+            courtToCanvas(courtWidth / 2, courtLength / 2).x,
+            courtToCanvas(courtWidth / 2, courtLength / 2).y,
+          )
         }
         ctx.closePath()
         ctx.stroke()
@@ -508,16 +531,14 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
 
     // Step 4 (optional): Draw singles lines
     if (step === 4 || (quickAnimation && showSingles)) {
-      ctx.strokeStyle = "#2a9d8f" // Teal for singles lines
+      ctx.strokeStyle = "#2a9d8f"
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
-
       // Left singles line
       ctx.beginPath()
       ctx.moveTo(courtToCanvas(singlesInset, 0).x, courtToCanvas(singlesInset, 0).y)
       ctx.lineTo(courtToCanvas(singlesInset, courtLength).x, courtToCanvas(singlesInset, courtLength).y)
       ctx.stroke()
-
       // Right singles line
       ctx.beginPath()
       ctx.moveTo(courtToCanvas(courtWidth - singlesInset, 0).x, courtToCanvas(courtWidth - singlesInset, 0).y)
@@ -526,20 +547,21 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
         courtToCanvas(courtWidth - singlesInset, courtLength).y,
       )
       ctx.stroke()
-
-      // Reset line dash for the measurement indicators
       ctx.setLineDash([])
     }
-  }, [step, showSingles, dimensions]) // Only redraw when step, showSingles, or dimensions change
+  }, [step, showSingles, dimensions])
 
   return (
-    <div ref={containerRef} className="relative w-full aspect-[16/7] bg-gray-50 rounded-lg overflow-hidden shadow-lg">
+    <div
+      ref={containerRef}
+      // Use a responsive class: on mobile remove the fixed aspect ratio so that the container grows vertically.
+      className={`relative w-full ${isMobile ? "" : "aspect-[16/7]"} bg-gray-50 rounded-lg overflow-hidden shadow-lg`}
+    >
       <canvas ref={canvasRef} className="w-full h-full" />
       {quickAnimation && (
         <div className="absolute inset-0 pointer-events-none">
           {/* Left side labels container */}
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 items-start">
-            {/* Service line label */}
             <motion.div
               className="flex items-center justify-start"
               initial={{ opacity: 0, x: -20 }}
@@ -550,8 +572,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                 Service Line (6.5ft behind kitchen)
               </div>
             </motion.div>
-
-            {/* Centerline extension label */}
             <motion.div
               className="flex items-center justify-start"
               initial={{ opacity: 0, x: -20 }}
@@ -562,8 +582,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                 Extend centerline to net
               </div>
             </motion.div>
-
-            {/* Singles line label */}
             <motion.div
               className="flex items-center justify-start"
               initial={{ opacity: 0, x: -20 }}
@@ -575,8 +593,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </div>
             </motion.div>
           </div>
-
-          {/* 6.5ft measurement indicators with arrows - positioned directly on the diagram */}
           <motion.div
             className="absolute flex flex-col items-center justify-center z-50"
             style={{
@@ -594,7 +610,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             </div>
             <ArrowUp className="h-5 w-5 text-red-600" />
           </motion.div>
-
           <motion.div
             className="absolute flex flex-col items-center justify-center z-50"
             style={{
@@ -612,8 +627,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             </div>
             <ArrowDown className="h-5 w-5 text-red-600" />
           </motion.div>
-
-          {/* Service lines animation */}
           <motion.div
             className="absolute"
             style={{
@@ -628,7 +641,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           >
             <div className="w-full h-full bg-red-600"></div>
           </motion.div>
-
           <motion.div
             className="absolute"
             style={{
@@ -643,8 +655,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
           >
             <div className="w-full h-full bg-red-600"></div>
           </motion.div>
-
-          {/* Centerline extensions animation */}
           <motion.div
             className="absolute"
             style={{
@@ -656,16 +666,12 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               transformOrigin: "top",
             }}
             initial={{ scaleY: 0, backgroundColor: "#3b82f6" }}
-            animate={{
-              scaleY: 1,
-              backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"],
-            }}
+            animate={{ scaleY: 1, backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"] }}
             transition={{
               scaleY: { duration: 0.8, delay: 1.3, ease: "easeOut" },
               backgroundColor: { duration: 0.3, delay: 2.8, times: [0, 0.9, 1] },
             }}
           />
-
           <motion.div
             className="absolute"
             style={{
@@ -677,17 +683,12 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               transformOrigin: "bottom",
             }}
             initial={{ scaleY: 0, backgroundColor: "#3b82f6" }}
-            animate={{
-              scaleY: 1,
-              backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"],
-            }}
+            animate={{ scaleY: 1, backgroundColor: ["#3b82f6", "#3b82f6", "#bc4749"] }}
             transition={{
               scaleY: { duration: 0.8, delay: 1.5, ease: "easeOut" },
               backgroundColor: { duration: 0.3, delay: 2.8, times: [0, 0.9, 1] },
             }}
           />
-
-          {/* Centerline from service line to kitchen animation (top) */}
           <motion.div
             className="absolute bg-red-600"
             style={{
@@ -703,8 +704,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.8, delay: 1.9, ease: "easeOut" }}
           />
-
-          {/* Centerline from service line to kitchen animation (bottom) */}
           <motion.div
             className="absolute bg-red-600"
             style={{
@@ -720,78 +719,76 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.8, delay: 2.1, ease: "easeOut" }}
           />
-
-          {/* Singles lines animation */}
-          <motion.div
-            className="absolute bg-teal-500"
-            style={{
-              left: leftSinglesPosition.x - 1,
-              top: 0,
-              width: 2,
-              height: dimensions.height,
-              transformOrigin: "top",
-            }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 1, delay: 2.3, ease: "easeOut" }}
-          />
-
-          <motion.div
-            className="absolute bg-teal-500"
-            style={{
-              left: rightSinglesPosition.x - 1,
-              top: 0,
-              width: 2,
-              height: dimensions.height,
-              transformOrigin: "top",
-            }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 1, delay: 2.5, ease: "easeOut" }}
-          />
-
-          {/* Singles line labels - positioned to avoid overlap */}
-          <motion.div
-            className="absolute flex flex-row items-center justify-center z-50"
-            style={{
-              left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-              top: dimensions.height * 0.08,
-              width: 60,
-              height: 30,
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 2.7 }}
-          >
-            <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
-            <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-              2ft
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="absolute flex flex-row items-center justify-center z-50"
-            style={{
-              left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-              top: dimensions.height * 0.08,
-              width: 60,
-              height: 30,
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 2.7 }}
-          >
-            <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-              2ft
-            </div>
-            <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
-          </motion.div>
+          <AnimatePresence>
+            {(step === 4 || (quickAnimation && showSingles)) && (
+              <>
+                <motion.div
+                  className="absolute bg-teal-500"
+                  style={{
+                    left: leftSinglesPosition.x - 1,
+                    top: 0,
+                    width: 2,
+                    height: dimensions.height,
+                    transformOrigin: "top",
+                  }}
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 1, delay: 2.3, ease: "easeOut" }}
+                />
+                <motion.div
+                  className="absolute bg-teal-500"
+                  style={{
+                    left: rightSinglesPosition.x - 1,
+                    top: 0,
+                    width: 2,
+                    height: dimensions.height,
+                    transformOrigin: "top",
+                  }}
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 1, delay: 2.5, ease: "easeOut" }}
+                />
+                <motion.div
+                  className="absolute flex flex-row items-center justify-center"
+                  style={{
+                    left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
+                    top: dimensions.height * 0.08,
+                    width: 60,
+                    height: 30,
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 2.7 }}
+                >
+                  <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
+                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
+                    2ft
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="absolute flex flex-row items-center justify-center"
+                  style={{
+                    left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
+                    top: dimensions.height * 0.08,
+                    width: 60,
+                    height: 30,
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 2.7 }}
+                >
+                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
+                    2ft
+                  </div>
+                  <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       )}
-
       {!quickAnimation && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* Net label - placed directly on the net line */}
           <AnimatePresence>
             {step === 0 && (
               <motion.div
@@ -813,8 +810,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Kitchen lines labels - only show in step 0 */}
           <AnimatePresence>
             {step === 0 && (
               <>
@@ -822,7 +817,7 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   className="absolute flex items-center justify-center"
                   style={{
                     left: topKitchenPosition.x - 100,
-                    top: topKitchenPosition.y - 40, // Moved up to avoid covering the line
+                    top: topKitchenPosition.y - 40,
                     width: 200,
                     height: 30,
                   }}
@@ -835,12 +830,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                     Kitchen Line (7ft from net)
                   </div>
                 </motion.div>
-
                 <motion.div
                   className="absolute flex items-center justify-center"
                   style={{
                     left: bottomKitchenPosition.x - 100,
-                    top: bottomKitchenPosition.y + 10, // Moved down to avoid covering the line
+                    top: bottomKitchenPosition.y + 10,
                     width: 200,
                     height: 30,
                   }}
@@ -856,8 +850,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </>
             )}
           </AnimatePresence>
-
-          {/* Service line labels and animations - only show in step 1 when not in singles mode */}
           <AnimatePresence>
             {step === 1 && !showSingles && (
               <>
@@ -865,7 +857,7 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   className="absolute flex items-center justify-center"
                   style={{
                     left: topServicePosition.x - 140,
-                    top: topServicePosition.y - 40, // Moved up to avoid covering the line
+                    top: topServicePosition.y - 40,
                     width: 280,
                     height: 30,
                   }}
@@ -878,12 +870,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                     Service Line (6.5ft behind kitchen)
                   </div>
                 </motion.div>
-
                 <motion.div
                   className="absolute flex items-center justify-center"
                   style={{
                     left: bottomServicePosition.x - 140,
-                    top: bottomServicePosition.y + 10, // Moved down to avoid covering the line
+                    top: bottomServicePosition.y + 10,
                     width: 280,
                     height: 30,
                   }}
@@ -899,8 +890,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </>
             )}
           </AnimatePresence>
-
-          {/* Measurement indicators - with arrows pointing in the correct direction */}
           <AnimatePresence>
             {step === 1 && (
               <>
@@ -922,7 +911,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   </div>
                   <ArrowUp className="h-5 w-5 text-red-600" />
                 </motion.div>
-
                 <motion.div
                   className="absolute flex flex-col items-center justify-center"
                   style={{
@@ -944,8 +932,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </>
             )}
           </AnimatePresence>
-
-          {/* Centerline extension label - step 2 */}
           <AnimatePresence>
             {step === 2 && (
               <motion.div
@@ -967,8 +953,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Service box labels - only show in step 3 (not step 4) */}
           <AnimatePresence>
             {step === 3 && !showSingles && (
               <motion.div
@@ -990,12 +974,9 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Animated centerline extensions for step 2 */}
           <AnimatePresence>
             {step === 2 && (
               <>
-                {/* Top centerline extension animation - grows from kitchen line to net (top to bottom) */}
                 <motion.div
                   className="absolute bg-blue-600"
                   style={{
@@ -1011,8 +992,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 />
-
-                {/* Bottom centerline extension animation - grows from kitchen line to net (bottom to top) */}
                 <motion.div
                   className="absolute bg-blue-600"
                   style={{
@@ -1031,12 +1010,9 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </>
             )}
           </AnimatePresence>
-
-          {/* Animated centerline from service line to kitchen for step 3 */}
           <AnimatePresence>
             {step === 3 && (
               <>
-                {/* Top centerline from service line to kitchen animation */}
                 <motion.div
                   className="absolute bg-red-600"
                   style={{
@@ -1052,8 +1028,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
                 />
-
-                {/* Bottom centerline from service line to kitchen animation */}
                 <motion.div
                   className="absolute bg-red-600"
                   style={{
@@ -1072,12 +1046,9 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
               </>
             )}
           </AnimatePresence>
-
-          {/* Singles lines with animated drawing effect */}
           <AnimatePresence>
             {(step === 4 || (quickAnimation && showSingles)) && (
               <>
-                {/* Left singles line animation */}
                 <motion.div
                   className="absolute bg-teal-500"
                   style={{
@@ -1091,8 +1062,6 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 1, ease: "easeOut" }}
                 />
-
-                {/* Right singles line animation */}
                 <motion.div
                   className="absolute bg-teal-500"
                   style={{
@@ -1106,13 +1075,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
                 />
-
-                {/* Singles line measurement indicators - top left */}
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25, // Top quarter of court
+                    top: dimensions.height * 0.25,
                     width: 60,
                     height: 30,
                   }}
@@ -1125,13 +1092,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                     2ft
                   </div>
                 </motion.div>
-
-                {/* Singles line measurement indicators - top right */}
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25, // Top quarter of court
+                    top: dimensions.height * 0.25,
                     width: 60,
                     height: 30,
                   }}
@@ -1144,13 +1109,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                   </div>
                   <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
                 </motion.div>
-
-                {/* Singles line measurement indicators - bottom left */}
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75, // Bottom quarter of court
+                    top: dimensions.height * 0.75,
                     width: 60,
                     height: 30,
                   }}
@@ -1163,13 +1126,11 @@ export function SkyBallCourtAnimation({ step, showSingles, quickAnimation = fals
                     2ft
                   </div>
                 </motion.div>
-
-                {/* Singles line measurement indicators - bottom right */}
                 <motion.div
                   className="absolute flex flex-row items-center justify-center"
                   style={{
                     left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75, // Bottom quarter of court
+                    top: dimensions.height * 0.75,
                     width: 60,
                     height: 30,
                   }}
