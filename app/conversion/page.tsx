@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, RotateCcw, Play } from "lucide-react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import { SkyBallCourtDiagram } from "@/components/diagram"
 
 export default function ConversionPage() {
   const [step, setStep] = useState(0)
