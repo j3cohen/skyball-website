@@ -201,7 +201,6 @@ export default function ConversionPage() {
           </div>
         </div>
       </main>
-      <SkyBallCourtDiagram />
       <Footer />
     </>
   )
