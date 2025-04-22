@@ -313,29 +313,6 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
 
                 {/* Tournament-specific fields removed as requested */}
 
-                {event.skillLevel && (
-                  <div>
-                    <label htmlFor="skill-level" className="block text-sm font-medium text-gray-700">
-                      Your Skill Level
-                    </label>
-                    <select
-                      id="skill-level"
-                      name="skill-level"
-                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        response?.fieldErrors?.skillLevel ? "border-red-500" : ""
-                      }`}
-                      required
-                    >
-                      <option value="">Select your skill level</option>
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                    </select>
-                    {response?.fieldErrors?.skillLevel && (
-                      <p className="mt-1 text-sm text-red-600">{response.fieldErrors.skillLevel[0]}</p>
-                    )}
-                  </div>
-                )}
 
                 {event.registrationFee && (
                   <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
