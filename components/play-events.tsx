@@ -5,14 +5,15 @@ import Link from "next/link"
 import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle } from "lucide-react"
 import { events } from "@/data/events"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type EventType = "all" | "tournament" | "clinic" | "open-play" | "special"
 type TimeFilter = "upcoming" | "past" | "all"
 
 export function PlayEvents() {
   const [eventTypeFilter, setEventTypeFilter] = useState<EventType>("all")
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming")
+//   const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming")
+  const [timeFilter] = useState<TimeFilter>("upcoming")
 
   const filteredEvents = events.filter((event) => {
     // Filter by event type
