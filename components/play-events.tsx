@@ -44,7 +44,7 @@ export function PlayEvents() {
 
   return (
     <div>
-      <Tabs
+      {/* <Tabs
         defaultValue="upcoming"
         className="w-full mb-8"
         onValueChange={(value) => setTimeFilter(value as TimeFilter)}
@@ -54,7 +54,7 @@ export function PlayEvents() {
           <TabsTrigger value="past">Past</TabsTrigger>
           <TabsTrigger value="all">All Events</TabsTrigger>
         </TabsList>
-      </Tabs>
+      </Tabs> */}
 
       <div className="flex flex-wrap gap-2 justify-center mb-8">
         {eventTypes.map((type) => (
@@ -65,7 +65,7 @@ export function PlayEvents() {
             className="rounded-full"
           >
             {type === "all"
-              ? "All Types"
+              ? "All Events"
               : type === "tournament"
                 ? "Tournaments"
                 : type === "clinic"
