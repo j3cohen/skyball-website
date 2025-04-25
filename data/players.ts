@@ -7,6 +7,7 @@ export interface Player {
     totalPoints: number
     age?: number
     record?: string
+    rank?: number
     highestRank?: {
       rank: number
       date: string
@@ -27,7 +28,7 @@ export interface Player {
     points: number
     countedForRankings: boolean
   }
-  
+
   export const players: Player[] = [
     {
       id: "deven-amann-rao",
