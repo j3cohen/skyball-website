@@ -20,6 +20,14 @@ export interface Player {
     }[]
   }
   
+  export interface Tournament {
+    id: string
+    name: string
+    date: string
+    points: number
+    countedForRankings: boolean
+  }
+  
   export const players: Player[] = [
     {
       id: "deven-amann-rao",
