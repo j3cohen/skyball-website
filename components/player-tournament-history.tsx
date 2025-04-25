@@ -94,7 +94,7 @@ export default function PlayerTournamentHistory({ player, tournaments }: PlayerT
         <h3 className="text-lg font-semibold mb-2">Ranking Calculation</h3>
         <p className="text-sm text-gray-600">
           Player rankings are based on their top 10 tournament performances over a rolling 12-month period. Points
-          earned in each tournament depend on the tournament category and the player's final position.
+          earned in each tournament depend on the tournament category and the player&apos;s final position.
         </p>
       </div>
     </div>

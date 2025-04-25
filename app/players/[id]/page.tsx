@@ -25,7 +25,7 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
   })
 
   // Calculate how many tournaments are counting towards ranking
-  const countedTournaments = sortedTournaments.filter((t) => t.countedForRankings)
+  // const countedTournaments = sortedTournaments.filter((t) => t.countedForRankings)
 
   // Determine which photo to display (full body or headshot)
   const displayPhoto = player.fullBodyPhoto || player.headshot

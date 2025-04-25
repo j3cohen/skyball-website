@@ -206,7 +206,7 @@ export default function EventPage({ params }: { params: { id: string } }) {
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                         <h3 className="text-lg font-semibold text-amber-800 mb-2">Seeding Information</h3>
                         <p className="text-sm text-amber-700 mb-3">
-                          As this was our first tournament, we used a "King of the Court" format to determine seeding.
+                          As this was our first tournament, we used a &quot;King of the Court&quot; format to determine seeding.
                           Players competed in first-to-two-points matches, with winners staying on court and earning
                           points.
                         </p>

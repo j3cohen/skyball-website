@@ -210,7 +210,7 @@ export function PlayEvents() {
         <div className="text-center py-12">
           <h3 className="text-xl font-medium text-gray-600">No events found</h3>
           <p className="text-gray-500 mt-2">
-            No events match your current filter. Try a different category or check the "Include past events" option.
+            No events match your current filter. Try a different category or check the &quot;Include past events&quot; option.
           </p>
         </div>
       )}
