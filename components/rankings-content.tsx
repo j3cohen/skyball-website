@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, CheckCircle, Star, Calendar, Users, HelpCircle } from "lucide-react"
+import RankingsTable from "./rankings-table"
 
 const rankingSections = [
   {
@@ -113,8 +114,10 @@ export default function RankingsContent() {
     <section className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold text-center mb-12">SkyBall™ Rankings</h1>
+        
 
         <div className="max-w-4xl mx-auto space-y-8">
+          <RankingsTable />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center text-2xl text-sky-600">

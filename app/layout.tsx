@@ -3,6 +3,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import type React from "react"
 import { Analytics } from "@vercel/analytics/react"
+import ScrollToTop from "@/components/scroll-to-top"
 
 export const metadata: Metadata = {
   title: "SkyBall - Rally Ready",
@@ -16,7 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${libreFranklin.variable} ${jetbrainsMono.variable} ${poppins.variable}`}>
-      <body className="font-sans antialiased">{children} <Analytics /> </body>
+      <body className="font-sans antialiased">
+        <ScrollToTop />
+        {children} 
+        <Analytics /> 
+      </body>
     </html>
   )
 }

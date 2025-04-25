@@ -2,18 +2,17 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle } from "lucide-react"
+import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History } from "lucide-react"
 import { events } from "@/data/events"
 import { Button } from "@/components/ui/button"
-// import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 type EventType = "all" | "tournament" | "clinic" | "open-play" | "special"
-type TimeFilter = "upcoming" | "past" | "all"
 
 export function PlayEvents() {
   const [eventTypeFilter, setEventTypeFilter] = useState<EventType>("all")
-//   const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming")
-  const [timeFilter] = useState<TimeFilter>("upcoming")
+  const [includePastEvents, setIncludePastEvents] = useState(false)
 
   const filteredEvents = events.filter((event) => {
     // Filter by event type
@@ -21,12 +20,9 @@ export function PlayEvents() {
       return false
     }
 
-    // Filter by time (past/upcoming)
-    if (timeFilter === "upcoming" && event.isPast) {
-      return false
-    }
-    if (timeFilter === "past" && !event.isPast) {
-      return false
+    // Filter past events - only show if includePastEvents is true
+    if (event.isPast) {
+      return includePastEvents
     }
 
     return true
@@ -43,21 +39,13 @@ export function PlayEvents() {
 
   const eventTypes = availableEventTypes()
 
+  // Check if we should show the past events toggle
+  // Only show it when "all events" or "tournaments" is selected
+  const showPastEventsToggle = eventTypeFilter === "all" || eventTypeFilter === "tournament"
+
   return (
     <div>
-      {/* <Tabs
-        defaultValue="upcoming"
-        className="w-full mb-8"
-        onValueChange={(value) => setTimeFilter(value as TimeFilter)}
-      >
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="past">Past</TabsTrigger>
-          <TabsTrigger value="all">All Events</TabsTrigger>
-        </TabsList>
-      </Tabs> */}
-
-      <div className="flex flex-wrap gap-2 justify-center mb-8">
+      <div className="flex flex-wrap gap-2 justify-center mb-6">
         {eventTypes.map((type) => (
           <Button
             key={type}
@@ -78,12 +66,24 @@ export function PlayEvents() {
         ))}
       </div>
 
+      {/* Past events toggle - only show when relevant */}
+      {showPastEventsToggle && (
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <Switch id="past-events" checked={includePastEvents} onCheckedChange={setIncludePastEvents} />
+          <Label htmlFor="past-events" className="flex items-center cursor-pointer">
+            <History className="h-4 w-4 mr-1.5" />
+            Include past events
+          </Label>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredEvents.map((event) => (
           <Link
             href={`/play/${event.id}`}
             key={event.id}
             className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow block"
+            scroll={true}
           >
             <div className="relative p-3">
               <div className="flex justify-between">
@@ -106,6 +106,11 @@ export function PlayEvents() {
                         ? "Open Play"
                         : "Special Event"}
                 </span>
+
+                {/* Show "PAST" badge for past events */}
+                {event.isPast && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">PAST</span>
+                )}
 
                 {/* Show "FULL" badge if event is at capacity */}
                 {event.maxParticipants &&
@@ -183,18 +188,18 @@ export function PlayEvents() {
                       Runner-up: <span className="font-medium">{event.results.runnerUp}</span>
                     </p>
                   )}
-                  {event.results.score && (
-                    <p className="text-sm">
-                      Final score: <span className="font-medium">{event.results.score}</span>
-                    </p>
-                  )}
                 </div>
               )}
 
               <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
 
               <div className="inline-flex items-center text-sky-600 font-medium">
-                {event.isPast ? "View Recap" : "View Details"} <ChevronRight className="h-4 w-4 ml-1" />
+                {event.isPast && event.hasResults
+                  ? "View Tournament Results"
+                  : event.isPast
+                    ? "View Recap"
+                    : "View Details"}
+                <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </div>
           </Link>
@@ -205,11 +210,7 @@ export function PlayEvents() {
         <div className="text-center py-12">
           <h3 className="text-xl font-medium text-gray-600">No events found</h3>
           <p className="text-gray-500 mt-2">
-            {timeFilter === "upcoming"
-              ? "No upcoming events match your filter. Try a different category or check back later."
-              : timeFilter === "past"
-                ? "No past events match your filter. Try a different category."
-                : "No events match your filter. Try changing your selection."}
+            No events match your current filter. Try a different category or check the "Include past events" option.
           </p>
         </div>
       )}
