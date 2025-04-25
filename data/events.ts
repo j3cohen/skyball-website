@@ -53,7 +53,7 @@ export type Event = {
     {
       id: "open-play-april-29",
       type: "open-play",
-      name: "MacCarren Park Open Play",
+      name: "McCarren Park Open Play",
       date: "April 29, 2025",
       time: "5:30 PM",
       location: "McCarren Park Blacktop (behind the tennis courts)",
