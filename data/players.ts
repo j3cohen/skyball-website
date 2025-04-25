@@ -33,7 +33,7 @@ export interface Player {
     {
       id: "deven-amann-rao",
       name: "Deven Amann-Rao",
-      hometown: "New York, NY",
+      hometown: "Jackson Heights, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/deven-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/deven-full-body.png",
       totalPoints: 118,
@@ -56,7 +56,7 @@ export interface Player {
     {
       id: "isaac-tullis",
       name: "Isaac Tullis",
-      hometown: "Brooklyn, NY",
+      hometown: "New York, NY",
       headshot: "/thoughtful-urbanite.png",
       totalPoints: 66,
       age: 30,
@@ -78,7 +78,7 @@ export interface Player {
     {
       id: "caleb-breslin",
       name: "Caleb Breslin",
-      hometown: "Queens, NY",
+      hometown: "New York, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/caleb-breslin-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/caleb-breslin-full-body.png",
       totalPoints: 33,
@@ -101,11 +101,11 @@ export interface Player {
     {
       id: "jason-grossman",
       name: "Jason Grossman",
-      hometown: "Manhattan, NY",
+      hometown: "Queens, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/jason-grossman-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/jason-grossman-full-body.png",
       totalPoints: 12,
-      age: 30,
+      age: 37,
       record: "0-1",
       highestRank: {
         rank: 4,
