@@ -33,7 +33,7 @@ export interface Player {
     {
       id: "deven-amann-rao",
       name: "Deven Amann-Rao",
-      hometown: "Jackson Heights, NY",
+      hometown: "Queens, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/deven-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/deven-full-body.png",
       totalPoints: 118,
