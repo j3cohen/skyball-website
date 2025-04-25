@@ -88,16 +88,16 @@ export default function Navbar() {
         "fixed w-full z-50 transition-all duration-300",
         isTransparentNavbarPage
           ? isScrolled
-            ? "bg-white shadow-md py-2"
-            : "bg-transparent py-4"
-          : "bg-white shadow-md py-2", // White background with shadow on other pages, just like when scrolled
+          ? "bg-[#01014c] shadow-md py-2"
+          : "bg-[#01014c] py-4"
+        : "bg-[#01014c] shadow-md py-2", // Changed from bg-white to bg-[#12284c]
       )}
     >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <a href="/" className="transition-all duration-300 hover:scale-105" onClick={handleLogoClick}>
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/SkyBall%20logo_B.jpg-dPdFMlGp5QkZiD1KMEEFeGXKxL28hh.jpeg"
+              src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/SkyBall_Favicon.jpg"
               alt="SkyBall"
               width={120}
               height={40}
@@ -113,7 +113,7 @@ export default function Navbar() {
                   onClick={(e) => handleNavigation(e, item.href)}
                   className={cn(
                     `${libreFranklin.className} text-sm transition-colors duration-300 group-hover:text-sky-600`,
-                    isTransparentNavbarPage ? (isScrolled ? "text-gray-700" : "text-white") : "text-gray-700",
+                    isTransparentNavbarPage ? (isScrolled ? "text-white" : "text-white") : "text-white",
                     "flex items-center cursor-pointer",
                   )}
                   onMouseEnter={() => setActiveDropdown(item.name)}
