@@ -20,9 +20,9 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
   }
 
   // Sort tournaments by date (newest first)
-  const sortedTournaments = [...player.tournaments].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime()
-  })
+//   const sortedTournaments = [...player.tournaments].sort((a, b) => {
+//     return new Date(b.date).getTime() - new Date(a.date).getTime()
+//   })
 
   // Calculate how many tournaments are counting towards ranking
   // const countedTournaments = sortedTournaments.filter((t) => t.countedForRankings)
