@@ -56,7 +56,7 @@ export interface Player {
     {
       id: "isaac-tullis",
       name: "Isaac Tullis",
-      hometown: "New York, NY",
+      hometown: "Colorado Springs, CO",
       headshot: "/thoughtful-urbanite.png",
       totalPoints: 66,
       age: 30,
