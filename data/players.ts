@@ -128,7 +128,7 @@ export interface Player {
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/will-simon-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/will-simon-full-body.png",
       totalPoints: 4,
-      age: 27,
+      age: 26,
       record: "0-1",
       highestRank: {
         rank: 5,
