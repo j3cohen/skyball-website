@@ -56,13 +56,13 @@ export type Event = {
       name: "McCarren Park Open Play",
       date: "April 29, 2025",
       time: "5:30 PM",
-      location: "McCarren Park Blacktop (behind the tennis courts)",
+      location: "Marsha P Johnson Pickleball Courts (Smorgasburg) ",
       description:
-        "Join us for an evening of casual SkyBall at our Brooklyn court! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
+        "Join us for an evening of casual SkyBall in Brooklyn! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
       image: "/skyball-open-session.png",
       skillLevel: "all",
       registrationFee: "$0",
-      isPast: false,
+      isPast: true,
       contactEmail: "play@skyball.us",
     },
   ]
