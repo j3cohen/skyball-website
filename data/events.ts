@@ -53,9 +53,9 @@ export type Event = {
     {
       id: "open-play-april-29",
       type: "open-play",
-      name: "McCarren Park Open Play",
+      name: "Williamsburg Open Play",
       date: "April 29, 2025",
-      time: "5:30 PM",
+      time: "6:00-8:00 PM",
       location: "Marsha P Johnson Pickleball Courts (Smorgasburg) ",
       description:
         "Join us for an evening of casual SkyBall in Brooklyn! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
