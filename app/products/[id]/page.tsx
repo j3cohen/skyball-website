@@ -60,7 +60,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   <h3 className="text-lg font-semibold mb-2">Returns</h3>
                   <p className="text-gray-700">
                     We offer a 30-day return policy for unused, unopened products in original packaging only. Customers
-                    are responsible for return shipping costs, and a $5 restocking fee will be applied to all returns.
+                    are responsible for return shipping costs.
                   </p>
                 </div>
               </div>
