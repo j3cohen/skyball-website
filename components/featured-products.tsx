@@ -12,6 +12,9 @@ export default function FeaturedProducts() {
     threshold: 0.1,
   })
 
+  // Only show the first 3 products on the featured section
+  const featuredProducts = products.slice(0, 3)
+
   return (
     <section ref={ref} className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
@@ -24,7 +27,7 @@ export default function FeaturedProducts() {
           Featured Products
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product, index) => (
+          {featuredProducts.map((product, index) => (
             <div
               key={product.id}
               className={cn(
@@ -34,7 +37,7 @@ export default function FeaturedProducts() {
               style={{ transitionDelay: `${index * 100}ms` }}
             >
               <div className="relative h-48">
-                <Image src={product.image || "/placeholder.svg"} alt={product.name} layout="fill" objectFit="cover" />
+                <Image src={product.images[0] || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold mb-2">{product.name}</h3>
@@ -51,8 +54,12 @@ export default function FeaturedProducts() {
             </div>
           ))}
         </div>
+        <div className="text-center mt-12">
+          <Link href="/shop">
+            <Button size="lg">View All Products</Button>
+          </Link>
+        </div>
       </div>
     </section>
   )
 }
-

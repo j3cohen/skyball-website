@@ -2,41 +2,62 @@ export interface Product {
   id: string
   name: string
   price: number
-  image: string
+  images: string[] // Changed from single image to array of images
   description: string
   details: string
+  stripeLink?: string
 }
 
 export const products: Product[] = [
   {
     id: "1",
-    name: "SkyBall™ Racket",
-    price: 79.99,
-    image:
-      "/placeholder.svg",
-    description: "21-inch stringed racket, perfect for SkyBall™",
+    name: "SkyBall 3-pack",
+    price: 14.99,
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
+    description: "Set of 3 high-density foam SkyBalls™",
     details:
-      "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
+      "Our official SkyBall™ 3-pack includes high-density foam balls designed for optimal flight and control. These balls work on most any surface, making them perfect for both casual play and competitive matches.",
+    stripeLink: "https://buy.stripe.com/bIYfZg0lK1RC6643cd",
   },
   {
     id: "2",
-    name: "SkyBall™ Set",
-    price: 24.99,
-    image:
-      "/placeholder.svg",
-    description: "Set of 4 high-density foam SkyBalls™",
+    name: "SkyBall Racket",
+    price: 35.99,
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png"],
+    description: "21-inch stringed racket, perfect for SkyBall™",
     details:
-      "Our official SkyBall™ set includes 4 high-density foam balls designed for optimal flight and control. These balls are perfect for both casual play and competitive matches.",
+      "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
+    stripeLink: "https://buy.stripe.com/9AQ00i6K867S2TS147",
   },
   {
     id: "3",
-    name: "SkyBall™ Starter Kit",
-    price: 149.99,
-    image:
-      "/placeholder.svg",
-    description: "2 rackets, 4 balls, and a portable net",
+    name: "SkyBall Essentials",
+    price: 74.99,
+    images: [
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+    ],
+    description:
+      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines.",
     details:
-      "Get everything you need to start playing SkyBall™ with our Starter Kit. It includes 2 official rackets, 4 high-density foam balls, and a portable net for easy setup anywhere.",
+      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines. Get started with SkyBall™ right away on your local pickleball court!",
+    stripeLink: "https://buy.stripe.com/6oE9AS4C0ao8dywfYY",
+  },
+  {
+    id: "4",
+    name: "SkyBall Anywhere Kit",
+    price: 149.99,
+    images: [
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/anywhere-kit-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-2.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-1.JPG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+    ],
+    description: "1 net, 2 rackets, 2 SkyBall 3-packs",
+    details:
+      "The complete SkyBall™ experience! Our Anywhere Kit includes a portable net, 2 official rackets, and 2 3-packs of high-density foam balls. Set up and play anywhere!",
+    stripeLink: "https://buy.stripe.com/3cs00iecA8g07a8fZ0",
   },
 ]
-
