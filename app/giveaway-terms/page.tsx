@@ -17,7 +17,7 @@ export default function GiveawayTermsPage() {
               <section>
                 <h3 className="text-xl font-medium mb-2">1. Eligibility</h3>
                 <p>
-                  The SkyBall™ Pre-Order Giveaway (the "Giveaway") is open to legal residents of the United States who
+                  The SkyBall™ Pre-Order Giveaway (the &quot;Giveaway&quot;) is open to legal residents of the United States who
                   are at least eighteen (18) years old at the time of entry and who place a pre-order for any SkyBall™
                   product between the Giveaway start and end dates. Employees of SkyBall™, its affiliates, subsidiaries,
                   advertising and promotion agencies, and suppliers, and their immediate family members are not eligible
@@ -48,7 +48,7 @@ export default function GiveawayTermsPage() {
                 <p>
                   Three (3) winners will be selected to receive free SkyBall™ gear. Prizes may include SkyBall™ rackets,
                   balls, nets, or other merchandise. Prizes
-                  are non-transferable, and no substitution will be made except as provided at SkyBall™'s sole
+                  are non-transferable, and no substitution will be made except as provided at SkyBall™&apos;s sole
                   discretion.
                 </p>
               </section>
@@ -58,8 +58,8 @@ export default function GiveawayTermsPage() {
                 <p>
                   Winners will be selected in a random drawing from among all eligible entries on June 3, 2024. Winners
                   will be notified by email within five (5) days following the winner selection. SkyBall™ shall have no
-                  liability for a winner's failure to receive notices due to spam, junk e-mail, or other security
-                  settings or for winners' provision of incorrect or otherwise non-functioning contact information.
+                  liability for a winner&apos;s failure to receive notices due to spam, junk e-mail, or other security
+                  settings or for winners&apos; provision of incorrect or otherwise non-functioning contact information.
                 </p>
               </section>
 
@@ -67,7 +67,7 @@ export default function GiveawayTermsPage() {
                 <h3 className="text-xl font-medium mb-2">6. Rights Granted by You</h3>
                 <p>
                   By entering this Giveaway, you understand and agree that SkyBall™, anyone acting on behalf of
-                  SkyBall™, and SkyBall™'s licensees, successors, and assigns, shall have the right, where permitted by
+                  SkyBall™, and SkyBall™&apos;s licensees, successors, and assigns, shall have the right, where permitted by
                   law, to print, publish, broadcast, distribute, and use in any media now known or hereafter developed,
                   in perpetuity and throughout the World, without limitation, your entry, name, portrait, picture,
                   voice, likeness, image, statements about the Giveaway, and biographical information for news,
@@ -80,7 +80,7 @@ export default function GiveawayTermsPage() {
                 <h3 className="text-xl font-medium mb-2">7. Terms & Conditions</h3>
                 <p>
                   SkyBall™ reserves the right, in its sole discretion, to cancel, terminate, modify or suspend the
-                  Giveaway should virus, bug, non-authorized human intervention, fraud, or other cause beyond SkyBall™'s
+                  Giveaway should virus, bug, non-authorized human intervention, fraud, or other cause beyond SkyBall™&apos;s
                   control corrupt or affect the administration, security, fairness, or proper conduct of the Giveaway.
                 </p>
               </section>
@@ -91,7 +91,7 @@ export default function GiveawayTermsPage() {
                   By entering, You agree to release and hold harmless SkyBall™ and its subsidiaries, affiliates,
                   advertising and promotion agencies, partners, representatives, agents, successors, assigns, employees,
                   officers, and directors from any liability, illness, injury, death, loss, litigation, claim, or damage
-                  that may occur, directly or indirectly, whether caused by negligence or not, from: (i) such entrant's
+                  that may occur, directly or indirectly, whether caused by negligence or not, from: (i) such entrant&apos;s
                   participation in the Giveaway and/or his/her acceptance, possession, use, or misuse of any prize or
                   any portion thereof; (ii) technical failures of any kind, including but not limited to the malfunction
                   of any computer, cable, network, hardware, or software, or other mechanical equipment; (iii) the
@@ -122,8 +122,8 @@ export default function GiveawayTermsPage() {
               <section>
                 <h3 className="text-xl font-medium mb-2">11. Winners List</h3>
                 <p>
-                  To obtain a copy of the winner's name or a copy of these Official Rules, email your request to:
-                  info@skyball.us with Subject Line 'Early Bird Giveaway'. Requests must be received no later than July
+                  To obtain a copy of the winner&apos;s name or a copy of these Official Rules, email your request to:
+                  info@skyball.us with Subject Line &apos;Early Bird Giveaway&apos;. Requests must be received no later than July
                   3, 2024.
                 </p>
               </section>

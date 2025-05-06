@@ -23,7 +23,7 @@ export default function ShopPage() {
             <h1 className="text-4xl font-bold mb-4">SkyBall™ Shop</h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Get everything you need to start playing SkyBall™. From individual rackets and balls to complete kits,
-              we've got you covered.
+              we&apos;ve got you covered.
             </p>
           </div>
 
