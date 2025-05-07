@@ -58,10 +58,10 @@ export function SkyBallCourtAnimation({
 
     // Also define the scale and offsets for the overlay singles lines
 
-    const scale = Math.min(
-      dimensions.width / (courtWidth + 10),
-      dimensions.height / (courtLength + 10),
-    )
+    // const scale = Math.min(
+    //   dimensions.width / (courtWidth + 10),
+    //   dimensions.height / (courtLength + 10),
+    // )
   
     // const offsetY = (dimensions.height - courtLength * scale) / 2
     // const courtPixelHeight = courtLength * scale
