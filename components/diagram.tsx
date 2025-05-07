@@ -12,7 +12,7 @@ export function SkyBallCourtDiagram() {
   const COURT_LENGTH_FT = 44;
   const COURT_WIDTH_FT = 20;
   const NET_POSITION_FT = COURT_LENGTH_FT / 2; // 22ft from either baseline
-  const SINGLES_INSET_FT = 2;                 // 2ft from each sideline
+  // const SINGLES_INSET_FT = 2;                 // 2ft from each sideline
   const SERVICE_LINE_OFFSET_FT = 13.5;        // distance from net
 
   // For simplicity, define a scale so that 1 foot = 10px.
@@ -30,7 +30,7 @@ export function SkyBallCourtDiagram() {
   const leftX = 0;
   const rightX = ftToPx(COURT_WIDTH_FT);   // 200
   const topY = 0;
-  const bottomY = ftToPx(COURT_LENGTH_FT); // 440
+  // const bottomY = ftToPx(COURT_LENGTH_FT); // 440
 
   // Net line (horizontal) at halfway in the vertical direction:
   const netY = ftToPx(NET_POSITION_FT); // 22ft => 220px from top

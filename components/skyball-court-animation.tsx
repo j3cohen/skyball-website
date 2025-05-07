@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowDown, ArrowUp} from "lucide-react"
 
 interface SkyBallCourtAnimationProps {
   step: number
@@ -53,8 +53,8 @@ export function SkyBallCourtAnimation({
   // const singlesInset = 2
   // const leftSinglesPosition = getPosition(singlesInset, courtLength / 2)
   // const rightSinglesPosition = getPosition(courtWidth - singlesInset, courtLength / 2)
-  const sidelinePosition = getPosition(0, courtLength / 2)
-  const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
+  // const sidelinePosition = getPosition(0, courtLength / 2)
+  // const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
 
     // Also define the scale and offsets for the overlay singles lines
 
@@ -63,8 +63,8 @@ export function SkyBallCourtAnimation({
       dimensions.height / (courtLength + 10),
     )
   
-    const offsetY = (dimensions.height - courtLength * scale) / 2
-    const courtPixelHeight = courtLength * scale
+    // const offsetY = (dimensions.height - courtLength * scale) / 2
+    // const courtPixelHeight = courtLength * scale
 
   // Update canvas dimensions when the container resizes.
   useEffect(() => {
