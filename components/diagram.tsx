@@ -36,8 +36,8 @@ export function SkyBallCourtDiagram() {
   const netY = ftToPx(NET_POSITION_FT); // 22ft => 220px from top
 
   // Singles lines: 2ft from each sideline
-  const leftSinglesX = ftToPx(SINGLES_INSET_FT);                // x=20
-  const rightSinglesX = ftToPx(COURT_WIDTH_FT - SINGLES_INSET_FT); // x=180
+  // const leftSinglesX = ftToPx(SINGLES_INSET_FT);                // x=20
+  // const rightSinglesX = ftToPx(COURT_WIDTH_FT - SINGLES_INSET_FT); // x=180
 
   // Service line positions: 13.5ft from net (both top & bottom)
   // net is at y=220, so top service line = 220 - 13.5*10 = 85
@@ -112,7 +112,7 @@ export function SkyBallCourtDiagram() {
       />
 
       {/* Singles lines => 2ft in from each sideline => from top baseline to bottom baseline */}
-      <line
+      {/* <line
         x1={leftSinglesX}
         y1={topY}
         x2={leftSinglesX}
@@ -129,7 +129,7 @@ export function SkyBallCourtDiagram() {
         stroke="white"
         strokeWidth={2}
         strokeDasharray="5,3"
-      />
+      /> */}
 
       {/* Optionally label the net or lines, if you want text: 
           <text x={5} y={netY - 5} fill="white" fontSize="14">

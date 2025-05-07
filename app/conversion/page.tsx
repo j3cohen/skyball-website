@@ -18,7 +18,6 @@ export default function ConversionPage() {
     "Add a service line 6.5ft behind the kitchen line",
     "Extend the centerline to the net to create service boxes",
     "Complete SkyBall court",
-    "Official SkyBall Court with Doubles Alley",
   ]
 
   const handleNext = () => {
@@ -75,7 +74,7 @@ export default function ConversionPage() {
             <div>
               <Card className="p-4 bg-white/80 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden border-sky-100">
                 <div className="max-h-[80vh] flex items-center justify-center">
-                  <SkyBallCourtAnimation step={step} showSingles={step === 4} quickAnimation={quickAnimation} />
+                  <SkyBallCourtAnimation step={step} quickAnimation={quickAnimation} />
                 </div>
               </Card>
             </div>
@@ -129,8 +128,8 @@ export default function ConversionPage() {
                       "Extend the existing centerline through the kitchen area to the net. This creates the service boxes for SkyBall."}
                     {step === 3 &&
                       "Your SkyBall court is now ready for play! The service boxes are clearly defined for proper serving. Next, we'll add singles lines for singles play."}
-                    {step === 4 &&
-                      "For singles play, add singles lines 2 feet in from each sideline, creating a narrower court similar to tennis singles. The area between the singles line and sideline is called the 'doubles alley'."}
+                    {/* {step === 4 &&
+                      "For singles play, add singles lines 2 feet in from each sideline, creating a narrower court similar to tennis singles. The area between the singles line and sideline is called the 'doubles alley'."} */}
                   </p>
                 </motion.div>
               </AnimatePresence>
@@ -191,10 +190,10 @@ export default function ConversionPage() {
                   line (13.5 feet from the net), and service boxes are created by extending the existing centerline
                   through the kitchen to the net.
                 </p>
-                <p className="text-gray-700 text-sm">
+                {/* <p className="text-gray-700 text-sm">
                   For singles play, optional singles lines can be added 2 feet in from each sideline, creating a
                   narrower court similar to tennis singles.
-                </p>
+                </p> */}
               </div>
             </div>
           </div>

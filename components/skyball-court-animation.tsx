@@ -6,13 +6,13 @@ import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from "lucide-react"
 
 interface SkyBallCourtAnimationProps {
   step: number
-  showSingles: boolean
+  //showSingles: boolean
   quickAnimation?: boolean
 }
 
 export function SkyBallCourtAnimation({
   step,
-  showSingles,
+  //showSingles,
   quickAnimation = false,
 }: SkyBallCourtAnimationProps) {
   // Mobile detection: if viewport width is less than 768px, we're on mobile.
@@ -50,9 +50,9 @@ export function SkyBallCourtAnimation({
   const bottomKitchenPosition = getPosition(courtWidth / 2, courtLength / 2 + kitchenDepth)
   const topServicePosition = getPosition(courtWidth / 2, courtLength / 2 - serviceLineDistance)
   const bottomServicePosition = getPosition(courtWidth / 2, courtLength / 2 + serviceLineDistance)
-  const singlesInset = 2
-  const leftSinglesPosition = getPosition(singlesInset, courtLength / 2)
-  const rightSinglesPosition = getPosition(courtWidth - singlesInset, courtLength / 2)
+  // const singlesInset = 2
+  // const leftSinglesPosition = getPosition(singlesInset, courtLength / 2)
+  // const rightSinglesPosition = getPosition(courtWidth - singlesInset, courtLength / 2)
   const sidelinePosition = getPosition(0, courtLength / 2)
   const farSidelinePosition = getPosition(courtWidth, courtLength / 2)
 
@@ -160,23 +160,28 @@ export function SkyBallCourtAnimation({
       ctx.lineWidth = 3
       // Top service line.
       ctx.beginPath()
-      if (step >= 3 && showSingles) {
-        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
-      } else {
-        ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
-      }
+      // if (step >= 3 && showSingles) {
+      //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+      //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
+      // } else {
+      //   ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+      //   ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
+      // }
+
+      ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
+
       ctx.stroke()
       // Bottom service line.
       ctx.beginPath()
-      if (step >= 3 && showSingles) {
-        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
-      } else {
-        ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
-      }
+      // if (step >= 3 && showSingles) {
+      //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+      //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
+      // } else {
+
+      ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
+      // }
       ctx.stroke()
 
       // If step is 1, draw the measurement lines.
@@ -204,35 +209,35 @@ export function SkyBallCourtAnimation({
       ctx.lineWidth = 4
       // Redraw service lines (removed in step 3+)
       ctx.beginPath()
-      if (showSingles) {
-        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
-      } else {
-        ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
-      }
+      // if (showSingles) {
+      //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+      //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
+      // } else {
+      ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
+      //}
       ctx.stroke()
       ctx.beginPath()
-      if (showSingles) {
-        ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
-      } else {
-        ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
-        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
-      }
+      // if (showSingles) {
+      //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+      //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
+      // } else {
+      ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+      ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
+      // }
       ctx.stroke()
 
       // Draw centerline from service line to kitchen (top)
-      ctx.beginPath()
-      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
-      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y)
-      ctx.stroke()
+      //ctx.beginPath()
+      //ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+      //ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 - kitchenDepth).y)
+      //ctx.stroke()
 
       // Draw centerline from service line to kitchen (bottom)
-      ctx.beginPath()
-      ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
-      ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y)
-      ctx.stroke()
+      //ctx.beginPath()
+      //ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+      //ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).x, courtToCanvas(courtWidth / 2, courtLength / 2 + kitchenDepth).y)
+      //ctx.stroke()
 
       // Draw centerline extensions from kitchen to net.
       ctx.beginPath()
@@ -251,86 +256,87 @@ export function SkyBallCourtAnimation({
 
         // Top left service box
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
-        } else {
-          ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
-        }
+        // if (showSingles) {
+        //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 - serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        //   ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
+        // } else {
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 - serviceLineDistance).x, courtToCanvas(0, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
+        // }
         ctx.closePath()
         ctx.stroke()
 
         // Top right service box
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-        } else {
-          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-        }
+        // if (showSingles) {
+        //   ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 - serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        // } else {
+        ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 - serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        // }
         ctx.closePath()
         ctx.stroke()
 
         // Bottom left service box
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
-        } else {
-          ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
-        }
+        // if (showSingles) {
+        //   ctx.moveTo(courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(singlesInset, courtLength / 2 + serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        //   ctx.lineTo(courtToCanvas(singlesInset, courtLength / 2).x, courtToCanvas(singlesInset, courtLength / 2).y)
+        // } else {
+        ctx.moveTo(courtToCanvas(0, courtLength / 2 + serviceLineDistance).x, courtToCanvas(0, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        ctx.lineTo(courtToCanvas(0, courtLength / 2).x, courtToCanvas(0, courtLength / 2).y)
+       // }
         ctx.closePath()
         ctx.stroke()
 
         // Bottom right service box
         ctx.beginPath()
-        if (showSingles) {
-          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-        } else {
-          ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
-          ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
-          ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
-        }
+        // if (showSingles) {
+        //   ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2 + serviceLineDistance).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength / 2).x, courtToCanvas(courtWidth - singlesInset, courtLength / 2).y)
+        //   ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        // } else {
+        ctx.moveTo(courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth / 2, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).x, courtToCanvas(courtWidth, courtLength / 2 + serviceLineDistance).y)
+        ctx.lineTo(courtToCanvas(courtWidth, courtLength / 2).x, courtToCanvas(courtWidth, courtLength / 2).y)
+        ctx.lineTo(courtToCanvas(courtWidth / 2, courtLength / 2).x, courtToCanvas(courtWidth / 2, courtLength / 2).y)
+        // }
         ctx.closePath()
         ctx.stroke()
       }
     }
 
     // Step 4: Draw singles lines.
-    if (step === 4 || (quickAnimation)) {
-      ctx.strokeStyle = "#2a9d8f"
-      ctx.lineWidth = 2
-      ctx.setLineDash([5, 5])
-      ctx.beginPath()
-      ctx.moveTo(courtToCanvas(singlesInset, 0).x, courtToCanvas(singlesInset, 0).y)
-      ctx.lineTo(courtToCanvas(singlesInset, courtLength).x, courtToCanvas(singlesInset, courtLength).y)
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.moveTo(courtToCanvas(courtWidth - singlesInset, 0).x, courtToCanvas(courtWidth - singlesInset, 0).y)
-      ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength).x, courtToCanvas(courtWidth - singlesInset, courtLength).y)
-      ctx.stroke()
-      ctx.setLineDash([])
-    }
-  }, [step, showSingles, dimensions])
+  //   if (step === 4 || (quickAnimation)) {
+  //     ctx.strokeStyle = "#2a9d8f"
+  //     ctx.lineWidth = 2
+  //     ctx.setLineDash([5, 5])
+  //     ctx.beginPath()
+  //     ctx.moveTo(courtToCanvas(singlesInset, 0).x, courtToCanvas(singlesInset, 0).y)
+  //     ctx.lineTo(courtToCanvas(singlesInset, courtLength).x, courtToCanvas(singlesInset, courtLength).y)
+  //     ctx.stroke()
+  //     ctx.beginPath()
+  //     ctx.moveTo(courtToCanvas(courtWidth - singlesInset, 0).x, courtToCanvas(courtWidth - singlesInset, 0).y)
+  //     ctx.lineTo(courtToCanvas(courtWidth - singlesInset, courtLength).x, courtToCanvas(courtWidth - singlesInset, courtLength).y)
+  //     ctx.stroke()
+  //     ctx.setLineDash([])
+  //   }
+  //}, [step, showSingles, dimensions])
+}, [step, dimensions])
 
   return (
     <div ref={containerRef} className={`relative w-full ${isMobile ? "h-screen" : "aspect-[16/7]"} bg-gray-50 rounded-lg overflow-hidden shadow-lg`}>
@@ -350,11 +356,11 @@ export function SkyBallCourtAnimation({
                 Extend centerline to net
               </div>
             </motion.div>
-            <motion.div className="flex items-center justify-start" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 2.3 }}>
+            {/* <motion.div className="flex items-center justify-start" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 2.3 }}>
               <div className="bg-teal-100 px-3 py-1 rounded-lg shadow-sm text-sm font-medium text-teal-700 border border-teal-200">
                 Add singles lines
               </div>
-            </motion.div>
+            </motion.div> */}
           </div>
           {/* 6.5ft measurement indicators */}
           <motion.div className="absolute flex flex-col items-center justify-center z-50" style={{ left: topServicePosition.x + 80, top: (topKitchenPosition.y + topServicePosition.y) / 2 - 25, width: 60, height: 50 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}>
@@ -383,7 +389,7 @@ export function SkyBallCourtAnimation({
           <motion.div className="absolute bg-red-600" style={{ left: topServicePosition.x - 1.5, top: topServicePosition.y, width: 3, height: (serviceLineDistance) * Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)), transformOrigin: "top" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.8, delay: 1.9, ease: "easeOut" }} />
           <motion.div className="absolute bg-red-600" style={{ left: bottomServicePosition.x - 1.5, top: netPosition.y, width: 3, height: (serviceLineDistance) * Math.min(dimensions.width / (courtWidth + 10), dimensions.height / (courtLength + 10)), transformOrigin: "bottom" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.8, delay: 1.9, ease: "easeOut" }} />
           {/* Singles lines overlay (step 4) */}
-          <AnimatePresence>
+          {/* <AnimatePresence>
             {(step === 4 || (quickAnimation)) && (
               <>
                 <motion.div className="absolute bg-teal-500" style={{ left: leftSinglesPosition.x - 1, top: 0, width: 2, height: dimensions.height, transformOrigin: "top" }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 1, ease: "easeOut", delay: 2.3 }} />
@@ -414,7 +420,7 @@ export function SkyBallCourtAnimation({
                 </motion.div>
               </>
             )}
-          </AnimatePresence>
+          </AnimatePresence> */}
         </div>
       )}
       {/* Desktop overlays (when quickAnimation is false) */}
@@ -467,7 +473,8 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 1 && !showSingles && (
+            {/* {step === 1 && !showSingles && ( */}
+            {step === 1 && (
               <>
                 <motion.div
                   className="absolute flex items-center justify-center"
@@ -545,7 +552,7 @@ export function SkyBallCourtAnimation({
             )}
           </AnimatePresence>
           <AnimatePresence>
-            {step === 3 && !showSingles && (
+            {step === 3 && (
               <motion.div
                 className="absolute flex items-center justify-center"
                 style={{ left: netPosition.x - 100, top: netPosition.y - 60, width: 200, height: 30 }}
@@ -554,7 +561,7 @@ export function SkyBallCourtAnimation({
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <div className="bg-red-100 px-3 py-1 rounded-lg shadow-sm text-sm font-medium text-red-700 border border-red-200">
+                <div className="z-50 bg-red-100 px-3 py-1 rounded-lg shadow-sm text-sm font-medium text-red-700 border border-red-200">
                   Service Boxes Created
                 </div>
               </motion.div>
@@ -624,107 +631,6 @@ export function SkyBallCourtAnimation({
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut", delay: 0.6 }}
                 />
-              </>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {(step === 4 || (quickAnimation)) && (
-              <>
-                {/* Singles lines overlay */}
-                <motion.div
-                  className="absolute bg-teal-500"
-                  style={{
-                    left: leftSinglesPosition.x - 1,
-                    top: offsetY,
-                    width: 2,
-                    height: courtPixelHeight,
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 2 }}
-                />
-                <motion.div
-                  className="absolute bg-teal-500"
-                  style={{
-                    left: rightSinglesPosition.x - 1,
-                    top: offsetY,
-                    width: 2,
-                    height: courtPixelHeight,
-                    transformOrigin: "top",
-                  }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 2 }}
-                />
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.25,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                  <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (sidelinePosition.x + leftSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <ArrowRight className="h-5 w-5 text-teal-600 mr-1" />
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                </motion.div>
-                <motion.div
-                  className="absolute flex flex-row items-center justify-center"
-                  style={{
-                    left: (farSidelinePosition.x + rightSinglesPosition.x) / 2 - 30,
-                    top: dimensions.height * 0.75,
-                    width: 60,
-                    height: 30,
-                  }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1.2 }}
-                >
-                  <div className="bg-teal-100 px-2 py-1 rounded text-sm font-bold text-teal-700 shadow-sm border border-teal-200">
-                    2ft
-                  </div>
-                  <ArrowLeft className="h-5 w-5 text-teal-600 ml-1" />
-                </motion.div>
               </>
             )}
           </AnimatePresence>

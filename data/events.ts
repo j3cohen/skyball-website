@@ -65,6 +65,108 @@ export type Event = {
       isPast: true,
       contactEmail: "play@skyball.us",
     },
+    {
+      id: "skyball-100-may-15",
+      type: "tournament",
+      name: "SkyBall™ 100 Open",
+      date: "May 15, 2025", 
+      time: "8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for a 100 level SkyBall tournament – compete to win a cash prize and rankings points.",
+      image: "/urban-skyball-action.png",
+      maxParticipants: 6,
+      currentParticipants: 0,
+      prize: "$100", // Updated from $500 to $100
+      registrationFee: "$20",
+      isPast: false, // Mark as past event
+      hasResults: false, // Has results
+      format: "Single Elimination Bracket",
+      contactEmail: "play@skyball.us",
+    },
+    {
+      id: "open-play-may-15",
+      type: "open-play",
+      name: "Bogart House Open Play",
+      date: "May 15, 2025",
+      time: "6:30-8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for an evening of casual SkyBall in Brooklyn! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
+      image: "/skyball-open-session.png",
+      skillLevel: "all",
+      registrationFee: "$0",
+      isPast: false,
+      contactEmail: "play@skyball.us",
+    },
+    {
+      id: "skyball-100-may-20",
+      type: "tournament",
+      name: "SkyBall™ 100 Open",
+      date: "May 20, 2025", 
+      time: "8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for a 100 level SkyBall tournament – compete to win a cash prize and rankings points.",
+      image: "/urban-skyball-action.png",
+      maxParticipants: 6,
+      currentParticipants: 0,
+      prize: "$100", // Updated from $500 to $100
+      registrationFee: "$20",
+      isPast: false, // Mark as past event
+      hasResults: false, // Has results
+      format: "Single Elimination Bracket",
+      contactEmail: "play@skyball.us",
+    },
+    {
+      id: "open-play-may-20",
+      type: "open-play",
+      name: "Bogart House Open Play",
+      date: "May 20, 2025",
+      time: "6:30-8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for an evening of casual SkyBall in Brooklyn! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
+      image: "/skyball-open-session.png",
+      skillLevel: "all",
+      registrationFee: "$0",
+      isPast: false,
+      contactEmail: "play@skyball.us",
+    },
+    {
+      id: "skyball-100-may-29",
+      type: "tournament",
+      name: "SkyBall™ 100 Open",
+      date: "May 29, 2025", 
+      time: "8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for a 100 level SkyBall tournament – compete to win a cash prize and rankings points.",
+      image: "/urban-skyball-action.png",
+      maxParticipants: 6,
+      currentParticipants: 0,
+      prize: "$100", // Updated from $500 to $100
+      registrationFee: "$20",
+      isPast: false, // Mark as past event
+      hasResults: false, // Has results
+      format: "Single Elimination Bracket",
+      contactEmail: "play@skyball.us",
+    },
+    {
+      id: "open-play-may-29",
+      type: "open-play",
+      name: "Bogart House Open Play",
+      date: "May 29, 2025",
+      time: "6:30-8:00 PM",
+      location: "The Ten, 230 Bogart St, Brooklyn, NY",
+      description:
+        "Join us for an evening of casual SkyBall in Brooklyn! We'll organize mini-games and quick-play matches to 11 (win by 2) to ensure everyone gets plenty of court time. Perfect for players of all skill levels looking to practice and have fun.",
+      image: "/skyball-open-session.png",
+      skillLevel: "all",
+      registrationFee: "$0",
+      isPast: false,
+      contactEmail: "play@skyball.us",
+    },
   ]
   
   export function getEventById(id: string): Event | undefined {
