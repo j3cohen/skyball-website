@@ -114,7 +114,7 @@ export function PlayEvents() {
 
                 {/* Show "FULL" badge if event is at capacity */}
                 {event.maxParticipants &&
-                  event.currentParticipants &&
+                  typeof event.currentParticipants === "number" &&
                   event.currentParticipants >= event.maxParticipants &&
                   !event.isPast && (
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">FULL</span>
@@ -139,23 +139,21 @@ export function PlayEvents() {
                   <span className="text-sm">{event.time}</span>
                 </div>
 
-                {/* Participant count with current/max format */}
-                {(event.maxParticipants || event.currentParticipants) && (
+                {/* Spots remaining display */}
+                {event.maxParticipants && (
                   <div className="flex items-center text-gray-600">
                     <Users className="h-4 w-4 mr-2" />
                     <span className="text-sm">
-                      {event.currentParticipants !== undefined && event.maxParticipants !== undefined
-                        ? `${event.currentParticipants}/${event.maxParticipants} participants`
-                        : event.maxParticipants !== undefined
-                          ? `0/${event.maxParticipants} participants`
-                          : event.currentParticipants !== undefined
-                            ? `${event.currentParticipants} participants`
-                            : event.participants || "Open registration"}
+                      {typeof event.currentParticipants === "number" && event.currentParticipants >= event.maxParticipants
+                        ? "Full - Waitlist Open"
+                        : typeof event.currentParticipants === "number" && event.currentParticipants > 0
+                          ? `${event.maxParticipants - event.currentParticipants} spots remaining`
+                          : `${event.maxParticipants} spots remaining`}
                     </span>
 
                     {/* Show warning icon if almost full (80% or more) */}
                     {event.maxParticipants &&
-                      event.currentParticipants &&
+                      typeof event.currentParticipants === "number" &&
                       event.currentParticipants >= event.maxParticipants * 0.8 &&
                       event.currentParticipants < event.maxParticipants &&
                       !event.isPast && (
