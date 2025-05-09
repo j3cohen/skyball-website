@@ -57,28 +57,24 @@ export async function getAllTournaments(): Promise<StaticEvent[]> {
   })
 }
 
-/** Fetch one tournament by id, merge with static fallback */
-export async function getTournamentById(
-  id: string
-): Promise<StaticEvent | null> {
-  const { data, error } = await supabase
+/** Fetch one “event” by id — will pull from Supabase if it exists, otherwise fall back to staticEvents */
+export async function getTournamentById(id: string): Promise<StaticEvent | null> {
+  const { data: row, error } = await supabase
     .from("tournaments")
     .select("*")
     .eq("id", id)
-    .single()
+    .maybeSingle()     // ← here’s the key change
 
-  // DEBUG: print raw Supabase response
-  console.log("[getAllTournaments] data.length:", data?.length, "error:", error);
-  console.log(`[getTournamentById: ${id}]`, { data, error })
+  // if a real DB error (network, permissions, etc), you might want to log
+  if (error) console.error("Supabase error fetching tournament:", error)
 
-  // cast into your TS shape
-  const row = (data ?? null) as TournamentRow | null
   const fallback = staticEvents.find((e) => e.id === id)
 
-  // nothing in DB and nothing static → 404
-  if (!row && (!fallback || error)) {
+  // if neither DB nor static knows about this id → 404
+  if (!row && !fallback) {
     return null
   }
 
+  // otherwise, merge row atop fallback (row wins)
   return mergeOne(fallback ?? ({} as StaticEvent), row ?? undefined)
 }

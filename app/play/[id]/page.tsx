@@ -1,7 +1,11 @@
 // app/play/[id]/page.tsx
+// Force this route to always be fetched at request time
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import { getTournamentById }    from "@/lib/tournaments"
+import { getTournamentById } from "@/lib/tournaments"
 import { getMatchesByTournament } from "@/data/matches"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -19,17 +23,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import MatchScoreDisplay from "@/components/match-score-display"
 
-
 export default async function EventPage({ params }: { params: { id: string } }) {
   const event = await getTournamentById(params.id)
-  if (!event) {
-    notFound()
-  } 
+  if (!event) notFound()
 
-  // 4) your existing derived values
-  const isPastEvent = event.isPast === true
-  const isRSVP      = event.type    === "open-play"
-  const hasResults  = event.hasResults === true
+  const isPastEvent  = event.isPast === true
+  const isRSVP       = event.type    === "open-play"
+  const hasResults   = event.hasResults === true
 
   const matches = hasResults ? getMatchesByTournament(event.id) : []
   const matchesByRound: Record<string, typeof matches> = {}
@@ -37,10 +37,11 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     matchesByRound[m.round] = matchesByRound[m.round] || []
     matchesByRound[m.round].push(m)
   })
-  const roundOrder = ["Play-in", "Quarter-final", "Semi-final", "Final"]
+  const roundOrder   = ["Play-in", "Quarter-final", "Semi-final", "Final"]
   const sortedRounds = Object.keys(matchesByRound).sort(
     (a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)
   )
+
 
 
   return (
