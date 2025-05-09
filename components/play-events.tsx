@@ -3,14 +3,27 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History } from "lucide-react"
-import { events } from "@/data/events"
+import type { Event } from "@/data/events"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
 type EventType = "all" | "tournament" | "clinic" | "open-play" | "special"
+interface PlayEventProps {
+  events: Event[]
+}
 
-export function PlayEvents() {
+// helper to coerce anything like "2025-05-15" or "April 24, 2025" into the format you want
+// function formatDate(d: string) {
+//   const date = new Date(d)
+//   return date.toLocaleDateString("en-US", {
+//     month: "long",
+//     day:   "numeric",
+//     year:  "numeric",
+//   })
+// }
+
+export function PlayEvents({ events }: PlayEventProps) {
   const [eventTypeFilter, setEventTypeFilter] = useState<EventType>("all")
   const [includePastEvents, setIncludePastEvents] = useState(false)
 

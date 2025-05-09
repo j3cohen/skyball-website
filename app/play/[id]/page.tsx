@@ -1,46 +1,47 @@
+// app/play/[id]/page.tsx
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import { getEventById } from "@/data/events"
+import { getTournamentById }    from "@/lib/tournaments"
 import { getMatchesByTournament } from "@/data/matches"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Calendar, MapPin, Clock, Trophy, Users, DollarSign, Award, Info } from "lucide-react"
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Trophy,
+  Users,
+  DollarSign,
+  Award,
+  Info,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import MatchScoreDisplay from "@/components/match-score-display"
 
-export default function EventPage({ params }: { params: { id: string } }) {
-  const event = getEventById(params.id)
 
+export default async function EventPage({ params }: { params: { id: string } }) {
+  const event = await getTournamentById(params.id)
   if (!event) {
     notFound()
-  }
+  } 
 
+  // 4) your existing derived values
   const isPastEvent = event.isPast === true
-  const isRSVP = event.type === "open-play"
-  const hasResults = event.hasResults === true
+  const isRSVP      = event.type    === "open-play"
+  const hasResults  = event.hasResults === true
 
-  // Get matches for this tournament if it has results
-  const matches = hasResults ? getMatchesByTournament(params.id) : []
-
-  // Group matches by round
+  const matches = hasResults ? getMatchesByTournament(event.id) : []
   const matchesByRound: Record<string, typeof matches> = {}
-  if (matches.length > 0) {
-    matches.forEach((match) => {
-      if (!matchesByRound[match.round]) {
-        matchesByRound[match.round] = []
-      }
-      matchesByRound[match.round].push(match)
-    })
-  }
-
-  // Sort rounds in a logical order
-  const roundOrder = ["Play-in", "Quarter-final", "Semi-final", "Final"]
-  const sortedRounds = Object.keys(matchesByRound).sort((a, b) => {
-    const aIndex = roundOrder.indexOf(a)
-    const bIndex = roundOrder.indexOf(b)
-    return aIndex - bIndex
+  matches.forEach((m) => {
+    matchesByRound[m.round] = matchesByRound[m.round] || []
+    matchesByRound[m.round].push(m)
   })
+  const roundOrder = ["Play-in", "Quarter-final", "Semi-final", "Final"]
+  const sortedRounds = Object.keys(matchesByRound).sort(
+    (a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)
+  )
+
 
   return (
     <>
