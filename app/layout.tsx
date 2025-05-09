@@ -5,6 +5,7 @@ import type React from "react"
 import { Analytics } from "@vercel/analytics/react"
 import ScrollToTop from "@/components/scroll-to-top"
 import { Suspense } from "react"
+import SupabaseProvider from "@/components/supabase-provider"
 
 
 export const metadata: Metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <ScrollToTop />
         </Suspense>
-        {children} 
+        <SupabaseProvider>
+          {children}
+        </SupabaseProvider>
         <Analytics /> 
       </body>
     </html>

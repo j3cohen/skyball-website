@@ -7,42 +7,49 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function BuyPassSection() {
   const [prices, setPrices] = useState<any[]>([])
+  const [session, setSession] = useState<any>(null)
 
+  // load pass types
   useEffect(() => {
     supabase
       .from("pass_types")
       .select("id, stripe_price_id, name, passes_quantity")
       .then(({ data, error }) => {
-        if (error) console.error("Error loading pass types:", error)
-        else if (data) setPrices(data)
+        if (error) console.error(error)
+        else setPrices(data ?? [])
       })
+
+    // grab the current user session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
   }, [])
 
   const handleCheckout = async (priceId: string) => {
-    console.log("🚀 Starting checkout for price:", priceId)
-    try {
-      const res = await fetch("/api/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
-      })
-      console.log("🎟️ create-checkout status:", res.status)
-
-      const { url, error } = await res.json()
-      if (error) {
-        console.error("API error:", error)
-        return
-      }
-      if (!url) {
-        console.error("No checkout URL returned")
-        return
-      }
-
-      // Redirect the browser to Stripe Checkout
-      window.location.href = url
-    } catch (err) {
-      console.error("Checkout flow error:", err)
+    if (!session) {
+      alert("Please sign in before purchasing.")
+      return
     }
+    const userId = session.user.id
+    console.log("🚀 checkout for user:", userId, "price:", priceId)
+
+    const res = await fetch("/api/create-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceId, userId }),
+    })
+    const { url, error } = await res.json()
+    if (error) {
+      console.error("API error:", error)
+      alert(error)
+      return
+    }
+    if (!url) {
+      console.error("No URL returned")
+      return
+    }
+    // redirect browser
+    window.location.href = url
   }
 
   return (
@@ -56,7 +63,8 @@ export default function BuyPassSection() {
             <div>
               <p className="font-medium">{p.name}</p>
               <p className="text-sm text-gray-600">
-                Includes {p.passes_quantity} pass{p.passes_quantity > 1 && "es"}
+                Includes {p.passes_quantity} pass
+                {p.passes_quantity > 1 ? "es" : ""}
               </p>
             </div>
             <Button onClick={() => handleCheckout(p.stripe_price_id)}>

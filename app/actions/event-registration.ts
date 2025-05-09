@@ -1,239 +1,144 @@
+// File: app/actions/event-registration.ts
 "use server"
 
-import { z } from "zod"
-
-// Add environment variables debug logging
-console.log("Environment variables check for event registration:", {
-  hasTelegramBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
-  hasTelegramChatId: !!process.env.TELEGRAM_CHAT_ID,
-  // Print first few characters to verify content without exposing full token
-  tokenPrefix: process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.substring(0, 4) + "..." : "not set",
-  chatIdPrefix: process.env.TELEGRAM_CHAT_ID ? process.env.TELEGRAM_CHAT_ID.substring(0, 2) + "..." : "not set",
-})
-
-// Define validation schema for form data
-const eventRegistrationSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().refine(
-    (val) => {
-      // Remove all non-digit characters except the + sign
-      const digitsOnly = val.replace(/[^\d+]/g, "")
-
-      // Check if it's an international number (starts with +)
-      if (digitsOnly.startsWith("+")) {
-        // Must have at least 11 characters total (+ and at least 10 digits)
-        return digitsOnly.length >= 11
-      }
-      // Otherwise it must have exactly 10 digits
-      else {
-        return digitsOnly.length === 10
-      }
-    },
-    {
-      message: "Phone number must be either 10 digits or international format starting with +",
-    },
-  ),
-  dob: z.string().refine(
-    (val) => {
-      // Check if the date is valid
-      const isValidDate = !isNaN(Date.parse(val))
-
-      if (!isValidDate) return false
-
-      // Check if the date is not in the future
-      const dobDate = new Date(val)
-      const today = new Date()
-      return dobDate <= today
-    },
-    {
-      message: "Please enter a valid date of birth (not in the future)",
-    },
-  ),
-  teamName: z.string().optional(),
-  partnerName: z.string().optional(),
-  partnerEmail: z.string().email("Please enter a valid partner email address").optional(),
-  skillLevel: z.string().optional(),
-  eventId: z.string(),
-  eventName: z.string(),
-  eventType: z.string(),
-})
-
-type EventRegistrationData = z.infer<typeof eventRegistrationSchema>
+import { redirect } from "next/navigation"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
 export async function submitEventRegistration(formData: FormData) {
-  try {
-    // Extract data from the form
-    const data = {
-      name: formData.get("name") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      dob: formData.get("dob") as string,
-      teamName: (formData.get("team-name") as string) || undefined,
-      partnerName: (formData.get("partner-name") as string) || undefined,
-      partnerEmail: (formData.get("partner-email") as string) || undefined,
-      skillLevel: (formData.get("skill-level") as string) || undefined,
-      eventId: formData.get("eventId") as string,
-      eventName: formData.get("eventName") as string,
-      eventType: formData.get("eventType") as string,
-    }
+  // hidden inputs from the <form>
+  const eventId   = formData.get("eventId")   as string
+  const eventName = formData.get("eventName") as string
+  const eventType = formData.get("eventType") as string
 
-    console.log(`Processing ${data.eventType === "open-play" ? "RSVP" : "registration"} for:`, data.name)
+  // Supabase client that reads the Next.js auth cookie
+  const supabase = createServerComponentClient({ cookies })
 
-    // Validate the data
-    try {
-      const validatedData = eventRegistrationSchema.parse(data)
-
-      // Send Telegram notification
-      console.log("Sending Telegram notification...")
-      const success = await sendTelegramNotification(validatedData)
-
-      if (success) {
-        console.log("Telegram notification sent successfully")
-        return {
-          success: true,
-          message:
-            data.eventType === "open-play"
-              ? "RSVP confirmed! We look forward to seeing you at the event."
-              : "Registration form submitted! Please complete your payment to secure your spot. Once payment is received, we will confirm your registration.",
-        }
-      } else {
-        // If Telegram notification fails, return an error
-        console.error("Failed to send Telegram notification")
-        return {
-          success: false,
-          message:
-            "We're experiencing technical difficulties. Please email info@skyball.us to register or try again later.",
-          errorCode: "TELEGRAM_NOTIFICATION_FAILED",
-          isSystemError: true,
-        }
-      }
-    } catch (validationError) {
-      // Handle validation errors separately
-      if (validationError instanceof z.ZodError) {
-        const fieldErrors = validationError.errors.reduce(
-          (acc, err) => {
-            const field = err.path[0] as string
-            if (!acc[field]) {
-              acc[field] = []
-            }
-            acc[field].push(err.message)
-            return acc
-          },
-          {} as Record<string, string[]>,
-        )
-
-        // Create a user-friendly message
-        return {
-          success: false,
-          message: "Please check your information and try again.",
-          fieldErrors,
-          errorCode: "VALIDATION_ERROR",
-          isSystemError: false,
-        }
-      }
-
-      // Re-throw if it's not a validation error
-      throw validationError
-    }
-  } catch (error) {
-    // Log the detailed error for debugging
-    console.error("Event registration error:", error)
-
-    // Generic error response for system errors
-    return {
-      success: false,
-      message:
-        "We're experiencing technical difficulties. Please email info@skyball.us to register or try again later.",
-      errorCode: "UNKNOWN_ERROR",
-      isSystemError: true,
-    }
+  // 1) session check
+  const {
+    data: { session },
+    error: sessErr,
+  } = await supabase.auth.getSession()
+  if (sessErr || !session) {
+    console.log("[reg] no session → login")
+    return redirect(`/login?from=/play/${eventId}/register`)
   }
-}
+  const userId = session.user.id
 
-async function sendTelegramNotification(data: EventRegistrationData) {
-  try {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const chatId = process.env.TELEGRAM_CHAT_ID
+  // 2) get tournament level
+  const { data: tour, error: tourErr } = await supabase
+    .from("tournaments")
+    .select("points_value")
+    .eq("id", eventId)
+    .single()
+  if (tourErr || !tour) {
+    console.error("[reg] tournament lookup failed", tourErr)
+    return redirect(`/play/${eventId}?error=event-not-found`)
+  }
 
-    // Additional debug logging inside the function
-    console.log("Telegram credentials check inside sendTelegramNotification:", {
-      hasBotToken: !!botToken,
-      hasChatId: !!chatId,
-      botTokenLength: botToken ? botToken.length : 0,
-      chatIdLength: chatId ? chatId.length : 0,
+  // 3) find an available pass matching that level
+  const { data: passRow, error: passErr } = await supabase
+    .from("passes")
+    .select("id, quantity_remaining, pass_types(points_value)")
+    .eq("user_id", userId)
+    .gt("quantity_remaining", 0)
+    .eq("pass_types.points_value", tour.points_value)
+    .limit(1)
+    .single()
+
+  if (passErr || !passRow) {
+    console.log("[reg] no pass left", passErr)
+    return redirect(`/play/${eventId}?error=no-pass`)
+  }
+
+  // 4) consume one pass + insert registration
+  const newQty = passRow.quantity_remaining - 1
+
+  const { error: updErr } = await supabase
+    .from("passes")
+    .update({ quantity_remaining: newQty })
+    .eq("id", passRow.id)
+
+  const { error: regErr } = await supabase
+    .from("registrations")
+    .insert({
+      user_id:       userId,
+      tournament_id: eventId,
+      pass_id:       passRow.id,
     })
 
-    if (!botToken || !chatId) {
-      console.error("Missing Telegram credentials:", {
-        hasBotToken: !!botToken,
-        hasChatId: !!chatId,
-      })
-      return false
-    }
+  if (updErr || regErr) {
+    console.error("[reg] db write failed", updErr ?? regErr)
+    return redirect(`/play/${eventId}?error=registration-failed`)
+  }
 
-    // Format the message
-    const isRSVP = data.eventType === "open-play"
-    const message = `
-🎾 *New ${isRSVP ? "RSVP" : "Registration"} for SkyBall Event* 🎾
+  console.log(`[reg] user ${userId} registered for ${eventId}`)
 
-*Event:* ${data.eventName}
-*Event ID:* ${data.eventId}
-*Event Type:* ${data.eventType}
+  // 5) send Telegram alert (best-effort)
+  try {
+    await sendTelegramNotification({
+      eventName,
+      eventId,
+      eventType,
+      userId,
+      userEmail: session.user.email,
+    })
+  } catch (err) {
+    console.error("[reg] Telegram failed", err)
+  }
 
-*Participant Details:*
-- Name: ${data.name}
-- Email: ${data.email}
-- Phone: ${data.phone}
-- Date of Birth: ${data.dob}
-${data.skillLevel ? `- Skill Level: ${data.skillLevel}` : ""}
-
-${
-  data.teamName || data.partnerName
-    ? `*Team Information:*
-${data.teamName ? `- Team Name: ${data.teamName}` : ""}
-${data.partnerName ? `- Partner Name: ${data.partnerName}` : ""}
-${data.partnerEmail ? `- Partner Email: ${data.partnerEmail}` : ""}`
-    : ""
+  // 6) redirect back with success flag
+  redirect(`/play/${eventId}?registered=1`)
 }
 
-_${isRSVP ? "RSVP" : "Registration"} received at ${new Date().toLocaleString("en-US", {
-      timeZone: "America/New_York",
-    })} Eastern_`
 
-    console.log("Attempting to send Telegram notification to:", chatId)
+// --- TELEGRAM HELPER ---
+type TelegramPayload = {
+  eventName:  string
+  eventId:    string
+  eventType:  string
+  userId:     string
+  userEmail?: string | null
+}
 
-    // Send the message to Telegram
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+async function sendTelegramNotification(p: TelegramPayload) {
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
+  const CHAT_ID   = process.env.TELEGRAM_CHAT_ID!
+  const timestamp = new Date().toLocaleString("en-US", {
+    timeZone: "America/New_York",
+  })
+  const header = p.eventType === "open-play"
+    ? "🎾 New RSVP"
+    : "🎾 New Registration"
+
+  const message = `
+*${header}*
+
+*Event:* ${p.eventName} (\`${p.eventId}\`)
+*Type:* ${p.eventType}
+
+*User:*  
+- ID: \`${p.userId}\`  
+- Email: ${p.userEmail ?? "N/A"}
+
+_Received at ${timestamp} Eastern_
+  `.trim()
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+    {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
+        chat_id:    CHAT_ID,
+        text:       message,
         parse_mode: "Markdown",
       }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Telegram API error:", errorData)
-      return false
     }
+  )
 
-    const result = await response.json()
-    console.log("Telegram API response:", result)
-    return result.ok
-  } catch (error) {
-    console.error("Error sending Telegram notification:", error)
-    // Log more details about the error
-    if (error instanceof Error) {
-      console.error("Error name:", error.name)
-      console.error("Error message:", error.message)
-      console.error("Error stack:", error.stack)
-    }
-    return false
+  if (!res.ok) {
+    const info = await res.json().catch(() => ({}))
+    throw new Error(`Telegram error ${res.status}: ${JSON.stringify(info)}`)
   }
 }
-
