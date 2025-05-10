@@ -5,16 +5,17 @@ import { cookies }                       from "next/headers"
 import { events as staticEvents, type Event as StaticEvent } from "@/data/events"
 
 type TournamentRow = {
-  id               : string
-  name             : string
-  date             : string
-  time             : string
-  location         : string
-  description      : string
-  max_participants : number | null
-  prize            : string | null
-  registration_fee : string
-  points_value     : number
+  id                 : string
+  name               : string
+  date               : string
+  time               : string
+  location           : string
+  description        : string
+  max_participants   : number | null
+  prize              : string | null
+  registration_fee   : string
+  points_value       : number
+  current_participants: number      // ← from the view
 }
 
 // Merge helper
@@ -29,8 +30,9 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     ...(row?.max_participants   != null && { maxParticipants: row.max_participants }),
     ...(row?.prize              && { prize: row.prize             }),
     ...(row?.registration_fee   && { registrationFee: row.registration_fee }),
-    // store points for redemption checks:
     ...(row?.points_value       != null && { pointsValue: row.points_value }),
+    // inject currentParticipants
+    ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
   }
 }
 
@@ -38,14 +40,14 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
 export async function getAllTournaments(): Promise<StaticEvent[]> {
   const supabase = createServerComponentClient({ cookies })
 
+  // Query the view instead of the raw table:
   const { data, error } = await supabase
-    .from("tournaments")
+    .from("tournament_with_counts")
     .select("*")
 
   const rows = data ?? []
   const rowMap = new Map(rows.map((r) => [r.id, r]))
 
-  // union of static IDs + DB IDs
   const allIds = Array.from(
     new Set<string>([
       ...staticEvents.map((e) => e.id),
@@ -54,8 +56,8 @@ export async function getAllTournaments(): Promise<StaticEvent[]> {
   )
 
   return allIds.map((id) => {
-    const fallback = staticEvents.find((e) => e.id === id)
-    return mergeOne(fallback ?? ({} as StaticEvent), rowMap.get(id))
+    const fallback = staticEvents.find((e) => e.id === id) ?? ({} as StaticEvent)
+    return mergeOne(fallback, rowMap.get(id))
   })
 }
 
@@ -64,7 +66,7 @@ export async function getTournamentById(id: string): Promise<StaticEvent | null>
   const supabase = createServerComponentClient({ cookies })
 
   const { data: row, error } = await supabase
-    .from("tournaments")
+    .from("tournament_with_counts")
     .select("*")
     .eq("id", id)
     .single()

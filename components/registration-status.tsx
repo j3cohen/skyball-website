@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
@@ -13,50 +14,65 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
   const router = useRouter()
 
   useEffect(() => {
-    (async () => {
-      // 1) check session
-      const { data: { session } } = await supabase.auth.getSession()
+    ;(async () => {
+      // 1) grab current session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      // not signed in
       if (!session) {
         setSessionChecked(true)
+        setLoading(false)
         return
       }
 
-      // 2) see if this user already has a registration
-      const { data, error } = await supabase
+      // 2) check if user already registered for this tournament
+      const { count, error } = await supabase
         .from("registrations")
-        .select("id", { count: "exact", head: true })
+        .select("id", { head: true, count: "exact" })
         .eq("user_id", session.user.id)
         .eq("tournament_id", tournamentId)
-        .limit(1)
 
       if (error) {
-        console.error("Error checking registration:", error)
-      } else {
-        setRegistered((data ?? []).length > 0)
+        console.error("Error checking registration:", error.message)
+      } else if (typeof count === "number") {
+        setRegistered(count > 0)
       }
+
       setSessionChecked(true)
       setLoading(false)
     })()
   }, [tournamentId])
 
-  if (loading) return null
+  if (loading || !sessionChecked) {
+    return null
+  }
 
-  if (!sessionChecked) return null
-
-  // if already registered
+  // 3) already registered → badge + dashboard link
   if (registered) {
     return (
-      <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-800 font-medium">
-        Registered
-      </span>
+      <div className="flex flex-col items-center gap-2">
+        <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-800 font-medium">
+          Registered
+        </span>
+        <Link href="/dashboard">
+          <Button variant="outline" size="sm">
+            Go to Dashboard
+          </Button>
+        </Link>
+      </div>
     )
   }
 
-  // not logged in
+  // 4) not signed in or not yet registered → show Register button
   const handleClick = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
     if (!session) {
-      router.push(`/login?from=/play/${tournamentId}`)
+      router.push(`/login?from=/play/${tournamentId}/register`)
       return
     }
     router.push(`/play/${tournamentId}/register`)
