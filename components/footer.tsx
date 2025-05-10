@@ -94,6 +94,12 @@ export default function Footer() {
               <p className="text-sm">
                 Host a tournament: <a href="mailto:play@skyball.us">play@skyball.us</a>
               </p>
+              <p className="text-sm">
+                <b/>
+              </p>
+              <p className="text-sm">
+                <Link href="/about">About Us</Link>
+              </p>
             </div>
           </div>
         </div>

@@ -3,6 +3,9 @@ import Footer from "@/components/footer"
 import dynamic from "next/dynamic"
 import { getAllTournaments } from "@/lib/tournaments"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import RegisteredTournaments from "@/components/registered-tournaments"
+import AvailableTournamentPasses from "@/components/available-tournament-passes"
+import TournamentPassHistory from "@/components/tournament-pass-history"
 
 // @ts-ignore – we only render this client-side
 const BuyPassSection = dynamic(() => import("@/components/buy-pass-section"), {
@@ -25,15 +28,18 @@ export default async function DashboardPage() {
                 <CardTitle>Your Upcoming Tournaments</CardTitle>
               </CardHeader>
               <CardContent>
-                {tournaments.length > 0 ? (
-                  <ul className="list-disc pl-5 space-y-2">
-                    {tournaments.map((t) => (
-                      <li key={t.id}>{t.name}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No upcoming tournaments.</p>
-                )}
+                <RegisteredTournaments/>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Tournament Passes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AvailableTournamentPasses/>
               </CardContent>
             </Card>
           </section>
@@ -45,6 +51,17 @@ export default async function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <BuyPassSection />
+              </CardContent>
+            </Card>
+          </section>
+          
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Tournament Pass History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TournamentPassHistory/>
               </CardContent>
             </Card>
           </section>

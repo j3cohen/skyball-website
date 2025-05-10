@@ -1,3 +1,4 @@
+// components/buy-pass-section.tsx
 "use client"
 
 import { useState, useEffect } from "react"

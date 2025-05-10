@@ -1,14 +1,13 @@
 // File: components/supabase-provider.tsx
+
 "use client"
 
 import { SessionContextProvider } from "@supabase/auth-helpers-react"
-import { supabaseBrowser }           from "@/lib/supabaseClient"
+import { createPagesBrowserClient }  from "@supabase/auth-helpers-nextjs"
 
-interface Props {
-  children: React.ReactNode
-}
+const supabaseBrowser = createPagesBrowserClient()
 
-export default function SupabaseProvider({ children }: Props) {
+export default function SupabaseProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionContextProvider supabaseClient={supabaseBrowser}>
       {children}

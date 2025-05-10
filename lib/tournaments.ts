@@ -1,5 +1,7 @@
 // lib/tournaments.ts
-import { supabase } from "@/lib/supabaseClient"
+
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies }                       from "next/headers"
 import { events as staticEvents, type Event as StaticEvent } from "@/data/events"
 
 type TournamentRow = {
@@ -12,9 +14,10 @@ type TournamentRow = {
   max_participants : number | null
   prize            : string | null
   registration_fee : string
+  points_value     : number
 }
 
-/** Merge a single row atop its static fallback */
+// Merge helper
 function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
   return {
     ...fallback,
@@ -26,24 +29,23 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     ...(row?.max_participants   != null && { maxParticipants: row.max_participants }),
     ...(row?.prize              && { prize: row.prize             }),
     ...(row?.registration_fee   && { registrationFee: row.registration_fee }),
+    // store points for redemption checks:
+    ...(row?.points_value       != null && { pointsValue: row.points_value }),
   }
 }
 
-/** Fetch all tournaments from Supabase, merge with staticEvents */
+/** Fetch & merge all tournaments */
 export async function getAllTournaments(): Promise<StaticEvent[]> {
+  const supabase = createServerComponentClient({ cookies })
+
   const { data, error } = await supabase
     .from("tournaments")
     .select("*")
 
-// DEBUG: print raw Supabase response
-  console.log("[getAllTournaments] data.length:", data?.length, "error:", error);
-  console.log("[getAllTournaments] supabase returned:", { data, error })
-
-  // cast into your TS shape
-  const rows = (data ?? []) as TournamentRow[]
+  const rows = data ?? []
   const rowMap = new Map(rows.map((r) => [r.id, r]))
 
-  // union static IDs + DB IDs
+  // union of static IDs + DB IDs
   const allIds = Array.from(
     new Set<string>([
       ...staticEvents.map((e) => e.id),
@@ -52,28 +54,23 @@ export async function getAllTournaments(): Promise<StaticEvent[]> {
   )
 
   return allIds.map((id) => {
-    const fallback = staticEvents.find((e) => e.id === id) ?? ({} as StaticEvent)
-    return mergeOne(fallback, rowMap.get(id))
+    const fallback = staticEvents.find((e) => e.id === id)
+    return mergeOne(fallback ?? ({} as StaticEvent), rowMap.get(id))
   })
 }
 
-/** Fetch one “event” by id — will pull from Supabase if it exists, otherwise fall back to staticEvents */
+/** Fetch & merge one tournament by ID */
 export async function getTournamentById(id: string): Promise<StaticEvent | null> {
+  const supabase = createServerComponentClient({ cookies })
+
   const { data: row, error } = await supabase
     .from("tournaments")
     .select("*")
     .eq("id", id)
-    .maybeSingle()     // ← here’s the key change
+    .single()
 
-  // if a real DB error (network, permissions, etc), you might want to log
-  if (error) console.error("Supabase error fetching tournament:", error)
+  const fallback = staticEvents.find((e) => e.id === id) ?? null
+  if (error && !fallback) return null
 
-  const fallback = staticEvents.find((e) => e.id === id)
-
-  // if neither DB nor static knows about this id → 404
-  if (!row && !fallback) {
-    return null
-  }
-
-  return mergeOne(fallback, row ?? undefined)
+  return mergeOne(fallback ?? ({} as StaticEvent), row ?? undefined)
 }
