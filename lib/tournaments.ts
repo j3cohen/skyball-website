@@ -75,6 +75,5 @@ export async function getTournamentById(id: string): Promise<StaticEvent | null>
     return null
   }
 
-  // otherwise, merge row atop fallback (row wins)
-  return mergeOne(fallback ?? ({} as StaticEvent), row ?? undefined)
+  return mergeOne(fallback, row ?? undefined)
 }
