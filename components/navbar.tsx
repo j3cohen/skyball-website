@@ -1,31 +1,31 @@
+// components/navbar.tsx
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Menu, X, ChevronDown } from 'lucide-react'
+import React, { useState, useEffect } from "react"
+import { Menu, X, ChevronDown, User, AlertCircle, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { libreFranklin } from "@/app/fonts"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { supabase } from "@/lib/supabaseClient"
+import type { Session } from "@supabase/supabase-js"
 
-// Define the type for navigation items
 interface NavItem {
-  name: string;
-  href: string;
-  subItems?: Array<{ name: string; href: string }>;
+  name: string
+  href: string
+  subItems?: { name: string; href: string }[]
 }
 
-// Update the navItems array to replace Products dropdown with Shop link
 const navItems: NavItem[] = [
   { name: "Home", href: "/" },
-  // { name: "About", href: "/about" },
-  // { name: "Shop", href: "/shop" }, 
   { name: "Rules", href: "/rules" },
   { name: "Play", href: "/play" },
   { name: "Rankings", href: "/rankings" },
-  { name: "Shop", href:"/shop" },
+  { name: "Shop", href: "/shop" },
 ]
 
 export default function Navbar() {
@@ -35,49 +35,65 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Check if we're on the home or about page
-  const isTransparentNavbarPage = pathname === "/" || pathname === "/about"
-
-  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
-    e.preventDefault()
-
-    // If clicking on the current page's link, just scroll to top
-    if (pathname === href) {
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    } else {
-      // For navigation to a different page:
-      // 1. First scroll to top of current page
-      window.scrollTo({ top: 0, behavior: "auto" })
-      // 2. Then navigate to the new page
-      router.push(href)
-    }
-  }
-
-  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    e.preventDefault()
-
-    // If we're on the home page, just scroll to top
-    if (pathname === "/") {
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    } else {
-      // If we're on any other page, first scroll to top, then navigate to home
-      window.scrollTo({ top: 0, behavior: "auto" })
-      router.push("/")
-    }
-  }
+  // auth state
+  const [session, setSession] = useState<Session | null>(null)
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<{ text: string; type: "error" | "success" } | null>(null)
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    // get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
+    // listen for changes
+    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session)
+      if (session) setIsSignUp(false) // close sign-up form on login
+      setMessage(null)
+    })
+    return () => sub.subscription.unsubscribe()
   }, [])
 
-  // This effect ensures we start at the top when the route changes
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage(null)
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) setMessage({ text: error.message, type: "error" })
+      else setMessage({ text: "Check your email for a confirmation link.", type: "success" })
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setMessage({ text: error.message, type: "error" })
+      else router.refresh()
+    }
+    setLoading(false)
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.refresh()
+  }
+
+  const isTransparent = pathname === "/" || pathname === "/about"
+
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+    const onScroll = () => setIsScrolled(window.scrollY > 10)
+    window.addEventListener("scroll", onScroll)
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (pathname === "/") window.scrollTo({ top: 0, behavior: "smooth" })
+    else router.push("/")
+  }
+
+  const handleNavClick = (href: string) => {
+    if (href === pathname) window.scrollTo({ top: 0, behavior: "smooth" })
+    else router.push(href)
+  }
 
   return (
     <motion.nav
@@ -85,86 +101,216 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ duration: 0.6 }}
       className={cn(
-        "fixed w-full z-50 transition-all duration-300",
-        isTransparentNavbarPage
+        "fixed w-full z-50 transition-all",
+        isTransparent
           ? isScrolled
-          ? "bg-[#01014c] shadow-md py-2"
-          : "bg-[#01014c] py-4"
-        : "bg-[#01014c] shadow-md py-2", // Changed from bg-white to bg-[#12284c]
+            ? "bg-[#01014c] shadow-md py-2"
+            : "bg-[#01014c] py-4"
+          : "bg-[#01014c] shadow-md py-2"
       )}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center">
-          <a href="/" className="transition-all duration-300 hover:scale-105" onClick={handleLogoClick}>
-            <Image
-              src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/SkyBall_Favicon.jpg"
-              alt="SkyBall"
-              width={120}
-              height={40}
-              className="h-10 w-auto"
-              priority
-            />
-          </a>
-          <div className="hidden md:flex space-x-8 items-center">
-            {navItems.map((item) => (
-              <div key={item.name} className="relative group">
-                <a
-                  href={item.href}
-                  onClick={(e) => handleNavigation(e, item.href)}
-                  className={cn(
-                    `${libreFranklin.className} text-sm transition-colors duration-300 group-hover:text-sky-600`,
-                    isTransparentNavbarPage ? (isScrolled ? "text-white" : "text-white") : "text-white",
-                    "flex items-center cursor-pointer",
-                  )}
-                  onMouseEnter={() => setActiveDropdown(item.name)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  {item.name}
-                  {item.subItems && <ChevronDown className="ml-1 h-4 w-4" />}
-                </a>
-                {item.subItems && (
-                  <AnimatePresence>
-                    {activeDropdown === item.name && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                        onMouseEnter={() => setActiveDropdown(item.name)}
-                        onMouseLeave={() => setActiveDropdown(null)}
-                      >
-                        <div className="py-1">
-                          {item.subItems.map((subItem) => (
-                            <a
-                              key={subItem.name}
-                              href={subItem.href}
-                              onClick={(e) => handleNavigation(e, subItem.href)}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              {subItem.name}
-                            </a>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+      <div className="container mx-auto px-4 flex items-center justify-between">
+        {/* Logo */}
+        <a href="/" onClick={handleLogoClick} className="hover:scale-105 transition">
+          <Image
+            src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/SkyBall_Favicon.jpg"
+            alt="SkyBall"
+            width={120}
+            height={40}
+            className="h-10 w-auto"
+            priority
+          />
+        </a>
+
+        {/* Desktop nav & auth */}
+        <div className="hidden md:flex items-center space-x-8">
+          {navItems.map((item) => (
+            <div key={item.name} className="relative group">
+              <button
+                onClick={() => handleNavClick(item.href)}
+                onMouseEnter={() => setActiveDropdown(item.name)}
+                onMouseLeave={() => setActiveDropdown(null)}
+                className={cn(
+                  libreFranklin.className,
+                  "text-sm transition-colors hover:text-sky-600",
+                  isTransparent ? "text-white" : "text-white"
                 )}
-              </div>
-            ))}
-          </div>
-          <button
-            className={cn(
-              "md:hidden transition-transform duration-300 hover:scale-110",
-              isTransparentNavbarPage ? (isScrolled ? "text-sky-600" : "text-white") : "text-sky-600", // Blue icon on white background, just like when scrolled
-            )}
-            onClick={() => setIsOpen(!isOpen)}
-          >
+              >
+                {item.name}
+                {item.subItems && <ChevronDown className="ml-1 inline h-4 w-4" />}
+              </button>
+              {item.subItems && activeDropdown === item.name && (
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                  >
+                    {item.subItems.map((sub) => (
+                      <button
+                        key={sub.href}
+                        onClick={() => handleNavClick(sub.href)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        {sub.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
+              )}
+            </div>
+          ))}
+
+          {/* Auth popover trigger */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white">
+                <User className="h-4 w-4" />
+                {session?.user?.email ? session.user.email.split("@")[0] : "Sign In"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              {session ? (
+                <div className="p-4 space-y-2">
+                  <p className="text-sm truncate">{session.user.email}</p>
+                  <Button size="sm" className="w-full" onClick={() => router.push("/dashboard")}>
+                    Dashboard
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full" onClick={handleSignOut}>
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleAuth} className="p-4 space-y-3">
+                  <h3 className="text-lg font-semibold">{isSignUp ? "Create Account" : "Sign In"}</h3>
+                  {message && (
+                    <div
+                      className={cn(
+                        "flex items-start gap-2 p-2 rounded-md text-sm",
+                        message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                      )}
+                    >
+                      {message.type === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                      <p>{message.text}</p>
+                    </div>
+                  )}
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Input
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? "Loading…" : isSignUp ? "Sign Up" : "Sign In"}
+                  </Button>
+                  <Button
+                    variant="link"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp)
+                      setMessage(null)
+                    }}
+                    className="text-xs p-0"
+                  >
+                    {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                  </Button>
+                </form>
+              )}
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Mobile auth + menu button */}
+        <div className="flex md:hidden items-center space-x-2">
+          {/* Sign In / User icon */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-1 text-white">
+                <User className="h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[calc(100vw-2rem)] p-0" align="end">
+              {session ? (
+                <div className="p-4 space-y-2">
+                  <p className="text-sm truncate">{session.user.email}</p>
+                  <Button size="sm" className="w-full" onClick={() => router.push("/dashboard")}>
+                    Dashboard
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full" onClick={handleSignOut}>
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleAuth} className="p-4 space-y-3">
+                  <h3 className="text-lg font-semibold">{isSignUp ? "Create Account" : "Sign In"}</h3>
+                  {message && (
+                    <div
+                      className={cn(
+                        "flex items-start gap-2 p-2 rounded-md text-sm",
+                        message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                      )}
+                    >
+                      {message.type === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                      <p>{message.text}</p>
+                    </div>
+                  )}
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Input
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? "Loading…" : isSignUp ? "Sign Up" : "Sign In"}
+                  </Button>
+                  <Button
+                    variant="link"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp)
+                      setMessage(null)
+                    }}
+                    className="text-xs p-0"
+                  >
+                    {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                  </Button>
+                </form>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Mobile menu toggle */}
+          <button className="text-white p-1" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
-      {/* Mobile menu */}
+
+      {/* Mobile menu items */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -172,39 +318,20 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${libreFranklin.className} md:hidden absolute top-full left-0 right-0 bg-white shadow-md overflow-hidden`}
+            className={`${libreFranklin.className} md:hidden bg-white shadow-md overflow-hidden`}
           >
-            <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
+            <div className="px-4 py-4 flex flex-col space-y-4">
               {navItems.map((item) => (
-                <div key={item.name}>
-                  <a
-                    href={item.href}
-                    className="text-gray-700 hover:text-sky-600 transition-colors duration-300 block cursor-pointer"
-                    onClick={(e) => {
-                      handleNavigation(e, item.href)
-                      setIsOpen(false)
-                    }}
-                  >
-                    {item.name}
-                  </a>
-                  {item.subItems && (
-                    <div className="ml-4 mt-2 space-y-2">
-                      {item.subItems.map((subItem) => (
-                        <a
-                          key={subItem.name}
-                          href={subItem.href}
-                          className="text-gray-600 hover:text-sky-600 transition-colors duration-300 block text-sm"
-                          onClick={(e) => {
-                            handleNavigation(e, subItem.href)
-                            setIsOpen(false)
-                          }}
-                        >
-                          {subItem.name}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={item.href}
+                  onClick={() => {
+                    handleNavClick(item.href)
+                    setIsOpen(false)
+                  }}
+                  className="text-gray-700 hover:text-sky-600 text-left"
+                >
+                  {item.name}
+                </button>
               ))}
             </div>
           </motion.div>

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle, CheckCircle, User } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 export function AuthCompact() {
   const router = useRouter()
@@ -61,17 +64,21 @@ export function AuthCompact() {
   }
 
   return (
-    <div className="absolute top-24 right-4 z-40">
+    <div className="fixed top-[4.5rem] sm:top-24 right-4 z-50 w-auto max-w-[95vw] sm:max-w-md">
       {session ? (
-        <Card className="shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
+        <Card className="shadow-md w-full">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <div className="flex-1">
-                <p className="text-sm font-medium truncate max-w-[150px]">{session.user.email}</p>
+                <p className="text-sm font-medium truncate max-w-[200px]">{session.user.email}</p>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => router.push("/dashboard")}>Dashboard</Button>
-                <Button size="sm" variant="outline" onClick={handleSignOut}>Sign Out</Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => router.push("/dashboard")}>
+                  Dashboard
+                </Button>
+                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -79,20 +86,21 @@ export function AuthCompact() {
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="shadow-md">
+            <Button variant="outline" className="shadow-md ml-auto">
               <User className="h-4 w-4 mr-2" /> Sign In
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="end">
+          <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 p-0" align="end">
             <Card className="border-0 shadow-none">
               <CardContent className="p-4 pt-4">
-                <h3 className="text-lg font-semibold mb-2">
-                  {isSignUp ? "Create Account" : "Sign In"}
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">{isSignUp ? "Create Account" : "Sign In"}</h3>
                 {message && (
-                  <div className={`mb-4 p-2 text-sm rounded-md flex items-start gap-2 ${
-                      message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
-                    }`}>
+                  <div
+                    className={cn(
+                      "mb-4 p-2 text-sm rounded-md flex items-start gap-2",
+                      message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700",
+                    )}
+                  >
                     {message.type === "error" ? (
                       <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                     ) : (
@@ -134,9 +142,7 @@ export function AuthCompact() {
                         onClick={() => setIsSignUp(!isSignUp)}
                         className="text-center text-xs p-0 h-auto mt-2"
                       >
-                        {isSignUp
-                          ? "Already have an account? Sign In"
-                          : "Don't have an account? Sign Up"}
+                        {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
                       </Button>
                     </div>
                   </div>
