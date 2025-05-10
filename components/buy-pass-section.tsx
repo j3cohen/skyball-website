@@ -6,18 +6,26 @@ import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+type PassType = {
+  id: string
+  stripe_price_id: string
+  name: string
+  passes_quantity: number
+  price: string
+}
+
 export default function BuyPassSection() {
-  const [prices, setPrices] = useState<any[]>([])
+  const [passTypes, setPassTypes] = useState<PassType[]>([])
   const [session, setSession] = useState<any>(null)
 
-  // load pass types
   useEffect(() => {
+    // load pass types (now including the `price` column)
     supabase
       .from("pass_types")
-      .select("id, stripe_price_id, name, passes_quantity")
+      .select("id, stripe_price_id, name, passes_quantity, price")
       .then(({ data, error }) => {
-        if (error) console.error(error)
-        else setPrices(data ?? [])
+        if (error) console.error("Error loading pass types:", error)
+        else setPassTypes(data ?? [])
       })
 
     // grab the current user session on mount
@@ -26,19 +34,18 @@ export default function BuyPassSection() {
     })
   }, [])
 
-  const handleCheckout = async (priceId: string) => {
+  const handleCheckout = async (stripePriceId: string) => {
     if (!session) {
       alert("Please sign in before purchasing.")
       return
     }
-    const userId = session.user.id
-    console.log("🚀 checkout for user:", userId, "price:", priceId)
 
     const res = await fetch("/api/create-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId, userId }),
+      body: JSON.stringify({ priceId: stripePriceId, userId: session.user.id }),
     })
+
     const { url, error } = await res.json()
     if (error) {
       console.error("API error:", error)
@@ -46,10 +53,11 @@ export default function BuyPassSection() {
       return
     }
     if (!url) {
-      console.error("No URL returned")
+      console.error("No URL returned from create-checkout")
       return
     }
-    // redirect browser
+
+    // redirect browser to Stripe Checkout
     window.location.href = url
   }
 
@@ -59,13 +67,18 @@ export default function BuyPassSection() {
         <CardTitle>Purchase Tournament Passes</CardTitle>
       </CardHeader>
       <CardContent>
-        {prices.map((p) => (
-          <div key={p.id} className="mb-4 flex justify-between items-center">
+        {passTypes.length === 0 && <p>Loading passes…</p>}
+
+        {passTypes.map((p) => (
+          <div
+            key={p.id}
+            className="mb-4 flex justify-between items-center border-b pb-4 last:border-0 last:pb-0"
+          >
             <div>
               <p className="font-medium">{p.name}</p>
               <p className="text-sm text-gray-600">
-                Includes {p.passes_quantity} pass
-                {p.passes_quantity > 1 ? "es" : ""}
+                {p.passes_quantity} pass{p.passes_quantity > 1 ? "es" : ""} for{" "}
+                <span className="font-semibold">{p.price}</span>
               </p>
             </div>
             <Button onClick={() => handleCheckout(p.stripe_price_id)}>
@@ -73,7 +86,6 @@ export default function BuyPassSection() {
             </Button>
           </div>
         ))}
-        {prices.length === 0 && <p>Loading passes…</p>}
       </CardContent>
     </Card>
   )
