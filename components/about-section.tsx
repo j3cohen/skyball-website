@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { ArrowRight, Award, MapPin, Calendar, ExternalLink, BookOpen, Trophy } from "lucide-react"
+import { Award, Calendar, ExternalLink, BookOpen, Trophy } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ export function AboutSection() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">A New Sport For Everyone</h2>
             <p className="text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               At SkyBall™, our mission is to spread the joy of our innovative game to players of all skill levels.
-              Founded in 2025, we've created SkyBall™ as a fun, engaging way for people to stay active, connect with
+              Founded in 2025, we`&apos;`ve created SkyBall™ as a fun, engaging way for people to stay active, connect with
               others, and enjoy the thrill of racket sports in a fresh, exciting format.
             </p>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -54,7 +54,7 @@ export function AboutSection() {
               </div>
               <h3 className="text-xl font-bold">Our Mission</h3>
               <p className="mt-2 text-gray-500">
-                We're dedicated to fostering a vibrant SkyBall™ community that welcomes casual players and competitive
+                We`&apos;`re dedicated to fostering a vibrant SkyBall™ community that welcomes casual players and competitive
                 enthusiasts alike. Our goal is to provide multiple ways to engage with SkyBall™ - from friendly matches
                 in your backyard to our official circuit, where players can test their skills in a more structured
                 environment.
@@ -69,7 +69,7 @@ export function AboutSection() {
               <h3 className="text-xl font-bold">The Sport</h3>
               <p className="mt-2 text-gray-500">
                 Played on a pickleball-sized court (20x44) with tennis-like movement patterns. <em>Rally-ready</em> in
-                minutes for beginners, yet offers depth for competitive players. As the home of SkyBall™, we're
+                minutes for beginners, yet offers depth for competitive players. As the home of SkyBall™, we`&apos;`re
                 committed to delivering high-quality equipment that ensures the best possible playing experience.
               </p>
               <div className="mt-4 pt-3 border-t border-gray-200 w-full text-center">
@@ -128,8 +128,8 @@ export function AboutSection() {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h4 className="text-xl font-semibold mb-3 text-sky-600">Rally Ready in Minutes</h4>
               <p className="text-gray-600">
-                One of SkyBall's greatest strengths is how quickly new players can start having fun. Unlike many racket
-                sports with steep learning curves, SkyBall™ is designed to be "rally ready" - most people can enjoy
+                One of SkyBall`&apos;`s greatest strengths is how quickly new players can start having fun. Unlike many racket
+                sports with steep learning curves, SkyBall™ is designed to be `&quot;`rally ready`&quot;` - most people can enjoy
                 rallying within just a few minutes of picking up a racket, making it perfect for casual play and social
                 gatherings.
               </p>
@@ -237,9 +237,9 @@ export function AboutSection() {
               <tbody>
                 <tr className="border-t">
                   <td className="p-4 font-medium">Court Size</td>
-                  <td className="p-4">20' x 44' (Pickleball sized)</td>
-                  <td className="p-4">60' x 120' (Full court)</td>
-                  <td className="p-4">20' x 44'</td>
+                  <td className="p-4">20`&apos;` x 44`&apos;` (Pickleball sized)</td>
+                  <td className="p-4">60`&apos;` x 120`&apos;` (Full court)</td>
+                  <td className="p-4">20`&apos;` x 44`&apos;`</td>
                 </tr>
                 <tr className="border-t bg-gray-50">
                   <td className="p-4 font-medium">Game Length</td>
@@ -273,7 +273,7 @@ export function AboutSection() {
         <div className="mt-16 text-center bg-gray-50 rounded-xl p-8">
           <h3 className="text-2xl font-bold mb-4">Join the SkyBall™ Movement</h3>
           <p className="text-gray-500 max-w-2xl mx-auto mb-6">
-            Whether you're a seasoned racket sport player or completely new to paddle games, SkyBall™ offers an
+            Whether you`&apos;`re a seasoned racket sport player or completely new to paddle games, SkyBall™ offers an
             accessible, fun, and engaging experience where the social aspects remain at the heart of everything we do.
           </p>
     

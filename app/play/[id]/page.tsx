@@ -19,9 +19,8 @@ import {
   Award,
   Info,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import MatchScoreDisplay from "@/components/match-score-display"
+
 import RegistrationStatus from "@/components/registration-status"
 
 export default async function EventPage({ params }: { params: { id: string } }) {
@@ -29,7 +28,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   if (!event) notFound()
 
   const isPastEvent  = event.isPast === true
-  const isRSVP       = event.type    === "open-play"
+  // const isRSVP       = event.type    === "open-play"
   const hasResults   = event.hasResults === true
 
   const matches = hasResults ? getMatchesByTournament(event.id) : []
@@ -38,10 +37,10 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     matchesByRound[m.round] = matchesByRound[m.round] || []
     matchesByRound[m.round].push(m)
   })
-  const roundOrder   = ["Play-in", "Quarter-final", "Semi-final", "Final"]
-  const sortedRounds = Object.keys(matchesByRound).sort(
-    (a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)
-  )
+  // const roundOrder   = ["Play-in", "Quarter-final", "Semi-final", "Final"]
+  // const sortedRounds = Object.keys(matchesByRound).sort(
+  //   (a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)
+  // )
 
   return (
     <>

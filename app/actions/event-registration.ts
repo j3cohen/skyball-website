@@ -19,7 +19,7 @@ export async function submitEventRegistration(formData: FormData) {
 
   // 2) Grab hidden inputs
   const eventId   = String(formData.get("eventId"))
-  const eventName = String(formData.get("eventName"))
+
 
   // 3) Lookup tournament cost
   const { data: tour, error: tourErr } = await supabase

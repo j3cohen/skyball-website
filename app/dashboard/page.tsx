@@ -7,7 +7,7 @@ import RegisteredTournaments from "@/components/registered-tournaments"
 import AvailableTournamentPasses from "@/components/available-tournament-passes"
 import TournamentPassHistory from "@/components/tournament-pass-history"
 
-// @ts-ignore – we only render this client-side
+// 'at' ts-ignore – we only render this client-side
 const BuyPassSection = dynamic(() => import("@/components/buy-pass-section"), {
   ssr: false,
 })
@@ -15,7 +15,6 @@ const BuyPassSection = dynamic(() => import("@/components/buy-pass-section"), {
 export const revalidate = 0
 
 export default async function DashboardPage() {
-  const tournaments = await getAllTournaments()
 
   return (
     <>
@@ -54,7 +53,7 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           </section>
-          
+
           <section>
             <Card>
               <CardHeader>

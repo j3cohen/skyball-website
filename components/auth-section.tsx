@@ -65,7 +65,7 @@ export function AuthSection() {
             <Card>
               <CardHeader>
                 <CardTitle>Welcome Back!</CardTitle>
-                <CardDescription>You're signed in as {session.user.email}</CardDescription>
+                <CardDescription>You`&apos;`re signed in as {session.user.email}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
