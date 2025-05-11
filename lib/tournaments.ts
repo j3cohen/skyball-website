@@ -41,7 +41,7 @@ export async function getAllTournaments(): Promise<StaticEvent[]> {
   const supabase = createServerComponentClient({ cookies })
 
   // Query the view instead of the raw table:
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("tournament_with_counts")
     .select("*")
 

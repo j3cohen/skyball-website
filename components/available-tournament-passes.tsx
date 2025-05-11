@@ -5,6 +5,17 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
+// exactly what Supabase returns for each pass row:
+type RawPassRow = {
+  id: string
+  quantity_remaining: number
+  pass_type: {
+    id: string
+    name: string
+    passes_quantity: number
+  }[]
+}
+
 type AvailablePass = {
   id: string
   quantity_remaining: number
@@ -39,7 +50,7 @@ export default function AvailableTournamentPasses() {
         setAvailable([])
       } else if (data) {
         // normalize the nested pass_type and filter out zero-remaining
-        const clean = (data as any[])
+        const clean = (data as RawPassRow[])
           .map((item) => ({
             id: item.id,
             quantity_remaining: item.quantity_remaining,

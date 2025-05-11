@@ -6,6 +6,18 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
+
+// exactly what Supabase returns per row
+type RawRegistration = {
+  id: string
+  registered_at: string
+  tournament: {
+    id: string
+    name: string
+    date: string
+  }[]
+}
+
 // Your “clean” shape:
 type Registration = {
   id: string
@@ -43,7 +55,8 @@ export default function RegisteredTournaments() {
         setItems([])
       } else if (data) {
         // map RawRegistration[] ➔ Registration[]
-        const clean: Registration[] = (data as any[]).map((r) => ({
+        const raw = data as RawRegistration[]
+        const clean: Registration[] = (raw).map((r) => ({
           id: r.id,
           registered_at: r.registered_at,
           tournament: Array.isArray(r.tournament)
