@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
-      success_url: `${origin}/dashboard?success=1`,
+      success_url: `${origin}/dashboard?success=1&action=purchase`,
       cancel_url:  `${origin}/dashboard?canceled=1`,
       metadata: {
         user_id:  userId,

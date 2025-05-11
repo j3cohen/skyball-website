@@ -14,7 +14,7 @@ type Tournament = {
 }
 
 export default function UpcomingTournaments() {
-  const [tours, setTours] = useState<Tournament[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,18 +26,28 @@ export default function UpcomingTournaments() {
       const { data, error } = await supabase
         .from("tournaments")
         .select("id, name, date")
-        .order("date", { ascending: true })
 
       if (error) {
-        console.error("Failed loading tournaments:", error)
-        setError("Unable to load upcoming tournaments.")
-        setTours([])
-      } else {
-        setTours(data ?? [])
+        console.error("Error loading tournaments:", error)
+        setError(error.message)
+        setTournaments([])
+      } else if (data) {
+        const today = new Date()
+        const upcoming = data
+          .filter((t) => {
+            const parsed = new Date(t.date)
+            return !isNaN(parsed.getTime()) && parsed >= today
+          })
+          .sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+          )
+
+        setTournaments(upcoming)
       }
 
       setLoading(false)
     }
+
     load()
   }, [])
 
@@ -48,6 +58,7 @@ export default function UpcomingTournaments() {
       </Card>
     )
   }
+
   if (error) {
     return (
       <Card>
@@ -55,7 +66,8 @@ export default function UpcomingTournaments() {
       </Card>
     )
   }
-  if (tours.length === 0) {
+
+  if (tournaments.length === 0) {
     return (
       <Card>
         <CardContent>No upcoming tournaments.</CardContent>
@@ -69,15 +81,15 @@ export default function UpcomingTournaments() {
         <CardTitle>Upcoming Tournaments</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {tours.map((t) => (
+        {tournaments.map((t) => (
           <div key={t.id} className="flex justify-between items-center">
             <div>
-                <Link
-                  href={`/play/${t.id}`}
-                  className="font-medium text-sky-600 hover:underline"
-                >
-                  {t.name}
-                </Link>
+              <Link
+                href={`/play/${t.id}`}
+                className="font-medium text-sky-600 hover:underline"
+              >
+                {t.name}
+              </Link>
               <p className="text-sm text-gray-600">{t.date}</p>
             </div>
             <RegistrationStatus tournamentId={t.id} />

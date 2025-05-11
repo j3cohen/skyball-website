@@ -12,14 +12,16 @@ export default function LoginPage({
   const from = searchParams.from ?? "/"
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
+      {/* fixed navbar */}
       <Navbar />
-      <main className="pt-24 pb-16">
+
+      {/* page content */}
+      <main className="flex-grow pt-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold mb-6">Sign In to SkyBall</h1>
-          <p className="mb-4">
-            You need to be signed in to register for events.
-          </p>
+          <p className="mb-4">You need to be signed in to register for events.</p>
+
           <AuthCompact />
 
           {from && (
@@ -36,7 +38,9 @@ export default function LoginPage({
           )}
         </div>
       </main>
+
+      {/* sticky footer at bottom */}
       <Footer />
-    </>
+    </div>
   )
 }
