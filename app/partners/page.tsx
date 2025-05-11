@@ -15,7 +15,7 @@ export default function PartnersPage() {
             <div className="text-center mb-12">
             <h1 className="text-4xl font-bold tracking-tight mb-4">Partnership Opportunities</h1>
             <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-                Join us in growing SkyBall™ globally. We`&apos;`re committed to being a high-quality partner that brings fun,
+                Join us in growing SkyBall™ globally. We&apos;re committed to being a high-quality partner that brings fun,
                 enjoyment, and lifestyle benefits to communities. Partner with us to create accessible, social, and
                 energizing experiences through sport.
             </p>
@@ -113,7 +113,7 @@ export default function PartnersPage() {
             <div className="text-center mt-12 bg-gray-50 rounded-xl p-8">
             <h2 className="text-2xl font-bold mb-4">Ready to Partner with SkyBall™?</h2>
             <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-                We`&apos;`re excited to explore partnership opportunities with you. Contact us today to discuss how we can work
+                We&apos;re excited to explore partnership opportunities with you. Contact us today to discuss how we can work
                 together to grow SkyBall™ in your community.
             </p>
             <ContactFormDialog/>
