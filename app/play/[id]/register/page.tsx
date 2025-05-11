@@ -39,7 +39,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     })()
   }, [params.id, router])
 
-  const usePass = async (passId: string) => {
+  const redeemPass = async (passId: string) => {
     setLoading(true)
     setError(null)
 
@@ -81,7 +81,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 <span>
                   {p.quantity_remaining} pass{p.quantity_remaining > 1 ? "es" : ""} remaining
                 </span>
-                <Button onClick={() => usePass(p.id)}>Use Pass</Button>
+                <Button onClick={() => redeemPass(p.id)}>Use Pass</Button>
               </div>
             ))
           )}

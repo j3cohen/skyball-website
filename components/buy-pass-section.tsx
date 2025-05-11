@@ -16,7 +16,7 @@ type PassType = {
 
 export default function BuyPassSection() {
   const [passTypes, setPassTypes] = useState<PassType[]>([])
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null>(null);
 
   useEffect(() => {
     // load pass types (now including the `price` column)

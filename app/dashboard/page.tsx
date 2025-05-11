@@ -1,7 +1,6 @@
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import dynamic from "next/dynamic"
-import { getAllTournaments } from "@/lib/tournaments"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import RegisteredTournaments from "@/components/registered-tournaments"
 import AvailableTournamentPasses from "@/components/available-tournament-passes"
