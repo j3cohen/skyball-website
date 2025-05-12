@@ -14,7 +14,7 @@ type Props = {
 export default function Profile({ onSave, readOnly }: Props) {
   const [fullName, setFullName]   = useState("")
   const [phone, setPhone]         = useState("")
-  const [hometown, setHometown]   = useState("")
+  const [current_city, setHometown]   = useState("")
   const [loading, setLoading]     = useState(false)
 
   useEffect(() => {
@@ -25,13 +25,13 @@ export default function Profile({ onSave, readOnly }: Props) {
       if (!session) return
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, phone, hometown")
+        .select("full_name, phone, current_city")
         .eq("id", session.user.id)
         .single()
       if (data) {
         setFullName(data.full_name || "")
         setPhone(data.phone     || "")
-        setHometown(data.hometown || "")
+        setHometown(data.current_city || "")
       }
     })()
   }, [])
@@ -47,7 +47,7 @@ export default function Profile({ onSave, readOnly }: Props) {
       id: session.user.id,
       full_name: fullName,
       phone,
-      hometown,
+      current_city,
       updated_at: new Date().toISOString(),
     }
 
@@ -79,15 +79,15 @@ export default function Profile({ onSave, readOnly }: Props) {
         />
       </div>
       <div>
-        <label>Hometown</label>
+        <label>Current Area</label>
         <Input
           disabled={readOnly}
-          value={hometown}
+          value={current_city}
           onChange={(e) => setHometown(e.currentTarget.value)}
         />
       </div>
       {!readOnly && (
-        <Button onClick={save} disabled={loading || !fullName || !phone || !hometown}>
+        <Button onClick={save} disabled={loading || !fullName || !phone || !current_city}>
           {loading ? "Saving…" : "Save Profile"}
         </Button>
       )}
