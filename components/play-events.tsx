@@ -1,5 +1,3 @@
-// components/play-events.tsx
-
 "use client"
 
 import type React from "react"
@@ -18,7 +16,6 @@ import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifi
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 import RaceTo300Announcement from "@/components/race-to-300-banner"
 
-
 type TabValue = "open-play" | "tournaments"
 
 interface PlayEventProps {
@@ -26,7 +23,6 @@ interface PlayEventProps {
 }
 
 export function PlayEvents({ events }: PlayEventProps) {
-
   const searchParams = useSearchParams()
 
   // Get the tab from URL parameter or default to "open-play"
@@ -138,8 +134,25 @@ export function PlayEvents({ events }: PlayEventProps) {
       {activeTab === "open-play" && (
         <section>
           <div className="flex flex-col md:flex-row gap-6 mb-6">
-            {/* Left column: Events list */}
-            <div className="flex-1">
+            {/* Right column: Info and signup - Moved to top on mobile */}
+            <div className="md:w-80 lg:w-96 md:order-2 order-1">
+              <div className="bg-sky-50 rounded-lg p-5 mb-4">
+                <h3 className="text-lg font-semibold mb-3">About Open Play</h3>
+                <p className="text-gray-700 text-sm mb-3">
+                  Open Play sessions are free and open to everyone! No registration required - just show up and play.
+                  Perfect for beginners and experienced players alike.
+                </p>
+                <p className="text-gray-700 text-sm">
+                  We also host spontaneous &quot;pop-up&quot; events throughout NYC. Sign up for notifications to be the
+                  first to know!
+                </p>
+              </div>
+
+              <NotificationSignup defaultType="open-play" />
+            </div>
+
+            {/* Left column: Events list - Moved to bottom on mobile */}
+            <div className="flex-1 md:order-1 order-2">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Open Play Sessions</h2>
 
@@ -255,23 +268,6 @@ export function PlayEvents({ events }: PlayEventProps) {
                 </>
               )}
             </div>
-
-            {/* Right column: Info and signup */}
-            <div className="md:w-80 lg:w-96">
-              <div className="bg-sky-50 rounded-lg p-5 mb-4">
-                <h3 className="text-lg font-semibold mb-3">About Open Play</h3>
-                <p className="text-gray-700 text-sm mb-3">
-                  Open Play sessions are free and open to everyone! No registration required - just show up and play.
-                  Perfect for beginners and experienced players alike.
-                </p>
-                <p className="text-gray-700 text-sm">
-                  We also host spontaneous &quot;pop-up&quot; events throughout NYC. Sign up for notifications to be the first to
-                  know!
-                </p>
-              </div>
-
-              <NotificationSignup defaultType="open-play" />
-            </div>
           </div>
         </section>
       )}
@@ -281,9 +277,9 @@ export function PlayEvents({ events }: PlayEventProps) {
         <section>
           <RaceTo300Announcement className="mb-6" />
 
-          {/* Tournaments section */} 
+          {/* Tournaments section */}
           <div className="flex flex-col md:flex-row gap-6 mb-6">
-            {/* Left column: Events list */}
+            {/* Left column: Events list - Keep original order for tournaments */}
             <div className="flex-1">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Tournaments</h2>
