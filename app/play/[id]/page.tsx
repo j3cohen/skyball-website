@@ -14,6 +14,7 @@ import { Calendar, MapPin, Clock, Trophy, Users, DollarSign, Award, Info } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import RegistrationStatus from "@/components/registration-status"
 import MatchScoreDisplay from "@/components/match-score-display"
+import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const event = await getTournamentById(params.id)
@@ -23,6 +24,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const staticEvent = getEventById(params.id)
 
   const isPastEvent = event.isPast === true
+  const isRSVP = event.type === "open-play"
   const hasResults = event.hasResults === true || staticEvent?.hasResults === true
 
   // Get matches for this tournament if it has results
@@ -81,7 +83,21 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
               {/* Event Header */}
               <div className="bg-sky-600 p-8 text-white">
-                <h1 className="text-3xl font-bold mb-2">{event.name}</h1>
+                <div className="flex justify-between items-start">
+                  <h1 className="text-3xl font-bold mb-2">{event.name}</h1>
+                  {!isPastEvent && (
+                    <div className="ml-4">
+                      <AddToCalendarDropdown
+                        name={event.name}
+                        date={event.date}
+                        time={event.time}
+                        location={event.location}
+                        description={event.description}
+                        variant="secondary"
+                      />
+                    </div>
+                  )}
+                </div>
                 {/* Only show description for upcoming events */}
                 {!isPastEvent && event.description && <p className="text-lg opacity-90">{event.description}</p>}
               </div>
