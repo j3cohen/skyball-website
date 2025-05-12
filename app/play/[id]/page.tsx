@@ -24,7 +24,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const staticEvent = getEventById(params.id)
 
   const isPastEvent = event.isPast === true
-  const isRSVP = event.type === "open-play"
+
   const hasResults = event.hasResults === true || staticEvent?.hasResults === true
 
   // Get matches for this tournament if it has results

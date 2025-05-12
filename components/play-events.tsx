@@ -22,7 +22,7 @@ interface PlayEventProps {
 }
 
 export function PlayEvents({ events }: PlayEventProps) {
-  const router = useRouter()
+
   const searchParams = useSearchParams()
 
   // Get the tab from URL parameter or default to "open-play"
@@ -261,7 +261,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                   Perfect for beginners and experienced players alike.
                 </p>
                 <p className="text-gray-700 text-sm">
-                  We also host spontaneous "pop-up" events throughout NYC. Sign up for notifications to be the first to
+                  We also host spontaneous &quot;pop-up&quot; events throughout NYC. Sign up for notifications to be the first to
                   know!
                 </p>
               </div>
@@ -522,7 +522,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
 
       {success ? (
         <div className="bg-green-50 text-green-700 p-3 rounded-md">
-          Thanks for signing up! You'll receive notifications based on your preferences.
+          Thanks for signing up! You&apos;ll receive notifications based on your preferences.
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -650,7 +650,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
           {fieldErrors.notifications && <p className="text-red-500 text-xs mt-1">{fieldErrors.notifications[0]}</p>}
 
           <div className="text-xs text-gray-500">
-            Provide at least one contact method. We'll only send notifications based on your preferences.
+            Provide at least one contact method. We&apos;ll only send notifications based on your preferences.
           </div>
 
           <Button type="submit" className="w-full" disabled={submitting}>
