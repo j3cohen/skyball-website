@@ -29,7 +29,7 @@ export default async function PlayPage() {
               Play SkyBall
             </h1>
             <p className="text-lg text-center text-gray-600 mb-12 max-w-3xl mx-auto">
-              Join us for tournaments, clinics, open play sessions, and special events. Find the
+              Join us for tournaments, open play sessions, clinics, and special events. Find the
               perfect way to experience SkyBall!
             </p>
 

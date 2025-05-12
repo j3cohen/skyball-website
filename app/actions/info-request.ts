@@ -115,7 +115,7 @@ export async function submitInfoRequest(formData: FormData) {
   }
 }
 
-async function sendTelegramNotification(data: InfoRequestData) {
+export async function sendTelegramNotification(data: InfoRequestData) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     const chatId = process.env.TELEGRAM_CHAT_ID
