@@ -3,10 +3,6 @@
 export const dynamic = "force-dynamic"
 
 
-const AddToCalendarDropdown = dynamic(() => import("@/components/add-to-calendar-dropdown"), {
-  ssr: false,
-})
-
 
 
 import Navbar from "@/components/navbar"
