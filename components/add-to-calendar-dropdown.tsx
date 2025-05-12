@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Calendar, ChevronDown, Download, Globe, Mail } from "lucide-react"
+import { Calendar, ChevronDown, Download, Globe, Mail } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -15,8 +15,6 @@ import {
   generateGoogleCalendarUrl,
   generateOutlookCalendarUrl,
   generateYahooCalendarUrl,
-  parseEventDateTime,
-  calculateEndTime,
 } from "@/lib/calendar"
 
 interface AddToCalendarProps {
@@ -50,17 +48,89 @@ export function AddToCalendarDropdown({
     }
   }, [])
 
+  // Parse time string that could be either a single time or a range (e.g., "6-8pm" or "7pm")
+  const parseTimeString = (timeStr: string): { startTime: string; endTime: string } => {
+    // Check if the time string contains a range indicator (hyphen or "to")
+    if (timeStr.includes("-") || timeStr.toLowerCase().includes(" to ")) {
+      // Split by hyphen or "to" to get start and end times
+      const separator = timeStr.includes("-") ? "-" : " to ";
+      const [startPart, endPart] = timeStr.split(separator).map(t => t.trim());
+      
+      // Handle cases where AM/PM is only specified in the end time
+      let startTime = startPart;
+      const endTime = endPart;
+      
+      // If start time doesn't have AM/PM but end time does, apply the same period
+      if (
+        !startTime.toLowerCase().includes("am") && 
+        !startTime.toLowerCase().includes("pm") && 
+        (endTime.toLowerCase().includes("am") || endTime.toLowerCase().includes("pm"))
+      ) {
+        const period = endTime.toLowerCase().includes("am") ? "am" : "pm";
+        startTime = `${startTime}${period}`;
+      }
+      
+      return { startTime, endTime };
+    }
+    
+    // If it's a single time, calculate end time based on duration
+    return { 
+      startTime: timeStr, 
+      endTime: "" // We'll calculate this later using durationMinutes
+    };
+  }
+
+  const parseEventDateTime = (dateStr: string, timeStr: string): { startDate: Date; endDate: Date } => {
+    try {
+      const { startTime, endTime } = parseTimeString(timeStr);
+      
+      // Parse the start date and time
+      const startDateStr = `${dateStr} ${startTime}`;
+      const startDate = new Date(startDateStr);
+      
+      // If start date is invalid, throw an error
+      if (isNaN(startDate.getTime())) {
+        throw new Error(`Invalid start date/time: ${startDateStr}`);
+      }
+      
+      let endDate: Date;
+      
+      // If we have an end time from the range, use it
+      if (endTime) {
+        const endDateStr = `${dateStr} ${endTime}`;
+        endDate = new Date(endDateStr);
+        
+        // If end date is invalid, fall back to duration-based calculation
+        if (isNaN(endDate.getTime())) {
+          endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+        }
+      } else {
+        // No end time specified, use duration
+        endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+      }
+      
+      return { startDate, endDate };
+    } catch (error) {
+      console.error("Error parsing date/time:", error);
+      // Fallback to current date/time + 2 hours
+      const now = new Date();
+      return {
+        startDate: now,
+        endDate: new Date(now.getTime() + durationMinutes * 60000)
+      };
+    }
+  }
+
   const handleAddToCalendar = (calendarType: "ics" | "google" | "outlook" | "yahoo") => {
     try {
-      const startDate = parseEventDateTime(date, time)
-      const endDate = calculateEndTime(startDate, durationMinutes)
+      const { startDate, endDate } = parseEventDateTime(date, time);
 
       const event: CalendarEvent = {
-        name,
+        name: name,
         description,
         location,
-        startDate,
-        endDate,
+        startDate: startDate,
+        endDate: endDate,
         url: pageUrl,
       }
 
