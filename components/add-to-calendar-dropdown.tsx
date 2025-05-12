@@ -95,7 +95,7 @@ export function AddToCalendarDropdown({
     // Match patterns like "May 15, 2025"
     const match = dateStr.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
     if (match) {
-      const [_, month, day, year] = match;
+      const [, month, day, year] = match; // Removed unused '_' variable
       const monthIndex = [
         'january', 'february', 'march', 'april', 'may', 'june',
         'july', 'august', 'september', 'october', 'november', 'december'
@@ -119,7 +119,7 @@ export function AddToCalendarDropdown({
     const match = normalizedTime.match(/(\d{1,2})(?::(\d{2}))?(?:\s*)?(am|pm)?/i);
     
     if (match) {
-      let [_, hours, minutes, period] = match;
+      const [, hours, minutes, period] = match; // Removed unused '_' variable
       let hoursNum = parseInt(hours);
       
       // Convert to 24-hour format if period is specified
