@@ -36,37 +36,42 @@ export const nameSchema = z
   .min(2, "Name must be at least 2 characters")
   .max(100, "Name must be less than 100 characters")
 
-// Contact validation - require at least one contact method
-export const contactValidation = (obj: z.AnyZodObject) =>
-  obj.refine((data: any) => data.email || data.phone, {
+// Define the shape of our notification data
+interface NotificationData {
+  name: string
+  email?: string
+  phone?: string
+  notifyOpenPlay?: boolean
+  notifyTournaments?: boolean
+  notifyPopUps?: boolean
+  notifySpecialEvents?: boolean
+}
+
+// Notification signup schema - create the schema first, then apply refinements
+export const notificationSignupSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    phone: phoneSchema,
+    notifyOpenPlay: z.boolean().optional().default(false),
+    notifyTournaments: z.boolean().optional().default(false),
+    notifyPopUps: z.boolean().optional().default(false),
+    notifySpecialEvents: z.boolean().optional().default(false),
+  })
+  // Add refinement for contact validation
+  .refine((data: NotificationData) => data.email || data.phone, {
     message: "Either email or phone is required",
     path: ["contact"],
   })
-
-// Notification preferences validation - require at least one notification type
-export const notificationPreferencesValidation = (obj: z.AnyZodObject) =>
-  obj.refine(
-    (data: any) => data.notifyOpenPlay || data.notifyTournaments || data.notifyPopUps || data.notifySpecialEvents,
+  // Add refinement for notification preferences
+  .refine(
+    (data: NotificationData) =>
+      data.notifyOpenPlay || data.notifyTournaments || data.notifyPopUps || data.notifySpecialEvents,
     {
       message: "At least one notification type must be selected",
       path: ["notifications"],
     },
   )
-
-// Notification signup schema
-const baseNotificationSignupSchema = z.object({
-  name: nameSchema,
-  email: emailSchema,
-  phone: phoneSchema,
-  notifyOpenPlay: z.boolean().optional().default(false),
-  notifyTournaments: z.boolean().optional().default(false),
-  notifyPopUps: z.boolean().optional().default(false),
-  notifySpecialEvents: z.boolean().optional().default(false),
-});
-
-export const notificationSignupSchema = contactValidation(
-  notificationPreferencesValidation(baseNotificationSignupSchema) as unknown as z.AnyZodObject
-);
 
 export type NotificationSignupData = z.infer<typeof notificationSignupSchema>
 
