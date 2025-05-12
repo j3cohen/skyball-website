@@ -1,9 +1,14 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Calendar, ChevronDown, Download, Globe, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   type CalendarEvent,
   downloadICSFile,
@@ -36,25 +41,29 @@ export function AddToCalendarDropdown({
   size = "sm",
 }: AddToCalendarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [pageUrl, setPageUrl] = useState("")
   const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPageUrl(window.location.href)
+    }
+  }, [])
 
   const handleAddToCalendar = (calendarType: "ics" | "google" | "outlook" | "yahoo") => {
     try {
-      // Parse the date and time
       const startDate = parseEventDateTime(date, time)
       const endDate = calculateEndTime(startDate, durationMinutes)
 
-      // Create the event object
       const event: CalendarEvent = {
         name,
         description,
         location,
         startDate,
         endDate,
-        url: window.location.href,
+        url: pageUrl,
       }
 
-      // Handle different calendar types
       switch (calendarType) {
         case "ics":
           downloadICSFile(event)
@@ -70,7 +79,6 @@ export function AddToCalendarDropdown({
           break
       }
 
-      // Close the dropdown
       setIsOpen(false)
     } catch (error) {
       console.error("Error adding to calendar:", error)
