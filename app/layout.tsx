@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/react"
 import ScrollToTop from "@/components/scroll-to-top"
 import { Suspense } from "react"
 import SupabaseProvider from "@/components/supabase-provider"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
           {children}
         </SupabaseProvider>
         <Analytics /> 
+        <SpeedInsights/>
       </body>
     </html>
   )
