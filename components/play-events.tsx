@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
+import RaceTo300Announcement from "@/components/race-to-300-banner"
 
 
 type TabValue = "open-play" | "tournaments"
@@ -278,6 +279,9 @@ export function PlayEvents({ events }: PlayEventProps) {
       {/* Tournaments Tab */}
       {activeTab === "tournaments" && (
         <section>
+          <RaceTo300Announcement className="mb-6" />
+
+          {/* Tournaments section */} 
           <div className="flex flex-col md:flex-row gap-6 mb-6">
             {/* Left column: Events list */}
             <div className="flex-1">

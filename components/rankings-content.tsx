@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, CheckCircle, Star, Calendar, Users, HelpCircle } from "lucide-react"
-import RankingsTable from "./rankings-table"
+import RankingsTable from "@/components/rankings-table"
+import RaceTo300Announcement from "@/components/race-to-300-banner"
 
 const rankingSections = [
   {
@@ -116,6 +117,7 @@ export default function RankingsContent() {
     <section className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold text-center mb-12">SkyBall™ Rankings</h1>
+        <RaceTo300Announcement className="mb-12" />
         
 
         <div className="max-w-4xl mx-auto space-y-8">
