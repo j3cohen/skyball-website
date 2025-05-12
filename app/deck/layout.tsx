@@ -1,8 +1,8 @@
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "SkyBall Investor Deck",
-  description: "SkyBall investor and partner presentation deck",
+  title: "SkyBall Info Deck",
+  description: "SkyBall information presentation deck",
 }
 
 export default function DeckLayout({
