@@ -16,7 +16,7 @@ import { DashboardNotifications }    from "@/components/dashboard-notifications"
 
 
 export default function DashboardContent() {
-  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; hometown?: string } | null>(null)
+  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; current_city?: string } | null>(null)
   const [loading, setLoading]   = useState(true)
   const [version, setVersion]   = useState(0)
   const router = useRouter()
@@ -36,7 +36,7 @@ export default function DashboardContent() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, phone, hometown")
+      .select("full_name, phone, current_city")
       .eq("id", session.user.id)
       .single()
 
@@ -63,7 +63,7 @@ export default function DashboardContent() {
     !profile ||
     !profile.full_name?.trim() ||
     !profile.phone?.trim() ||
-    !profile.hometown?.trim()
+    !profile.current_city?.trim()
 
   return (
     <>
