@@ -1,3 +1,5 @@
+// components/rankings-content.tsx
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, CheckCircle, Star, Calendar, Users, HelpCircle } from "lucide-react"
 import RankingsTable from "./rankings-table"
