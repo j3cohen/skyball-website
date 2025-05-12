@@ -43,7 +43,7 @@ export default function RaceTo300Announcement({ className = "" }: RaceTo300Annou
           </h3>
 
           <div className="space-y-2 text-sm sm:text-base">
-            <p>SkyBall is officially live — and we're rewarding the grind.</p>
+            <p>SkyBall is officially live — and we&apos;re rewarding the grind.</p>
 
             <p className="font-medium">
               Be the first player to reach 300 ranking points and win a $300 cash prize from SkyBall.
@@ -54,7 +54,7 @@ export default function RaceTo300Announcement({ className = "" }: RaceTo300Annou
               Stack points, snag cash, and climb the rankings.
             </p>
 
-            <p className="font-medium italic">Let's see who hits 300 first.</p>
+            <p className="font-medium italic">Let&apos;s see who hits 300 first.</p>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
