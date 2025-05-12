@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History, Bell } from "lucide-react"
 import type { Event } from "@/data/events"
