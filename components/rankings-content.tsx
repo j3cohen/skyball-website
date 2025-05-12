@@ -14,9 +14,9 @@ const rankingSections = [
         <p className="mb-4">
           Tournaments are categorized by SkyBall™ administration based on size, importance, and tournament draw.
         </p>
-        <p className="mb-4">
+        {/* <p className="mb-4">
           <em>No points awarded unless players win a minimum of one match in a given tournament</em>
-        </p>
+        </p> */}
         <p className="mb-4">
           <em>
             If a player wins a minimum of one match in a given tournament, they are guaranteed a minimum of 25 points
