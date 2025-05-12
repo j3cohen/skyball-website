@@ -48,65 +48,135 @@ export function AddToCalendarDropdown({
     }
   }, [])
 
-  // Parse time string that could be either a single time or a range (e.g., "6-8pm" or "7pm")
+  // Parse time string that could be either a single time or a range (e.g., "6:30-8:00 PM" or "7pm")
   const parseTimeString = (timeStr: string): { startTime: string; endTime: string } => {
+    // Normalize the time string (remove extra spaces, convert to lowercase)
+    const normalizedTime = timeStr.trim().toLowerCase();
+    
     // Check if the time string contains a range indicator (hyphen or "to")
-    if (timeStr.includes("-") || timeStr.toLowerCase().includes(" to ")) {
+    if (normalizedTime.includes("-") || normalizedTime.includes(" to ")) {
       // Split by hyphen or "to" to get start and end times
-      const separator = timeStr.includes("-") ? "-" : " to ";
-      const [startPart, endPart] = timeStr.split(separator).map(t => t.trim());
+      const separator = normalizedTime.includes("-") ? "-" : " to ";
+      let [startPart, endPart] = normalizedTime.split(separator).map(t => t.trim());
       
-      // Handle cases where AM/PM is only specified in the end time
-      let startTime = startPart;
-      const endTime = endPart;
+      // Check if AM/PM is specified at the end of the range (e.g., "6:30-8:00 PM")
+      const hasAmPmAtEnd = /\s+(am|pm)$/i.test(endPart);
       
-      // If start time doesn't have AM/PM but end time does, apply the same period
-      if (
-        !startTime.toLowerCase().includes("am") && 
-        !startTime.toLowerCase().includes("pm") && 
-        (endTime.toLowerCase().includes("am") || endTime.toLowerCase().includes("pm"))
-      ) {
-        const period = endTime.toLowerCase().includes("am") ? "am" : "pm";
-        startTime = `${startTime}${period}`;
+      if (hasAmPmAtEnd) {
+        const amPm = endPart.match(/(am|pm)$/i)?.[0] || "";
+        
+        // If start time doesn't have AM/PM, add it
+        if (!/(am|pm)$/i.test(startPart)) {
+          startPart = `${startPart} ${amPm}`;
+        }
       }
       
-      return { startTime, endTime };
+      return { startTime: startPart, endTime: endPart };
     }
     
     // If it's a single time, calculate end time based on duration
     return { 
-      startTime: timeStr, 
+      startTime: normalizedTime, 
       endTime: "" // We'll calculate this later using durationMinutes
     };
   }
 
+  // Helper function to parse date strings like "May 15, 2025"
+  const parseDate = (dateStr: string): Date => {
+    // Try to parse with built-in Date constructor
+    const date = new Date(dateStr);
+    
+    // If valid, return it
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+    
+    // If not valid, try more specific parsing
+    // Match patterns like "May 15, 2025"
+    const match = dateStr.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
+    if (match) {
+      const [_, month, day, year] = match;
+      const monthIndex = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+      ].indexOf(month.toLowerCase());
+      
+      if (monthIndex !== -1) {
+        return new Date(parseInt(year), monthIndex, parseInt(day));
+      }
+    }
+    
+    // If all else fails, throw an error
+    throw new Error(`Unable to parse date: ${dateStr}`);
+  }
+
+  // Helper function to parse time strings like "6:30 PM"
+  const parseTime = (dateObj: Date, timeStr: string): Date => {
+    // Normalize the time string
+    const normalizedTime = timeStr.trim().toLowerCase();
+    
+    // Match patterns like "6:30 pm", "6pm", "18:30", etc.
+    const match = normalizedTime.match(/(\d{1,2})(?::(\d{2}))?(?:\s*)?(am|pm)?/i);
+    
+    if (match) {
+      let [_, hours, minutes, period] = match;
+      let hoursNum = parseInt(hours);
+      
+      // Convert to 24-hour format if period is specified
+      if (period) {
+        if (period.toLowerCase() === 'pm' && hoursNum < 12) {
+          hoursNum += 12;
+        } else if (period.toLowerCase() === 'am' && hoursNum === 12) {
+          hoursNum = 0;
+        }
+      }
+      
+      // Create a new date object with the parsed time
+      const result = new Date(dateObj);
+      result.setHours(hoursNum);
+      result.setMinutes(minutes ? parseInt(minutes) : 0);
+      result.setSeconds(0);
+      result.setMilliseconds(0);
+      
+      return result;
+    }
+    
+    // If parsing fails, throw an error
+    throw new Error(`Unable to parse time: ${timeStr}`);
+  }
+
   const parseEventDateTime = (dateStr: string, timeStr: string): { startDate: Date; endDate: Date } => {
     try {
+      console.log(`Parsing date: "${dateStr}" and time: "${timeStr}"`);
+      
+      // Parse the date part first
+      const baseDate = parseDate(dateStr);
+      console.log(`Base date parsed as: ${baseDate.toISOString()}`);
+      
+      // Parse the time range
       const { startTime, endTime } = parseTimeString(timeStr);
+      console.log(`Parsed time range: start="${startTime}", end="${endTime}"`);
       
-      // Parse the start date and time
-      const startDateStr = `${dateStr} ${startTime}`;
-      const startDate = new Date(startDateStr);
-      
-      // If start date is invalid, throw an error
-      if (isNaN(startDate.getTime())) {
-        throw new Error(`Invalid start date/time: ${startDateStr}`);
-      }
+      // Combine date and start time
+      const startDate = parseTime(baseDate, startTime);
+      console.log(`Start date and time: ${startDate.toISOString()}`);
       
       let endDate: Date;
       
       // If we have an end time from the range, use it
       if (endTime) {
-        const endDateStr = `${dateStr} ${endTime}`;
-        endDate = new Date(endDateStr);
+        endDate = parseTime(baseDate, endTime);
+        console.log(`End date and time: ${endDate.toISOString()}`);
         
-        // If end date is invalid, fall back to duration-based calculation
-        if (isNaN(endDate.getTime())) {
-          endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+        // If end time is earlier than start time, it might be on the next day
+        if (endDate < startDate) {
+          endDate.setDate(endDate.getDate() + 1);
+          console.log(`Adjusted end date to next day: ${endDate.toISOString()}`);
         }
       } else {
         // No end time specified, use duration
         endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+        console.log(`Calculated end time using duration: ${endDate.toISOString()}`);
       }
       
       return { startDate, endDate };
