@@ -13,7 +13,7 @@ export default function RankingsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50">
+      <main className="pt-24 min-h-screen bg-gray-50">
         <RaceTo300Announcement />
         <RankingsContent />
       </main>
