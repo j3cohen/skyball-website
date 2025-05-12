@@ -57,7 +57,9 @@ export function AddToCalendarDropdown({
     if (normalizedTime.includes("-") || normalizedTime.includes(" to ")) {
       // Split by hyphen or "to" to get start and end times
       const separator = normalizedTime.includes("-") ? "-" : " to ";
-      let [startPart, endPart] = normalizedTime.split(separator).map(t => t.trim());
+      const parts = normalizedTime.split(separator).map(t => t.trim());
+      let startPart = parts[0];
+      const endPart = parts[1];
       
       // Check if AM/PM is specified at the end of the range (e.g., "6:30-8:00 PM")
       const hasAmPmAtEnd = /\s+(am|pm)$/i.test(endPart);
