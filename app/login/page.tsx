@@ -3,6 +3,17 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { AuthCompact } from "@/components/auth-compact"
 import Link from "next/link"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Login",
+  description: "Sign in to your SkyBall account.",
+  openGraph: {
+    title: "Login",
+    description: "Sign in to your SkyBall account.",
+    url: "https://skyball.com/login",
+  },
+}
 
 export default function LoginPage({
   searchParams,

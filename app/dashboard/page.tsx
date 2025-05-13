@@ -2,6 +2,17 @@
 import Navbar     from "@/components/navbar"
 import Footer     from "@/components/footer"
 import DashboardContent from "@/components/dashboard-content"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Your personal dashboard for managing your SkyBall experience.",
+  openGraph: {
+    title: "Dashboard",
+    description: "Your personal dashboard for managing your SkyBall experience.",
+    url: "https://skyball.com/dashboard",
+  },
+}
 
 export const dynamic    = "force-dynamic"
 export const revalidate = 0

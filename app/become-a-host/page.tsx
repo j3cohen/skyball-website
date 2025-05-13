@@ -6,6 +6,17 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, MapPinIcon, UsersIcon, TrophyIcon } from "lucide-react"
 import InfoRequestForm from "@/components/info-request-form"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Become a Host",
+  description: "Learn how to host a SkyBall tournament in your community.",
+  openGraph: {
+    title: "Become a Host",
+    description: "Learn how to host a SkyBall tournament in your community.",
+    url: "https://skyball.com/become-a-host",
+  },
+}
 
 const steps = [
   {

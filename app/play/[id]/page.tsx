@@ -15,6 +15,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import RegistrationStatus from "@/components/registration-status"
 import MatchScoreDisplay from "@/components/match-score-display"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
+import type { Metadata } from "next" 
+
+export const metadata: Metadata = {
+  title: "Event Details",
+  description: "Detailed information about the event, including results and registration.",
+  openGraph: {
+    title: "Event Details",
+    description: "Detailed information about the event, including results and registration.",
+    url: "https://skyball.com/play/[id]",
+  },
+}
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const event = await getTournamentById(params.id)

@@ -14,6 +14,17 @@ import { getAllTournaments } from "@/lib/tournaments"
 //import { supabase } from "@/lib/supabaseClient"
 //import { AuthSection } from "@/components/auth-section"
 //import { AuthCompact } from "@/components/auth-compact"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Play",
+  description: "Join us for tournaments, open play sessions, and special events. Find the perfect way to experience SkyBall!",
+  openGraph: {
+    title: "Play",
+    description: "Join us for tournaments, open play sessions, and special events. Find the perfect way to experience SkyBall!",
+    url: "https://skyball.com/play",
+  },
+}
 
 
 

@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button"
 import { BookOpenIcon, UsersIcon, TrophyIcon, HeartIcon } from "lucide-react"
 import InfoRequestForm from "@/components/info-request-form"
 import { Input } from "@/components/ui/input"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "SkyBall for Schools",
+  description: "Learn how to introduce SkyBall to your school.",
+  openGraph: {
+    title: "SkyBall for Schools",
+    description: "Learn how to introduce SkyBall to your school.",
+    url: "https://skyball.com/skyball-for-schools",
+  },
+}
 
 const benefits = [
   {

@@ -5,6 +5,17 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { players, calculateRankings } from "@/data/players"
 import PlayerTournamentHistory from "@/components/player-tournament-history"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Player Profile",
+  description: "View player profile and tournament history.",
+  openGraph: {
+    title: "Player Profile",
+    description: "View player profile and tournament history.",
+    url: "https://skyball.com/players/[id]",
+  },
+}
 
 export default function PlayerPage({ params }: { params: { id: string } }) {
   // Find the player by ID

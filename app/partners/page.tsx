@@ -5,6 +5,17 @@ import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { ContactFormDialog } from "@/components/contact-form-dialog"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Partnership Opportunities",
+  description: "Join us in growing SkyBall™ globally. We are committed to being a high-quality partner that brings fun, enjoyment, and lifestyle benefits to communities.",
+  openGraph: {
+    title: "Partnership Opportunities",
+    description: "Join us in growing SkyBall™ globally. We are committed to being a high-quality partner that brings fun, enjoyment, and lifestyle benefits to communities.",
+    url: "https://skyball.com/partners",
+  },
+}
 
 export default function PartnersPage() {
   return (
