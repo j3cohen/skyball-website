@@ -53,9 +53,24 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push(`/play/${params.id}?registered=1`)
-    }
+} else {
+  // Optional: fetch tournament name and profile name for alert
+  const [tournamentRes, profileRes] = await Promise.all([
+    supabase.from("tournaments").select("name").eq("id", params.id).single(),
+    supabase.from("profiles").select("full_name").single()
+  ])
+
+  const tournamentName = tournamentRes.data?.name ?? "(unknown tournament)"
+  const fullName = profileRes.data?.full_name ?? "(unknown player)"
+
+  await fetch("/api/telegram-alert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tournamentName, fullName }),
+  })
+
+  router.push(`/play/${params.id}?registered=1`)
+}
   }
 
   return (
