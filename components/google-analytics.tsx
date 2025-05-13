@@ -4,11 +4,25 @@
 import { useEffect } from 'react'
 import Script from 'next/script'
 
+// Define types for Google Analytics
+type GTagEvent = {
+  action: string
+  category: string
+  label: string
+  value: number
+}
+
+// Define proper types for gtag function arguments
+type GTagParams = 
+  | ['js', Date] 
+  | ['config', string, { page_path?: string }]
+  | ['event', string, GTagEvent]
+
 // Extend the Window interface to include dataLayer
 declare global {
   interface Window {
-    dataLayer: any[]
-    gtag: (...args: any[]) => void
+    dataLayer: GTagParams[]
+    gtag: (...args: GTagParams) => void
   }
 }
 
@@ -22,12 +36,12 @@ export default function GoogleAnalytics() {
       window.dataLayer = window.dataLayer || []
       
       // Use function expression instead of function declaration
-      const gtag = (...args: any[]) => {
+      const gtag = (...args: GTagParams) => {
         window.dataLayer.push(args)
       }
       
       gtag('js', new Date())
-      gtag('config', GA_MEASUREMENT_ID, {
+      gtag('config', GA_MEASUREMENT_ID || '', {
         page_path: window.location.pathname,
       })
     }
