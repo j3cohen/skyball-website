@@ -10,17 +10,7 @@ import ProductList from "@/components/product-list"
 import InfoRequestForm from "@/components/info-request-form"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Shop",
-  description: "SkyBall Shop",
-  openGraph: {
-    title: "Shop",
-    description: "SkyBall Shop",
-    url: "https://skyball.com/shop",
-  },
-}
 
 export default function ShopPage() {
   const [showForm, setShowForm] = useState(false)

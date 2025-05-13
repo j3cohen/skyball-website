@@ -7,17 +7,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import BuyPassSection from "@/components/buy-pass-section"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Register for Tournament",
-  description: "Register for a tournament using your SkyBall pass.",
-  openGraph: {
-    title: "Register for Tournament",
-    description: "Register for a tournament using your SkyBall pass.",
-    url: "https://skyball.com/play/[id]/register",
-  },
-}
 
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()

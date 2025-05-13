@@ -8,17 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, RotateCcw, Play } from "lucide-react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "SkyBall Court Conversion",
-  description: "Learn how to convert a standard pickleball court into a SkyBall court.",
-  openGraph: {
-    title: "SkyBall Court Conversion",
-    description: "Learn how to convert a standard pickleball court into a SkyBall court.",
-    url: "https://skyball.com/conversion",
-  },
-}
 
 export default function ConversionPage() {
   const [step, setStep] = useState(0)

@@ -1,6 +1,17 @@
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "SkyBall™ Pre-Order Giveaway Terms & Conditions",
+  description: "Official rules and terms for the SkyBall™ Pre-Order Giveaway.",
+  openGraph: {
+    title: "SkyBall™ Pre-Order Giveaway Terms & Conditions",
+    description: "Official rules and terms for the SkyBall™ Pre-Order Giveaway.",
+    url: "https://skyball.com/giveaway-terms",
+  },
+}
 
 export default function GiveawayTermsPage() {
   return (
