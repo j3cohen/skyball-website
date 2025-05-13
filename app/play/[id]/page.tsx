@@ -10,7 +10,7 @@ import { getMatchesByTournament } from "@/data/matches"
 import { getEventById } from "@/data/events"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Calendar, MapPin, Clock, Trophy, Users, DollarSign, Award, Info } from "lucide-react"
+import { Calendar, MapPin, Clock, Trophy, DollarSign, Award, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import RegistrationStatus from "@/components/registration-status"
 import MatchScoreDisplay from "@/components/match-score-display"
@@ -61,23 +61,23 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   })
 
   // Helper function to get effective participant count
-  const getEffectiveParticipantCount = (): number => {
-    // If currentParticipants is undefined or null, return 0
-    if (typeof event.currentParticipants !== "number") {
-      return 0
-    }
+  // const getEffectiveParticipantCount = (): number => {
+  //   // If currentParticipants is undefined or null, return 0
+  //   if (typeof event.currentParticipants !== "number") {
+  //     return 0
+  //   }
 
-    // If it's a past event with 0 participants from the DB view, check static data
-    if (event.isPast && event.currentParticipants === 0 && staticEvent) {
-      // If static event has a non-zero currentParticipants value, use that
-      if (typeof staticEvent.currentParticipants === "number" && staticEvent.currentParticipants > 0) {
-        return staticEvent.currentParticipants
-      }
-    }
+  //   // If it's a past event with 0 participants from the DB view, check static data
+  //   if (event.isPast && event.currentParticipants === 0 && staticEvent) {
+  //     // If static event has a non-zero currentParticipants value, use that
+  //     if (typeof staticEvent.currentParticipants === "number" && staticEvent.currentParticipants > 0) {
+  //       return staticEvent.currentParticipants
+  //     }
+  //   }
 
-    // For all other cases, return the actual participant count
-    return event.currentParticipants
-  }
+  //   // For all other cases, return the actual participant count
+  //   return event.currentParticipants
+  // }
 
   return (
     <>
