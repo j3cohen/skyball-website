@@ -163,7 +163,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                           <span>Prize: {event.prize}</span>
                         </div>
                       )}
-                      {(event.maxParticipants || event.currentParticipants !== undefined) && (
+                      {/* {(event.maxParticipants || event.currentParticipants !== undefined) && (
                         <div className="flex items-center">
                           <Users className="w-5 h-5 mr-3 text-sky-600" />
                           {isPastEvent ? (
@@ -178,7 +178,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                             </span>
                           )}
                         </div>
-                      )}
+                      )} */}
                       {event.registrationDeadline && (
                         <div className="flex items-center">
                           <Calendar className="w-5 h-5 mr-3 text-sky-600" />
