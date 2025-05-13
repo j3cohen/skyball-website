@@ -3,6 +3,7 @@
 
 import { useEffect } from 'react'
 import Script from 'next/script'
+import { usePathname } from 'next/navigation' // Use usePathname instead of useSearchParams
 
 // Define types for Google Analytics
 type GTagEvent = {
@@ -30,6 +31,8 @@ declare global {
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
 
 export default function GoogleAnalytics() {
+  const pathname = usePathname() // Use pathname instead of searchParams
+
   useEffect(() => {
     // This will run only once on component mount
     if (typeof window !== 'undefined') {
@@ -42,10 +45,10 @@ export default function GoogleAnalytics() {
       
       gtag('js', new Date())
       gtag('config', GA_MEASUREMENT_ID || '', {
-        page_path: window.location.pathname,
+        page_path: pathname, // Use pathname instead of window.location.pathname
       })
     }
-  }, [])
+  }, [pathname]) // Add pathname as a dependency
 
   return (
     <>
@@ -63,7 +66,7 @@ export default function GoogleAnalytics() {
             window.gtag = gtag;
             gtag('js', new Date());
             gtag('config', '${GA_MEASUREMENT_ID}', {
-              page_path: window.location.pathname,
+              page_path: '${pathname}',
             });
           `,
         }}

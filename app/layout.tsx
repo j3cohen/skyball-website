@@ -7,8 +7,8 @@ import ScrollToTop from "@/components/scroll-to-top"
 import { Suspense } from "react"
 import SupabaseProvider from "@/components/supabase-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import GoogleAnalytics from '@/components/google-analytics'
 import PageViewTracker from '@/components/page-view-tracker'
+import AnalyticsWrapper from "@/components/analytics-wrapper"
 
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default function RootLayout({
           {children}
         </SupabaseProvider>
         <Analytics /> 
-        <GoogleAnalytics />
+        <AnalyticsWrapper />
         <PageViewTracker />
         <SpeedInsights/>
       </body>
