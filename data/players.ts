@@ -85,7 +85,7 @@ export interface Player {
       age: 31,
       record: "1-1",
       highestRank: {
-        rank: 3,
+        rank: 4,
         date: "Current",
       },
       tournaments: [
@@ -104,11 +104,11 @@ export interface Player {
       hometown: "Queens, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/jason-grossman-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/jason-grossman-full-body.png",
-      totalPoints: 12,
+      totalPoints: 37,
       age: 37,
       record: "0-1",
       highestRank: {
-        rank: 4,
+        rank: 3,
         date: "Current",
       },
       tournaments: [
@@ -116,7 +116,7 @@ export interface Player {
           id: "lift-off",
           name: "SkyBall™ Open: Lift Off",
           date: "April 24, 2025",
-          points: 12,
+          points: 37,
           countedForRankings: true,
         },
       ],
@@ -127,9 +127,9 @@ export interface Player {
       hometown: "New York, NY",
       headshot: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/will-simon-hs.png",
       fullBodyPhoto: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/will-simon-full-body.png",
-      totalPoints: 4,
+      totalPoints: 29,
       age: 26,
-      record: "0-1",
+      record: "0-2",
       highestRank: {
         rank: 5,
         date: "Current",
@@ -142,6 +142,13 @@ export interface Player {
           points: 4,
           countedForRankings: true,
         },
+        { 
+          id: "skyball-100-may-15",
+          name: "SkyBall™ 100: May 15",
+          date: "May 15, 2025",
+          points: 25,
+          countedForRankings: true,
+        }
       ],
     },
   ]

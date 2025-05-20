@@ -16,6 +16,7 @@ type TournamentRow = {
   registration_fee   : string
   points_value       : number
   current_participants: number      // ← from the view
+  date_actual        : string | null
 }
 
 // Merge helper
@@ -33,6 +34,8 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     ...(row?.points_value       != null && { pointsValue: row.points_value }),
     // inject currentParticipants
     ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
+    ...(row?.date_actual && { date_actual: row.date_actual }),
+    
   }
 }
 
@@ -75,4 +78,24 @@ export async function getTournamentById(id: string): Promise<StaticEvent | null>
   if (error && !fallback) return null
 
   return mergeOne(fallback ?? ({} as StaticEvent), row ?? undefined)
+}
+
+/** Fetch the basic winner/runner-up/score summary for a given tournament */
+export async function getTournamentSummary(id: string): Promise<{
+  winner: string
+  runner_up: string
+  score: string
+} | null> {
+  const supabase = createServerComponentClient({ cookies })
+  const { data, error } = await supabase
+    .rpc("get_tournament_summary", { p_tournament_id: id })
+    .single()
+
+  if (error || !data) return null
+  const summary = data as { winner: string; runner_up: string; score: string }
+  return {
+    winner: summary.winner,
+    runner_up: summary.runner_up,
+    score: summary.score,
+  }
 }

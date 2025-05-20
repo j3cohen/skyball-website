@@ -1,82 +1,157 @@
+// components/player-tournament-history.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import type { Player, Tournament } from "@/data/players"
-import { getMatchesByPlayerAndTournament } from "@/data/matches"
-import MatchScoreDisplay from "./match-score-display"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/lib/database.types"
+import MatchScoreDisplay, { type Match as DisplayMatch } from "./match-score-display"
 import ScrollLink from "./scroll-link"
 
-interface PlayerTournamentHistoryProps {
+// Raw RPC row including seeds and sets
+interface MatchRow {
+  match_id:      string
+  round:         string
+  player1_slug:  string
+  player1_name:  string
+  player1_seed:  number
+  player2_slug:  string
+  player2_name:  string
+  player2_seed:  number
+  winner_slug:   string
+  sets: {
+    set_number:   number
+    player1Score: number
+    player2Score: number
+  }[]
+}
+
+
+interface Tournament {
+  id: string
+  name: string
+  date: string
+  points: number
+  countedForRankings: boolean
+}
+interface Player {
+  id: string
+  slug: string
+  name: string
+}
+
+interface Props {
   player: Player
   tournaments: Tournament[]
 }
 
-export default function PlayerTournamentHistory({ player, tournaments }: PlayerTournamentHistoryProps) {
-  const [expandedTournament, setExpandedTournament] = useState<string | null>(null)
+export default function PlayerTournamentHistory({
+  player,
+  tournaments,
+}: Props) {
+  const supabase = createClientComponentClient<Database>()
+  const [expanded, setExpanded] = useState<string | null>(null)
+  // Map tournament -> matches or null while loading
+  const [matchesByTour, setMatchesByTour] = useState<Record<string, DisplayMatch[] | null>>({})
 
-  // Calculate how many tournaments are counting towards ranking
-  const countedTournaments = tournaments.filter((t) => t.countedForRankings)
+  async function toggle(tid: string) {
+    if (expanded === tid) {
+      setExpanded(null)
+      return
+    }
+    setExpanded(tid)
 
-  const toggleTournament = (tournamentId: string) => {
-    if (expandedTournament === tournamentId) {
-      setExpandedTournament(null)
-    } else {
-      setExpandedTournament(tournamentId)
+    if (matchesByTour[tid] === undefined) {
+      setMatchesByTour(prev => ({ ...prev, [tid]: null }))
+      const { data, error } = await supabase
+        .rpc("get_match_details_by_tournament", { p_tournament_id: tid })
+
+      const rows: MatchRow[] = Array.isArray(data)
+        ? (data as any[]).map(r => ({
+            ...(r as any),
+            sets: typeof r.sets === "string" ? JSON.parse(r.sets) : r.sets,
+          }))
+        : []
+      console.debug("Raw rows for tournament", tid, rows)
+
+      const matches: DisplayMatch[] = rows
+        .filter(r => r.player1_slug === player.slug || r.player2_slug === player.slug)
+        .map(r => ({
+          id:       r.match_id,
+          round:    r.round,
+          player1:  { id: r.player1_slug, name: r.player1_name, seed: r.player1_seed },
+          player2:  { id: r.player2_slug, name: r.player2_name, seed: r.player2_seed },
+          winnerId: r.winner_slug,
+          sets:     r.sets.map(s => ({
+            player1Score: s.player1Score,
+            player2Score: s.player2Score,
+          })),
+        }))
+      console.debug("Mapped matches for tournament", tid, matches)
+
+      setMatchesByTour(prev => ({ ...prev, [tid]: matches }))
     }
   }
 
+  const countedCount = tournaments.filter(t => t.countedForRankings).length
+
+  // auto-expand first tournament for debug
+  useEffect(() => {
+    if (tournaments.length > 0 && expanded === null) {
+      toggle(tournaments[0].id)
+    }
+  }, [tournaments])
+
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold mb-4">Tournament History</h2>
+    <div className="p-8 bg-white rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold mb-2">Tournament History</h2>
       <p className="text-gray-600 mb-6">
-        Total Points: {player.totalPoints} (based on top {countedTournaments.length}
-        {countedTournaments.length === 1 ? " tournament" : " tournaments"})
+        Showing {tournaments.length} total, {countedCount} counted for rankings
       </p>
 
       <div className="space-y-4">
-        {tournaments.map((tournament) => {
-          const isExpanded = expandedTournament === tournament.id
-          const matches = getMatchesByPlayerAndTournament(player.id, tournament.id)
-          const hasMatches = matches.length > 0
-
+        {tournaments.map(t => {
+          const isOpen = expanded === t.id
+          const matches = matchesByTour[t.id]
           return (
-            <div key={tournament.id} className="border rounded-lg overflow-hidden">
-              <div
-                className={`px-4 py-3 flex justify-between items-center cursor-pointer ${hasMatches ? "hover:bg-gray-50" : ""}`}
-                onClick={() => hasMatches && toggleTournament(tournament.id)}
+            <div key={t.id} className="border rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggle(t.id)}
+                className="w-full flex justify-between items-center px-4 py-3 hover:bg-gray-50"
               >
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                    <div>
-                      <div className="font-medium">{tournament.name}</div>
-                      <div className="text-sm text-gray-500">{tournament.date}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-sky-600">{tournament.points} points</div>
-                      <div className="text-xs text-gray-500">
-                        {tournament.countedForRankings ? "Counted for rankings" : "Not counted"}
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <div className="font-medium text-lg">{t.name}</div>
+                  <div className="text-sm text-gray-500">{t.date}</div>
                 </div>
-                {hasMatches && (
-                  <div className="ml-4">{isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</div>
-                )}
-              </div>
-
-              {isExpanded && hasMatches && (
-                <div className="bg-gray-50 px-4 py-3 border-t">
-                  <h3 className="font-medium mb-3">Match Results</h3>
-                  <div className="space-y-3">
-                    {matches.map((match) => (
-                      <MatchScoreDisplay key={match.id} match={match} highlightPlayerId={player.id} />
-                    ))}
+                <div className="flex items-center space-x-4">
+                  <div className="text-sky-600 font-semibold">
+                    {t.points}pt{t.points !== 1 && "s"}
                   </div>
+                  <div className="text-xs text-gray-500">
+                    {t.countedForRankings ? "Counted" : "Not counted"}
+                  </div>
+                  {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </button>
 
+              {isOpen && (
+                <div className="bg-gray-50 border-t px-4 py-3">
+                  {matches === null && <p className="text-gray-500 italic">Loading matches…</p>}
+                  {matches !== null && matches.length === 0 && <p className="text-gray-500 italic">No matches recorded.</p>}
+                  {Array.isArray(matches) && matches.length > 0 && (
+                    <div className="space-y-2">
+                      {matches.map(m => (
+                        <MatchScoreDisplay
+                          key={m.id}
+                          match={m}
+                          highlightPlayerId={player.id}
+                        />
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-4 text-right">
                     <ScrollLink
-                      href={`/play/${tournament.id}`}
+                      href={`/play/${t.id}`}
                       className="text-sky-600 hover:text-sky-800 text-sm font-medium"
                     >
                       View full tournament results →
@@ -87,15 +162,7 @@ export default function PlayerTournamentHistory({ player, tournaments }: PlayerT
             </div>
           )
         })}
-      </div>
-
-      {/* Explanation of ranking calculation */}
-      <div className="bg-gray-50 p-4 mt-6 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2">Ranking Calculation</h3>
-        <p className="text-sm text-gray-600">
-          Player rankings are based on their top 10 tournament performances over a rolling 12-month period. Points
-          earned in each tournament depend on the tournament category and the player&apos;s final position.
-        </p>
+        {tournaments.length === 0 && <p className="text-gray-500 italic">No tournaments found.</p>}
       </div>
     </div>
   )
