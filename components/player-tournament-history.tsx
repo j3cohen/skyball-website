@@ -63,16 +63,33 @@ export default function PlayerTournamentHistory({
 
     if (matchesByTour[tid] === undefined) {
       setMatchesByTour(prev => ({ ...prev, [tid]: null }))
-      const { data, error } = await supabase
+      const { data, error: rpcError } = await supabase
         .rpc("get_match_details_by_tournament", { p_tournament_id: tid })
 
-      const rows: MatchRow[] = Array.isArray(data)
-        ? (data as any[]).map(r => ({
-            ...(r as any),
-            sets: typeof r.sets === "string" ? JSON.parse(r.sets) : r.sets,
-          }))
-        : []
-      console.debug("Raw rows for tournament", tid, rows)
+      if (rpcError) {
+        console.error("RPC error:", rpcError)
+        setMatchesByTour(prev => ({ ...prev, [tid]: [] }))
+        return
+      }
+
+      const rows: MatchRow[] = (data ?? []).map((row: unknown) => {
+        const r = row as {
+          match_id: string
+          round: string
+          player1_slug: string
+          player1_name: string
+          player1_seed: number
+          player2_slug: string
+          player2_name: string
+          player2_seed: number
+          winner_slug: string
+          sets: string | { set_number: number; player1Score: number; player2Score: number }[]
+        }
+        return {
+          ...r,
+          sets: Array.isArray(r.sets) ? r.sets : JSON.parse(r.sets as string),
+        }
+      })
 
       const matches: DisplayMatch[] = rows
         .filter(r => r.player1_slug === player.slug || r.player2_slug === player.slug)

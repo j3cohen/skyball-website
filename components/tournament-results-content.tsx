@@ -30,8 +30,6 @@ interface TournamentResultsContentProps {
 
 export default function TournamentResultsContent({
   tournamentId,
-  tournamentName,
-  tournamentDate,
   matches,
 }: TournamentResultsContentProps) {
   // Group matches by round
