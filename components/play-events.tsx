@@ -25,9 +25,9 @@ interface PlayEventProps {
 export function PlayEvents({ events }: PlayEventProps) {
   const searchParams = useSearchParams()
 
-  // Get the tab from URL parameter or default to "open-play"
+  // Get the tab from URL parameter or default to "tournaments"
   const tabParam = searchParams.get("tab")
-  const initialTab: TabValue = tabParam === "tournaments" || tabParam === "open-play" ? tabParam : "open-play"
+  const initialTab: TabValue = tabParam === "tournaments" || tabParam === "open-play" ? tabParam : "tournaments"
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab)
   const [includePastEvents, setIncludePastEvents] = useState(false)
