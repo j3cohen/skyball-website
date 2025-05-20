@@ -65,10 +65,6 @@ export type Event = {
       registrationFee: "$0",
       isPast: true,
       contactEmail: "play@skyball.us",
-      results: {
-        winner: "Jack Smith",
-        runnerUp: "Jared Barrett"
-      },
     },
     {
       id: "skyball-100-may-15",
@@ -88,6 +84,11 @@ export type Event = {
       hasResults: true, // Has results
       format: "Single Elimination Bracket",
       contactEmail: "play@skyball.us",
+      results: {
+        winner: "Jack Smith",
+        runnerUp: "Jared Barrett",
+        score: "11-5, 6-11, 11-4",
+      },
     },
     {
       id: "open-play-may-15",
