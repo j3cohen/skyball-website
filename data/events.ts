@@ -65,6 +65,10 @@ export type Event = {
       registrationFee: "$0",
       isPast: true,
       contactEmail: "play@skyball.us",
+      results: {
+        winner: "Jack Smith",
+        runnerUp: "Jared Barrett"
+      },
     },
     {
       id: "skyball-100-may-15",
