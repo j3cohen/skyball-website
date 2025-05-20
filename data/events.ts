@@ -24,6 +24,7 @@ export type Event = {
       score?: string
     }
     date_actual?: string
+    start_at?: string
   }
   
   export const events: Event[] = [

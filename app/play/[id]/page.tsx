@@ -32,9 +32,11 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const staticEvent = getEventById(params.id)
 
   // Determine past/upcoming
-  const isPastEvent = event.date_actual
-    ? new Date(event.date_actual) < new Date()
+  const isPastEvent = event.start_at
+    ? new Date(event.start_at) < new Date()
     : event.isPast === true
+  
+
 
   const summary = await getTournamentSummary(params.id)
 

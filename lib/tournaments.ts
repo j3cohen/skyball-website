@@ -17,6 +17,7 @@ type TournamentRow = {
   points_value       : number
   current_participants: number      // ← from the view
   date_actual        : string | null
+  start_at           : string | null
 }
 
 // Merge helper
@@ -35,6 +36,7 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     // inject currentParticipants
     ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
     ...(row?.date_actual && { date_actual: row.date_actual }),
+    ...(row?.start_at && {start_at: row.start_at}),
     
   }
 }
