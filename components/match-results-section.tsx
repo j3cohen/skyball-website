@@ -8,8 +8,10 @@ type RawMatchRow = {
   match_id:     string
   round:        string
   player1_slug: string
+  player1_seed: number
   player1_name: string
   player2_slug: string
+  player2_seed: number
   player2_name: string
   winner_slug:  string
   sets: {
@@ -53,8 +55,8 @@ export default function MatchResultsSection({
   const matches = rows.map((r) => ({
     id: r.match_id,
     round: r.round,
-    player1: { id: r.player1_slug, name: r.player1_name, seed: 0 },
-    player2: { id: r.player2_slug, name: r.player2_name, seed: 0 },
+    player1: { id: r.player1_slug, name: r.player1_name, seed: r.player1_seed },
+    player2: { id: r.player2_slug, name: r.player2_name, seed: r.player2_seed },
     sets: r.sets.map((s) => ({
       player1Score: s.player1Score,
       player2Score: s.player2Score,
