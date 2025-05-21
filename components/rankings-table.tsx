@@ -38,6 +38,7 @@ export default function RankingsTable() {
             hometown
           )
         `)
+        .gt("total_points", 0)
         .order("current_rank", { ascending: true })
 
       if (error) {
