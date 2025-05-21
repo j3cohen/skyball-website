@@ -32,6 +32,10 @@ const rankingSections = [
           </thead>
           <tbody>
             <tr>
+              <td className="border border-gray-300 p-2">Sky 50</td>
+              <td className="border border-gray-300 p-2">50</td>
+            </tr>
+            <tr>
               <td className="border border-gray-300 p-2">Sky 100</td>
               <td className="border border-gray-300 p-2">100</td>
             </tr>
