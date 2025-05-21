@@ -70,6 +70,11 @@ export function PlayEvents({ events }: PlayEventProps) {
 
     return true
   })
+  tournamentEvents.sort((a, b) => {
+  const aDate = new Date(a.date)
+  const bDate = new Date(b.date)
+  return bDate.getTime() - aDate.getTime() // Descending order
+  })
 
   // Get open play events separately
   const openPlayEvents = events.filter((event) => event.type === "open-play" && (!event.isPast || includePastEvents))
@@ -77,6 +82,8 @@ export function PlayEvents({ events }: PlayEventProps) {
   // Split open play events into upcoming and past
   const upcomingOpenPlayEvents = openPlayEvents.filter((event) => !event.isPast)
   const pastOpenPlayEvents = openPlayEvents.filter((event) => event.isPast)
+  pastOpenPlayEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
 
   // Helper function to get effective participant count
   // This handles the case where currentParticipants is 0 from the DB but might have a value in static data

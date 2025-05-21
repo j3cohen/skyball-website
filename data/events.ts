@@ -103,7 +103,7 @@ export type Event = {
       image: "/skyball-open-session.png",
       skillLevel: "all",
       registrationFee: "$0",
-      isPast: false,
+      isPast: true,
       contactEmail: "play@skyball.us",
     },
     {
@@ -142,7 +142,7 @@ export type Event = {
       image: "/skyball-open-session.png",
       skillLevel: "all",
       registrationFee: "$0",
-      isPast: false,
+      isPast: true,
       contactEmail: "play@skyball.us",
     },
     {
