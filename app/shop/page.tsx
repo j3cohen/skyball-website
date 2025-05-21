@@ -2,14 +2,14 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { X } from "lucide-react"
-// import Link from "next/link"
+import { X, AlertCircle } from "lucide-react"
+import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import ProductList from "@/components/product-list"
 import InfoRequestForm from "@/components/info-request-form"
 import { Button } from "@/components/ui/button"
-// import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 
 export default function ShopPage() {
@@ -28,21 +28,21 @@ export default function ShopPage() {
             </p>
           </div>
 
-          {/* Pre-order Notice */}
-          {/* <Alert className="mb-12 border-sky-200 bg-sky-50">
+
+
+          <ProductList />
+
+          {/* terms and conditions apply */}
+          <Alert className="mb-12 border-sky-200 bg-sky-50">
             <AlertCircle className="h-5 w-5 text-sky-600" />
             <AlertDescription className="text-center py-2">
-              <span className="font-semibold text-sky-800">PRE-ORDER NOW</span> – Products should be available to ship
-              before June 1. All pre-orders are automatically entered to win free SkyBall gear! Winners announced June
-              3rd.
-              <Link href="/giveaway-terms" className="text-sky-600 hover:text-sky-800 underline ml-1">
+              <span className="font-semibold text-sky-800">Terms and Conditions</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
+              <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
                 Terms and conditions apply
               </Link>
               .
             </AlertDescription>
-          </Alert> */}
-
-          <ProductList />
+          </Alert>
 
           {/* CTA Button */}
           <div className="text-center mt-16 mb-8">
