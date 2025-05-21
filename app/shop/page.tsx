@@ -9,7 +9,7 @@ import Footer from "@/components/footer"
 import ProductList from "@/components/product-list"
 import InfoRequestForm from "@/components/info-request-form"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+// import { Alert, AlertDescription } from "@/components/ui/alert"
 
 
 export default function ShopPage() {
@@ -29,7 +29,7 @@ export default function ShopPage() {
           </div>
 
           {/* Pre-order Notice */}
-          <Alert className="mb-12 border-sky-200 bg-sky-50">
+          {/* <Alert className="mb-12 border-sky-200 bg-sky-50">
             <AlertCircle className="h-5 w-5 text-sky-600" />
             <AlertDescription className="text-center py-2">
               <span className="font-semibold text-sky-800">PRE-ORDER NOW</span> – Products should be available to ship
@@ -40,7 +40,7 @@ export default function ShopPage() {
               </Link>
               .
             </AlertDescription>
-          </Alert>
+          </Alert> */}
 
           <ProductList />
 
