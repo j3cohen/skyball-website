@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { X, AlertCircle } from "lucide-react"
-import Link from "next/link"
+import { X } from "lucide-react"
+// import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import ProductList from "@/components/product-list"
