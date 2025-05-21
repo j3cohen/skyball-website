@@ -117,13 +117,18 @@ export type Event = {
         "Join us for a 100 level SkyBall tournament – compete to win a cash prize and rankings points.",
       image: "/urban-skyball-action.png",
       maxParticipants: 6,
-      currentParticipants: 0,
+      currentParticipants: 6,
       prize: "$100", // Updated from $500 to $100
       registrationFee: "$20",
-      isPast: false, // Mark as past event
-      hasResults: false, // Has results
+      isPast: true, // Mark as past event
+      hasResults: true, // Has results
       format: "Single Elimination Bracket",
       contactEmail: "play@skyball.us",
+      results: 
+        {
+          winner: "Joe Swenson",  
+          score: "1-1 record +3 margin",
+        },
     },
     {
       id: "open-play-may-20",
