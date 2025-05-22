@@ -65,6 +65,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     are responsible for return shipping costs.
                   </p>
                 </div>
+                <Link href="/shop/terms-conditions" className="hover: font-semibold text-sky-800 underline ml-1">
+                    Terms and Conditions Apply
+                </Link>
                 <Alert className="mb-12 border-sky-200 bg-sky-50">
                 <AlertCircle className="h-5 w-5 text-sky-600" />
                 <AlertDescription className="text-center py-2">
