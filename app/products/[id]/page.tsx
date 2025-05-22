@@ -5,6 +5,8 @@ import { products } from "@/data/products"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import ProductImageGallery from "@/components/product-image-gallery"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const product = products.find((p) => p.id === params.id)
@@ -49,7 +51,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold mb-2">Shipping Information</h3>
                   <p className="text-gray-700 mb-4">
-                    Free shipping on all orders within the United States. Standard delivery takes 3-5 business days. For
+                    Free shipping on all orders within the United States. Standard delivery takes approximately 3-5 business days - we will send tracking information when available. For
                     international orders, please contact us at{" "}
                     <a href="mailto:info@skyball.us" className="text-sky-600 hover:underline">
                       info@skyball.us
@@ -63,6 +65,17 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     are responsible for return shipping costs.
                   </p>
                 </div>
+                {/* terms and conditions apply */}
+                <Alert className="mb-12 border-sky-200 bg-sky-50">
+                  <AlertCircle className="h-5 w-5 text-sky-600" />
+                  <AlertDescription className="text-center py-2">
+                    <span className="font-semibold text-sky-800">Terms and Conditions</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
+                    <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
+                      Terms and conditions apply
+                    </Link>
+                    .
+                  </AlertDescription>
+                </Alert>
               </div>
             </div>
           </div>
