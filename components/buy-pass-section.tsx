@@ -12,6 +12,7 @@ type PassType = {
   name: string
   passes_quantity: number
   price: string
+  points_value: number
 }
 
 export default function BuyPassSection() {
@@ -22,7 +23,7 @@ export default function BuyPassSection() {
     // load pass types (now including the `price` column)
     supabase
       .from("pass_types")
-      .select("id, stripe_price_id, name, passes_quantity, price")
+      .select("id, points_value, stripe_price_id, name, passes_quantity, price")
       .then(({ data, error }) => {
         if (error) console.error("Error loading pass types:", error)
         else setPassTypes(data ?? [])

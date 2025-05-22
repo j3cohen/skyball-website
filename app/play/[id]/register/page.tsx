@@ -16,29 +16,54 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   const [error, setError]     = useState<string|null>(null)
 
   useEffect(() => {
-    ;(async () => {
-      // 1) Ensure logged in
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push(`/login?from=/play/${params.id}/register`)
-        return
-      }
+  ;(async () => {
+    // — ensure logged in (unchanged) …
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push(`/login?from=/play/${params.id}/register`)
+      return
+    }
 
-      // 2) Fetch passes with remaining > 0 for this user
-      const { data, error } = await supabase
-        .from("passes")
-        .select("id, quantity_remaining")
-        .gt("quantity_remaining", 0)
-
-      if (error) {
-        setError(error.message)
-      } else {
-        setPasses(data ?? [])
-      }
-
+    // — fetch this tournament’s points_value
+    const { data: tourn, error: tournError } = await supabase
+      .from("tournaments")
+      .select("points_value")
+      .eq("id", params.id)
+      .single()
+    if (tournError || !tourn) {
+      setError("Could not load tournament info.")
       setLoading(false)
-    })()
-  }, [params.id, router])
+      return
+    }
+    const requiredPoints = tourn.points_value
+
+    // — now fetch only the matching passes
+    const { data, error } = await supabase
+      .from("passes")
+      .select(`
+        id,
+        quantity_remaining,
+        pass_types ( points_value )
+      `)
+      .gt("quantity_remaining", 0)
+      .eq("pass_types.points_value", requiredPoints)
+
+    if (error) {
+      setError(error.message)
+    } else {
+      // strip out the join metadata before setting state
+      setPasses(
+        (data ?? []).map((p) => ({
+          id: p.id,
+          quantity_remaining: p.quantity_remaining,
+        }))
+      )
+    }
+
+    setLoading(false)
+  })()
+}, [params.id, router])
+
 
   const redeemPass = async (passId: string) => {
     setLoading(true)
