@@ -6,7 +6,6 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import ProductImageGallery from "@/components/product-image-gallery"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const product = products.find((p) => p.id === params.id)
@@ -71,7 +70,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   </p>
 
                   <Alert className="mb-12 border-sky-200 bg-sky-50">
-                    <AlertCircle className="h-5 w-5 text-sky-600" />
                     <AlertDescription className="text-center py-2">
                       <span className="font-semibold text-sky-800">Terms and Conditions Apply</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
                       <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
@@ -88,7 +86,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             {/* terms and conditions apply */}
             <div className="mt-6">
               <Alert className="mb-12 border-sky-200 bg-sky-50">
-                <AlertCircle className="h-5 w-5 text-sky-600" />
                 <AlertDescription className="text-center py-2">
                   <span className="font-semibold text-sky-800">Terms and Conditions Apply</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
                   <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
