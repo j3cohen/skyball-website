@@ -15,7 +15,11 @@ type PassType = {
   points_value: number
 }
 
-export default function BuyPassSection() {
+interface BuyPassSectionProps {
+  requiredLevel: number
+}
+
+export default function BuyPassSection({ requiredLevel }: BuyPassSectionProps) {
   const [passTypes, setPassTypes] = useState<PassType[]>([])
   const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null>(null);
 
@@ -23,7 +27,8 @@ export default function BuyPassSection() {
     // load pass types (now including the `price` column)
     supabase
       .from("pass_types")
-      .select("id, points_value, stripe_price_id, name, passes_quantity, price")
+      .select("id, stripe_price_id, name, passes_quantity, price, points_value")
+      .eq("points_value", requiredLevel)
       .then(({ data, error }) => {
         if (error) console.error("Error loading pass types:", error)
         else setPassTypes(data ?? [])

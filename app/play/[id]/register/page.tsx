@@ -12,6 +12,7 @@ import BuyPassSection from "@/components/buy-pass-section"
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [passes, setPasses]   = useState<{ id: string; quantity_remaining: number }[]>([])
+  const [requiredLevel, setRequiredLevel] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string|null>(null)
 
@@ -41,7 +42,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       setLoading(false)
       return
     }
-    const requiredLevel = tourn.points_value
+    setRequiredLevel(tourn.points_value)
 
     // 3) Fetch all your passes with their pass_type info
     const { data: allPasses, error: passError } = await supabase
@@ -127,7 +128,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
             <div className="space-y-6">
               <p>No valid passes to use for this tournament.</p>
               {/* Inline purchase UI */}
-              <BuyPassSection />
+              {requiredLevel !== null && <BuyPassSection requiredLevel={requiredLevel} />}
             </div>
           ) : (
             passes.map((p) => (
