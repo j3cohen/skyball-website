@@ -24,6 +24,7 @@ type TournamentRow = {
 function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
   return {
     ...fallback,
+    ...(row?.id                 && { id: row.id }),
     ...(row?.name               && { name: row.name               }),
     ...(row?.date               && { date: row.date               }),
     ...(row?.time               && { time: row.time               }),

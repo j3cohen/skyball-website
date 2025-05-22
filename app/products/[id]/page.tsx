@@ -64,7 +64,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     are responsible for return shipping costs.
                   </p>
                 </div>
-
               </div>
             </div>
 
