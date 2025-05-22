@@ -4,59 +4,71 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/lib/database.types"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import BuyPassSection from "@/components/buy-pass-section"
+import { AuthCompact } from "@/components/auth-compact"
 
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const supabase = createClientComponentClient<Database>()
+
+  const [session, setSession] = useState<boolean | null>(null)
   const [passes, setPasses] = useState<{ id: string; quantity_remaining: number }[]>([])
   const [requiredLevel, setRequiredLevel] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // 1) check auth state once
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(!!session)
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((_, sesh) => {
+      setSession(!!sesh)
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [supabase])
+
+  // 2) once signed-in, load passes
+  useEffect(() => {
+    if (session === null) return    // still determining
+    if (!session) {
+      setLoading(false)
+      return
+    }
+
     ;(async () => {
       setLoading(true)
       setError(null)
 
-      // 1) create auth-aware client & ensure logged in
-      const supabase = createClientComponentClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session) {
-        router.push(`/login?from=/play/${params.id}/register`)
-        return
-      }
-
-      // 2) fetch this tournament's required level
-      const { data: tourn, error: tournError } = await supabase
+      // fetch tournament level
+      const { data: tourn, error: tErr } = await supabase
         .from("tournaments")
         .select("points_value")
         .eq("id", params.id)
         .single()
-      if (tournError || !tourn) {
+      if (tErr || !tourn) {
         setError("Could not load tournament info.")
         setLoading(false)
         return
       }
-      const level = tourn.points_value
-      setRequiredLevel(level)
+      setRequiredLevel(tourn.points_value)
 
-      // 3) fetch all your non-zero passes (RLS applies user filter)
-      const { data: allPasses, error: passError } = await supabase
+      // fetch your passes (RLS will scope to you)
+      const { data: allPasses, error: pErr } = await supabase
         .from("passes")
         .select("id, quantity_remaining, pass_types(points_value)")
         .gt("quantity_remaining", 0)
 
-      if (passError) {
-        setError(passError.message)
+      if (pErr) {
+        setError(pErr.message)
       } else {
-        // 4) filter to only those matching this level
+        // only keep matching level
         const valid = (allPasses ?? []).filter(
-          (p) => p.pass_types?.[0]?.points_value === level
+          (p) => p.pass_types?.points_value === tourn.points_value
         )
         setPasses(
           valid.map((p) => ({
@@ -65,47 +77,54 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
           }))
         )
       }
-
       setLoading(false)
     })()
-  }, [params.id, router])
+  }, [session, params.id, supabase])
 
   const redeemPass = async (passId: string) => {
     setLoading(true)
     setError(null)
-    const supabase = createClientComponentClient()
 
-    // call the SECURITY DEFINER function
-    const { error: rpcError } = await supabase.rpc("register_for_tournament", {
+    const { error: rpcErr } = await supabase.rpc("register_for_tournament", {
       p_tournament_id: params.id,
       p_pass_id: passId,
     })
-    if (rpcError) {
-      setError(rpcError.message)
+    if (rpcErr) {
+      setError(rpcErr.message)
       setLoading(false)
       return
     }
 
-    // optional: send Telegram alert
-    const [tournRes, profileRes] = await Promise.all([
-      supabase.from("tournaments").select("name").eq("id", params.id).single(),
-      supabase.from("profiles").select("full_name").single(),
-    ])
-    const tournamentName = tournRes.data?.name ?? "(unknown tournament)"
-    const fullName = profileRes.data?.full_name ?? "(unknown player)"
-    await fetch("/api/telegram-alert", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tournamentName, fullName }),
-    })
-
     router.push(`/play/${params.id}?registered=1`)
   }
 
+  // --- RENDER ---
+
+  // 3) if we still don’t know auth status
+  if (session === null) {
+    return <p className="text-center py-16">Checking authentication…</p>
+  }
+
+  // 4) not signed in? show your AuthCompact popover instead of redirect
+  if (!session) {
+    return (
+      <>
+        <Navbar />
+        <main className="py-24">
+          <div className="container mx-auto text-center">
+            <p className="mb-6">Please sign in to register for this tournament.</p>
+            <AuthCompact />
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  // 5) signed in → normal register UI
   return (
     <>
       <Navbar />
-
       <main className="py-24">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold mb-4">Register for Tournament</h1>
@@ -132,7 +151,6 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
           )}
         </div>
       </main>
-
       <Footer />
     </>
   )
