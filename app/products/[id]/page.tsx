@@ -40,6 +40,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                       <Button size="lg" className="w-full md:w-auto">
                         Buy Now
                       </Button>
+                      <Link href="/shop/terms-conditions" className="hover: font-semibold text-sky-800 underline ml-1">
+                          Terms and Conditions Apply
+                      </Link>
                     </a>
                   ) : (
                     <Button size="lg" className="w-full md:w-auto">
