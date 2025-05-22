@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -12,59 +12,82 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
+import type { Database } from "@/lib/database.types"
 
-type PassType = {
+// Types for your pass and tournament
+interface PassType {
   id: string
   name: string
   passes_quantity: number
   points_value: number
 }
-
-type AvailablePass = {
+interface AvailablePass {
   id: string
   quantity_remaining: number
   pass_type: PassType
 }
 
 export default function RedeemPassSection({ tournamentId }: { tournamentId: string }) {
+  const supabase = createClientComponentClient<Database>()
+  const router = useRouter()
+
   const [passes, setPasses] = useState<AvailablePass[]>([])
   const [selectedPassId, setSelectedPassId] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [message, setMessage] = useState<string | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     async function loadPasses() {
       setLoading(true)
-      // 1) ensure user logged in
+      setMessage(null)
+
+      // 1) Ensure user logged in
       const {
         data: { session },
+        error: sessError,
       } = await supabase.auth.getSession()
+      if (sessError) {
+        setMessage("Authentication error, please try again.")
+        setLoading(false)
+        return
+      }
       if (!session) {
         router.push(`/login?from=/play/${tournamentId}/register`)
         return
       }
 
-      // 2) fetch all non-depleted passes and their types
-      const { data, error } = await supabase
+      // 2) Fetch tournament's required level
+      const { data: tourn, error: tournErr } = await supabase
+        .from("tournaments")
+        .select("points_value")
+        .eq("id", tournamentId)
+        .single()
+      if (tournErr || !tourn) {
+        setMessage("Could not load tournament info.")
+        setLoading(false)
+        return
+      }
+      const requiredLevel = tourn.points_value
+
+      // 3) Fetch non-depleted passes matching level
+      const { data: listData, error: pErr } = await supabase
         .from("passes")
-        .select(`
-          id,
-          quantity_remaining,
-          pass_type: pass_types (
+        .select(
+          `id, quantity_remaining, pass_type:pass_types(
             id,
             name,
             passes_quantity,
             points_value
-          )
-        `)
+          )`
+        )
         .gt("quantity_remaining", 0)
+        .eq("pass_types.points_value", requiredLevel)
 
-      if (error) {
-        console.error("Error loading passes:", error)
+      if (pErr) {
+        console.error("Error loading passes:", pErr)
         setPasses([])
       } else {
-        const list = (data ?? []).map((row) => {
+        const list = (listData ?? []).map((row) => {
           const pt = Array.isArray(row.pass_type)
             ? row.pass_type[0]
             : row.pass_type
@@ -77,33 +100,35 @@ export default function RedeemPassSection({ tournamentId }: { tournamentId: stri
         setPasses(list)
         if (list.length) setSelectedPassId(list[0].id)
       }
+
       setLoading(false)
     }
 
     loadPasses()
-  }, [tournamentId, router])
+  }, [tournamentId, router, supabase])
 
   const handleRedeem = async () => {
+    if (!selectedPassId) return
     setLoading(true)
     setMessage(null)
 
-    const { error } = await supabase.rpc("register_for_tournament", {
+    // 4) Call your SECURITY DEFINER RPC
+    const { error: rpcErr } = await supabase.rpc("register_for_tournament", {
       p_tournament_id: tournamentId,
       p_pass_id: selectedPassId,
     })
 
-    if (error) {
-      setMessage(error.message)
+    if (rpcErr) {
+      setMessage(rpcErr.message)
       setLoading(false)
     } else {
       setMessage("✅ Registration successful!")
-      // refresh listings / navigate back
       router.push(`/play/${tournamentId}?registered=1`)
     }
   }
 
   if (loading) return <p>Loading passes…</p>
-  if (!passes.length) return <p>You have no passes to redeem.</p>
+  if (!passes.length) return <p>You have no valid passes. Please purchase one.</p>
 
   return (
     <div className="space-y-4 max-w-sm">
@@ -122,11 +147,7 @@ export default function RedeemPassSection({ tournamentId }: { tournamentId: stri
         </SelectContent>
       </Select>
 
-      <Button
-        onClick={handleRedeem}
-        disabled={loading || !selectedPassId}
-        className="w-full"
-      >
+      <Button onClick={handleRedeem} disabled={loading || !selectedPassId} className="w-full">
         {loading ? "Registering…" : "Complete Registration"}
       </Button>
     </div>
