@@ -70,7 +70,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* terms and conditions apply */}
-            <div className="mt-6">
+            <div className="md:w-1/2 mt-6">
               <Alert className="mb-12 border-sky-200 bg-sky-50">
                 <AlertCircle className="h-5 w-5 text-sky-600" />
                 <AlertDescription className="text-center py-2">
