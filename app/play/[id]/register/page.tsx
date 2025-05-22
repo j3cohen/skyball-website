@@ -16,52 +16,66 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   const [error, setError]     = useState<string|null>(null)
 
     useEffect(() => {
-    ;(async () => {
-      // 1) Ensure logged in
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push(`/login?from=/play/${params.id}/register`)
-        return
-      }
+  ;(async () => {
+    setLoading(true)
+    setError(null)
 
-      // 2) Fetch the tournament’s required level
-      const { data: tourn, error: tournError } = await supabase
-        .from("tournaments")
-        .select("points_value")
-        .eq("id", params.id)
-        .single()
-      if (tournError || !tourn) {
-        setError("Could not load tournament info.")
-        setLoading(false)
-        return
-      }
-      const requiredLevel = tourn.points_value
+    // 1) Ensure logged in
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session) {
+      router.push(`/login?from=/play/${params.id}/register`)
+      return
+    }
 
-      // 3) Fetch only your passes that match that level AND still have uses
-      const { data, error: passError } = await supabase
-        .from("passes")
-        .select(`
-          id,
-          quantity_remaining,
-          pass_types ( points_value )
-        `)
-        .gt("quantity_remaining", 0)
-        .eq("pass_types.points_value", requiredLevel)
+    // 2) Fetch this tournament’s required level
+    const { data: tourn, error: tournError } = await supabase
+      .from("tournaments")
+      .select("points_value")
+      .eq("id", params.id)
+      .single()
 
-      if (passError) {
-        setError(passError.message)
-      } else {
-        setPasses(
-          (data ?? []).map((p) => ({
-            id: p.id,
-            quantity_remaining: p.quantity_remaining,
-          }))
-        )
-      }
-
+    if (tournError || !tourn) {
+      setError("Could not load tournament info.")
       setLoading(false)
-    })()
-  }, [params.id, router])
+      return
+    }
+    const requiredLevel = tourn.points_value
+
+    // 3) Fetch all your passes with their pass_type info
+    const { data: allPasses, error: passError } = await supabase
+      .from("passes")
+      .select(`
+        id,
+        quantity_remaining,
+        pass_types ( points_value )
+      `)
+      .gt("quantity_remaining", 0)
+
+    if (passError) {
+      setError(passError.message)
+      setLoading(false)
+      return
+    }
+
+    // 4) Filter to only the correct-level ones
+    const valid = (allPasses ?? []).filter(
+      (p) => p.pass_types?.[0]?.points_value === requiredLevel
+    )
+
+    // 5) Map down to your state shape
+    setPasses(
+      valid.map((p) => ({
+        id: p.id,
+        quantity_remaining: p.quantity_remaining,
+      }))
+    )
+
+    setLoading(false)
+  })()
+}, [params.id, router])
+
 
 
   const redeemPass = async (passId: string) => {
