@@ -3,8 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { Database } from "@/lib/database.types"
+import { supabase } from "@/lib/supabaseClient"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -13,8 +12,6 @@ import { AuthCompact } from "@/components/auth-compact"
 
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const supabase = createClientComponentClient<Database>()
-
   const [session, setSession] = useState<boolean | null>(null)
   const [passes, setPasses] = useState<{ id: string; quantity_remaining: number }[]>([])
   const [requiredLevel, setRequiredLevel] = useState<number | null>(null)
@@ -30,11 +27,11 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       setSession(!!sesh)
     })
     return () => sub.subscription.unsubscribe()
-  }, [supabase])
+  }, [])
 
-  // 2) once signed-in, load passes
+  // 2) once signed-in, load passes and tournament info
   useEffect(() => {
-    if (session === null) return    // still determining
+    if (session === null) return  // still determining
     if (!session) {
       setLoading(false)
       return
@@ -46,66 +43,57 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
 
       // fetch tournament level
       const { data: tourn, error: tErr } = await supabase
-        .from("tournaments")
-        .select("points_value")
-        .eq("id", params.id)
+        .from('tournaments')
+        .select('points_value')
+        .eq('id', params.id)
         .single()
       if (tErr || !tourn) {
-        setError("Could not load tournament info.")
+        setError('Could not load tournament info.')
         setLoading(false)
         return
       }
       setRequiredLevel(tourn.points_value)
 
-      // fetch your passes (RLS will scope to you)
+      // fetch your passes matching that level
       const { data: allPasses, error: pErr } = await supabase
-        .from("passes")
-        .select("id, quantity_remaining, pass_types(points_value)")
-        .gt("quantity_remaining", 0)
-
+        .from('passes')
+        .select('id, quantity_remaining, pass_types(points_value)')
+        .gt('quantity_remaining', 0)
+        .eq('pass_types.points_value', tourn.points_value)
       if (pErr) {
         setError(pErr.message)
       } else {
-        // only keep matching level
-        const valid = (allPasses ?? []).filter(
-          (p) => p.pass_types?.points_value === tourn.points_value
-        )
-        setPasses(
-          valid.map((p) => ({
-            id: p.id,
-            quantity_remaining: p.quantity_remaining,
-          }))
-        )
+        const valid = (allPasses ?? []).map(p => ({
+          id: p.id,
+          quantity_remaining: p.quantity_remaining
+        }))
+        setPasses(valid)
       }
       setLoading(false)
     })()
-  }, [session, params.id, supabase])
+  }, [session, params.id])
 
   const redeemPass = async (passId: string) => {
     setLoading(true)
     setError(null)
-
-    const { error: rpcErr } = await supabase.rpc("register_for_tournament", {
+    const { error: rpcErr } = await supabase.rpc('register_for_tournament', {
       p_tournament_id: params.id,
       p_pass_id: passId,
     })
     if (rpcErr) {
       setError(rpcErr.message)
       setLoading(false)
-      return
+    } else {
+      router.push(`/play/${params.id}?registered=1`)
     }
-
-    router.push(`/play/${params.id}?registered=1`)
   }
 
   // --- RENDER ---
 
-  // 3) if we still don’t know auth status
   if (session === null) {
     return <p className="text-center py-16">Checking authentication…</p>
   }
 
-  // 4) not signed in? show your AuthCompact popover instead of redirect
   if (!session) {
     return (
       <>
@@ -121,7 +109,6 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     )
   }
 
-  // 5) signed in → normal register UI
   return (
     <>
       <Navbar />
@@ -142,8 +129,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
             passes.map((p) => (
               <div key={p.id} className="mb-4 flex justify-between items-center">
                 <span>
-                  {p.quantity_remaining} pass
-                  {p.quantity_remaining > 1 ? "es" : ""} remaining
+                  {p.quantity_remaining} pass{p.quantity_remaining > 1 ? 'es' : ''} remaining
                 </span>
                 <Button onClick={() => redeemPass(p.id)}>Use Pass</Button>
               </div>
