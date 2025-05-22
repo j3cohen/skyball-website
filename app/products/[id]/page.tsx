@@ -65,18 +65,20 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     are responsible for return shipping costs.
                   </p>
                 </div>
-                {/* terms and conditions apply */}
-                <Alert className="mb-12 border-sky-200 bg-sky-50">
-                  <AlertCircle className="h-5 w-5 text-sky-600" />
-                  <AlertDescription className="text-center py-2">
-                    <span className="font-semibold text-sky-800">Terms and Conditions</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
-                    <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
-                      Terms and conditions apply
-                    </Link>
-                    .
-                  </AlertDescription>
-                </Alert>
+
               </div>
+              {/* terms and conditions apply */}
+              <Alert className="mb-12 border-sky-200 bg-sky-50">
+                <AlertCircle className="h-5 w-5 text-sky-600" />
+                <AlertDescription className="text-center py-2">
+                  <span className="font-semibold text-sky-800">Terms and Conditions</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
+                  <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
+                    Terms and conditions apply
+                  </Link>
+                  .
+                </AlertDescription>
+              </Alert>
+              
             </div>
           </div>
           <div className="mt-12 text-center">
