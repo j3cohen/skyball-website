@@ -71,9 +71,16 @@ export function PlayEvents({ events }: PlayEventProps) {
     return true
   })
   tournamentEvents.sort((a, b) => {
-  const aDate = new Date(a.date)
-  const bDate = new Date(b.date)
-  return bDate.getTime() - aDate.getTime() // Descending order
+    const aTime = new Date(a.date).getTime()
+    const bTime = new Date(b.date).getTime()
+
+    // if we’re only showing upcoming, sort soonest first (ascending)
+    if (!includePastEvents) {
+      return aTime - bTime
+    }
+
+    // if past are enabled, sort most recent first (descending)
+    return bTime - aTime
   })
 
   // Get open play events separately
