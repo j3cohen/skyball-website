@@ -75,12 +75,12 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       } else {
         // filter to only those matching this tournament's level
         const valid = (allPasses ?? []).filter(
-          (row) => Array.isArray(row.pass_type) && row.pass_type[0]?.points_value === level
+          (row) => Array.isArray(row.pass_type) && row.pass_type.length > 0 && row.pass_type[0].points_value === level
         )
         // map to include name label
         const formatted = valid.map((row) => ({
           id: row.id,
-          name: row.pass_type[0]?.name,
+          name: Array.isArray(row.pass_type) ? row.pass_type[0].name : '',
           quantity_remaining: row.quantity_remaining,
         }))
         setPasses(formatted)
