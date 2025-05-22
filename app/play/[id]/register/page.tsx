@@ -10,10 +10,17 @@ import { Button } from "@/components/ui/button"
 import BuyPassSection from "@/components/buy-pass-section"
 import { AuthCompact } from "@/components/auth-compact"
 
+// Augment pass type to include name label
+interface RedeemablePass {
+  id: string
+  name: string
+  quantity_remaining: number
+}
+
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [session, setSession] = useState<boolean | null>(null)
-  const [passes, setPasses] = useState<{ id: string; quantity_remaining: number }[]>([])
+  const [passes, setPasses] = useState<RedeemablePass[]>([])
   const [requiredLevel, setRequiredLevel] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -52,22 +59,31 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
         setLoading(false)
         return
       }
-      setRequiredLevel(tourn.points_value)
+      const level = tourn.points_value
+      setRequiredLevel(level)
 
-      // fetch your passes matching that level
+      // fetch all your non-depleted passes with their types
       const { data: allPasses, error: pErr } = await supabase
         .from('passes')
-        .select('id, quantity_remaining, pass_types(points_value)')
+        .select(
+          'id, quantity_remaining, pass_type:pass_types(id, name, points_value)'
+        )
         .gt('quantity_remaining', 0)
-        .eq('pass_types.points_value', tourn.points_value)
+
       if (pErr) {
         setError(pErr.message)
       } else {
-        const valid = (allPasses ?? []).map(p => ({
-          id: p.id,
-          quantity_remaining: p.quantity_remaining
+        // filter to only those matching this tournament's level
+        const valid = (allPasses ?? []).filter(
+          (row) => Array.isArray(row.pass_type) && row.pass_type[0]?.points_value === level
+        )
+        // map to include name label
+        const formatted = valid.map((row) => ({
+          id: row.id,
+          name: row.pass_type[0]?.name,
+          quantity_remaining: row.quantity_remaining,
         }))
-        setPasses(valid)
+        setPasses(formatted)
       }
       setLoading(false)
     })()
@@ -129,7 +145,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
             passes.map((p) => (
               <div key={p.id} className="mb-4 flex justify-between items-center">
                 <span>
-                  {p.quantity_remaining} pass{p.quantity_remaining > 1 ? 'es' : ''} remaining
+                  {p.name}: {p.quantity_remaining} pass{p.quantity_remaining > 1 ? 'es' : ''} remaining
                 </span>
                 <Button onClick={() => redeemPass(p.id)}>Use Pass</Button>
               </div>
