@@ -4,8 +4,9 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
+// Define the shape of your pass types
 type PassType = {
   id: string
   stripe_price_id: string
@@ -15,30 +16,42 @@ type PassType = {
   points_value: number
 }
 
+// Props: optional requiredLevel for tournament registration
 interface BuyPassSectionProps {
-  requiredLevel: number
+  requiredLevel?: number
 }
 
 export default function BuyPassSection({ requiredLevel }: BuyPassSectionProps) {
   const [passTypes, setPassTypes] = useState<PassType[]>([])
-  const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null>(null);
+  const [session, setSession] = useState<
+    Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
+  | null>(null)
 
   useEffect(() => {
-    // load pass types (now including the `price` column)
-    supabase
+    // Build base query
+    let query = supabase
       .from("pass_types")
       .select("id, stripe_price_id, name, passes_quantity, price, points_value")
-      .eq("points_value", requiredLevel)
-      .then(({ data, error }) => {
-        if (error) console.error("Error loading pass types:", error)
-        else setPassTypes(data ?? [])
-      })
 
-    // grab the current user session on mount
+    // If a required level is provided, filter by it
+    if (requiredLevel != null) {
+      query = query.eq("points_value", requiredLevel)
+    }
+
+    // Execute the query
+    query.then(({ data, error }) => {
+      if (error) {
+        console.error("Error loading pass types:", error)
+      } else {
+        setPassTypes(data ?? [])
+      }
+    })
+
+    // Load the current user session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
-  }, [])
+  }, [requiredLevel])
 
   const handleCheckout = async (stripePriceId: string) => {
     if (!session) {
@@ -63,17 +76,27 @@ export default function BuyPassSection({ requiredLevel }: BuyPassSectionProps) {
       return
     }
 
-    // redirect browser to Stripe Checkout
+    // Redirect to Stripe Checkout
     window.location.href = url
   }
 
   return (
     <Card className="shadow-md">
       <CardHeader>
-        <CardTitle>Purchase Tournament Passes</CardTitle>
+        <CardTitle>
+          {requiredLevel != null
+            ? `Purchase ${requiredLevel}-Level Pass`
+            : "Purchase Tournament Passes"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        {passTypes.length === 0 && <p>Loading passes…</p>}
+        {passTypes.length === 0 && (
+          <p className="text-center text-gray-500">
+            {requiredLevel != null
+              ? "No passes available for this level."
+              : "Loading passes…"}
+          </p>
+        )}
 
         {passTypes.map((p) => (
           <div
@@ -83,7 +106,7 @@ export default function BuyPassSection({ requiredLevel }: BuyPassSectionProps) {
             <div>
               <p className="font-medium">{p.name}</p>
               <p className="text-sm text-gray-600">
-                {p.passes_quantity} pass{p.passes_quantity > 1 ? "es" : ""} for{" "}
+                {p.passes_quantity} pass{p.passes_quantity > 1 ? "es" : ""} for{' '}
                 <span className="font-semibold">{p.price}</span>
               </p>
             </div>
