@@ -68,6 +68,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tournamentName, fullName }),
   })
+  
 
   router.push(`/play/${params.id}?registered=1`)
 }
