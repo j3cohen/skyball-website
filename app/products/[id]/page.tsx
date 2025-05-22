@@ -39,11 +39,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                       <Button size="lg" className="w-full md:w-auto">
                         Buy Now
                       </Button>
-                      <div>
-                        <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
-                          Terms and Conditions Apply
-                        </Link>
-                      </div>
                     </a>
                   ) : (
                     <Button size="lg" className="w-full md:w-auto">
@@ -68,23 +63,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     We offer a 30-day return policy for unused, unopened products in original packaging only. Customers
                     are responsible for return shipping costs.
                   </p>
-
-                  <Alert className="mb-12 border-sky-200 bg-sky-50">
-                    <AlertDescription className="text-center py-2">
-                      <span className="font-semibold text-sky-800">Terms and Conditions Apply</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
-                      <Link href="/shop/terms-conditions" className="text-sky-600 hover:text-sky-800 underline ml-1">
-                        Terms and Conditions Apply
-                      </Link>
-                      .
-                    </AlertDescription>
-                  </Alert>
                 </div>
 
               </div>
             </div>
 
             {/* terms and conditions apply */}
-            <div className="mt-6">
+            <div className="px-8 mt-6">
               <Alert className="mb-12 border-sky-200 bg-sky-50">
                 <AlertDescription className="text-center py-2">
                   <span className="font-semibold text-sky-800">Terms and Conditions Apply</span> – By completing your purchase, you agree to our Terms and Conditions. Please review them before checking out.
