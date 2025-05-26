@@ -47,7 +47,7 @@ export const products: Product[] = [
   {
     id: "4",
     name: "SkyBall Anywhere Kit",
-    price: 149.99,
+    price: 139.99,
     images: [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/anywhere-kit-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-2.png",
@@ -58,6 +58,6 @@ export const products: Product[] = [
     description: "1 net, 2 rackets, 2 SkyBall 3-packs",
     details:
       "The complete SkyBall™ experience! Our Anywhere Kit includes a portable net, 2 official rackets, and 2 3-packs of high-density foam balls. Set up and play anywhere!",
-    stripeLink: "https://buy.stripe.com/3cs00iecA8g07a8fZ0",
+    stripeLink: "https://buy.stripe.com/8x200j5Fn2mNegceX0es009",
   },
 ]
