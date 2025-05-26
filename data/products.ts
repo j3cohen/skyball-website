@@ -22,17 +22,17 @@ export const products: Product[] = [
   {
     id: "2",
     name: "SkyBall Racket",
-    price: 35.99,
+    price: 28.99,
     images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png"],
     description: "21-inch stringed racket, perfect for SkyBall™",
     details:
       "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
-    stripeLink: "https://buy.stripe.com/9AQ00i6K867S2TS147",
+    stripeLink: "https://buy.stripe.com/3cIdR9d7Pf9zb407uyes007",
   },
   {
     id: "3",
     name: "SkyBall Essentials",
-    price: 74.99,
+    price: 64.99,
     images: [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
@@ -42,7 +42,7 @@ export const products: Product[] = [
       "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines.",
     details:
       "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines. Get started with SkyBall™ right away on your local pickleball court!",
-    stripeLink: "https://buy.stripe.com/6oE9AS4C0ao8dywfYY",
+    stripeLink: "https://buy.stripe.com/8x2aEXc3L5yZ3BybKOes008",
   },
   {
     id: "4",
