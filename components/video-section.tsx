@@ -184,7 +184,7 @@ export default function VideoSection() {
           >
             <div className="w-full max-w-[min(100%,70vh)]">
               <VideoPlayer
-                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball_promo_aws1.mov"
+                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_video_outside_website_homepage.mov"
                 aspectRatio="square"
                 objectFit="cover"
               />
@@ -199,7 +199,7 @@ export default function VideoSection() {
           >
             <div className="w-full">
               <VideoPlayer
-                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/rally.mov"
+                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_rally_website_homepage.mp4"
                 aspectRatio="video"
                 objectFit="contain"
               />
