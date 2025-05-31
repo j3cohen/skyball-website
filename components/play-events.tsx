@@ -263,7 +263,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                             </div>
 
                             {/* Show participants for past events */}
-                            {typeof event.currentParticipants === "number" && (
+                            {/* {typeof event.currentParticipants === "number" && (
                               <div className="flex items-center text-gray-600 mt-2">
                                 <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                                 <span className="text-sm">
@@ -271,7 +271,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                                   {getEffectiveParticipantCount(event) === 1 ? "participant" : "participants"}
                                 </span>
                               </div>
-                            )}
+                            )} */}
 
                             {/* Removed description for past events */}
                           </div>
@@ -365,7 +365,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                           </div>
 
                           {/* Participants/spots display - different for past vs upcoming events */}
-                          {event.maxParticipants && typeof event.currentParticipants === "number" && (
+                          {/* {event.maxParticipants && typeof event.currentParticipants === "number" && (
                             <div className="flex items-center text-gray-600 mt-2">
                               <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                               <span className="text-sm">
@@ -378,10 +378,10 @@ export function PlayEvents({ events }: PlayEventProps) {
                                     event.currentParticipants >= event.maxParticipants
                                     ? "Full - Waitlist Open"
                                     : `${event.maxParticipants - event.currentParticipants} spots remaining`}
-                              </span>
+                              </span> */}
 
                               {/* Show warning icon if almost full (80% or more) - only for upcoming events */}
-                              {!event.isPast &&
+                              {/* {!event.isPast &&
                                 event.currentParticipants >= event.maxParticipants * 0.8 &&
                                 event.currentParticipants < event.maxParticipants && (
                                   <span title="Almost full">
@@ -389,7 +389,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                                   </span>
                                 )}
                             </div>
-                          )}
+                          )} */}
 
                           {event.prize && (
                             <div className="flex items-center text-gray-600 mt-2">

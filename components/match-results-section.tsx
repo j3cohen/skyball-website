@@ -50,6 +50,7 @@ export default function MatchResultsSection({
 
   if (error) return <p className="text-red-600">Error: {error}</p>
   if (rows === null) return <p>Loading match results…</p>
+  if (tournamentId === "skyball-100-may-29") return <p>Winner Is Caleb Breslin</p>
   if (rows.length === 0) return <p>No match results available.</p>
 
   const matches = rows.map((r) => ({
