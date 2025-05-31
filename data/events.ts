@@ -159,7 +159,7 @@ export type Event = {
       currentParticipants: 0,
       prize: "$100", // Updated from $500 to $100
       registrationFee: "$20",
-      isPast: false, // Mark as past event
+      isPast: true, // Mark as past event
       hasResults: false, // Has results
       format: "Single Elimination Bracket",
       contactEmail: "play@skyball.us",
