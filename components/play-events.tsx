@@ -5,7 +5,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History, Bell } from "lucide-react"
+// import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History, Bell } from "lucide-react"
+import { Calendar, MapPin, Trophy, Clock, ChevronRight, History, Bell } from "lucide-react"
 import type { Event } from "@/data/events"
 import { events as staticEvents } from "@/data/events"
 import { Button } from "@/components/ui/button"
@@ -94,29 +95,29 @@ export function PlayEvents({ events }: PlayEventProps) {
 
   // Helper function to get effective participant count
   // This handles the case where currentParticipants is 0 from the DB but might have a value in static data
-  const getEffectiveParticipantCount = (event: Event): number => {
-    // If currentParticipants is undefined or null, return 0
-    if (typeof event.currentParticipants !== "number") {
-      return 0
-    }
+  // const getEffectiveParticipantCount = (event: Event): number => {
+  //   // If currentParticipants is undefined or null, return 0
+  //   if (typeof event.currentParticipants !== "number") {
+  //     return 0
+  //   }
 
-    // If it's a past event with 0 participants from the DB view, check static data
-    if (event.isPast && event.currentParticipants === 0) {
-      // Look up the event in the static data
-      const staticEvent = staticEvents.find((e) => e.id === event.id)
+  //   // If it's a past event with 0 participants from the DB view, check static data
+  //   if (event.isPast && event.currentParticipants === 0) {
+  //     // Look up the event in the static data
+  //     const staticEvent = staticEvents.find((e) => e.id === event.id)
 
-      // If found and has a non-zero currentParticipants value, use that
-      if (staticEvent && typeof staticEvent.currentParticipants === "number" && staticEvent.currentParticipants > 0) {
-        return staticEvent.currentParticipants
-      }
+  //     // If found and has a non-zero currentParticipants value, use that
+  //     if (staticEvent && typeof staticEvent.currentParticipants === "number" && staticEvent.currentParticipants > 0) {
+  //       return staticEvent.currentParticipants
+  //     }
 
-      // Otherwise, return 0 (the actual value from the database)
-      return 0
-    }
+  //     // Otherwise, return 0 (the actual value from the database)
+  //     return 0
+  //   }
 
-    // For all other cases, return the actual participant count
-    return event.currentParticipants
-  }
+  //   // For all other cases, return the actual participant count
+  //   return event.currentParticipants
+  // }
 
   return (
     <div>
