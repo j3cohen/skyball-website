@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { ArrowLeft, Maximize2, Minimize2 } from "lucide-react"
 
-export default function DeckPage() {
+export default function FacilitiesDeckPage() {
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [windowHeight, setWindowHeight] = useState(0)
 
@@ -62,11 +62,11 @@ export default function DeckPage() {
           </div>
 
           <iframe
-            src="https://docs.google.com/presentation/d/1OjC2SjT7YAKM-2q91n6G243mtoBOPSBe-EM9p4-2DHY/pubembed?start=false&loop=false&delayms=30000"
+            src="https://docs.google.com/presentation/d/e/2PACX-1vTUxo0hWi-17Dsv9nulHG5W1_B1Kh1qqU7KoNoOP623dVk7S_bVpx0lPt70iem-exWPBcjvcBTkqh8E/pubembed?start=false&loop=false&delayms=30000"
             className="absolute inset-0 w-full h-full"
             frameBorder="0"
             allowFullScreen
-            title="SkyBall Info Deck"
+            title="SkyBall Facilities Deck"
           />
 
           <button
@@ -84,7 +84,7 @@ export default function DeckPage() {
 
         {!isFullScreen && (
           <div className="mt-6 text-center text-sm text-gray-500 max-w-3xl">
-            <p>This presentation is for authorized partners and investors only.</p>
+            <p>This presentation is for authorized partners and facilities only.</p>
             <p className="mt-1">
               For questions or more information, contact{" "}
               <a href="mailto:info@skyball.us" className="text-sky-600 hover:underline">
