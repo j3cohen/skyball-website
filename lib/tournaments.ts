@@ -18,6 +18,8 @@ type TournamentRow = {
   current_participants: number      // ← from the view
   date_actual        : string | null
   start_at           : string | null
+  open_play         : boolean
+  image             : string | null
 }
 
 // Merge helper
@@ -38,6 +40,8 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
     ...(row?.date_actual && { date_actual: row.date_actual }),
     ...(row?.start_at && {start_at: row.start_at}),
+    ...(row?.image && { image: row.image }),
+    ...(row?.open_play != null    && { type: row.open_play ? 'open-play' : 'tournament' }),
     
   }
 }
