@@ -182,7 +182,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                 )}
 
               </div>
-                              {/* Contact Information */}
+                {/* Contact Information */}
                 {event.contactEmail && (
                   <Card className="mb-8">
                     <CardHeader>

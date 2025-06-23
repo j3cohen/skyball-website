@@ -1,3 +1,4 @@
+// /components/auth-compact.tsx
 "use client"
 
 import type React from "react"
