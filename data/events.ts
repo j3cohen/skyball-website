@@ -25,6 +25,7 @@ export type Event = {
     }
     date_actual?: string
     start_at?: string
+    paymentLink?: string
   }
   
   export const events: Event[] = [

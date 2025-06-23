@@ -18,29 +18,42 @@ type TournamentRow = {
   current_participants: number      // ← from the view
   date_actual        : string | null
   start_at           : string | null
+  open_play         : boolean
+  image             : string | null
+  payment_link     : string | null
 }
+
 
 // Merge helper
 function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
-  return {
+  const base: Partial<StaticEvent> = {
     ...fallback,
-    ...(row?.id                 && { id: row.id }),
-    ...(row?.name               && { name: row.name               }),
-    ...(row?.date               && { date: row.date               }),
-    ...(row?.time               && { time: row.time               }),
-    ...(row?.location           && { location: row.location       }),
-    ...(row?.description        && { description: row.description }),
-    ...(row?.max_participants   != null && { maxParticipants: row.max_participants }),
-    ...(row?.prize              && { prize: row.prize             }),
-    ...(row?.registration_fee   && { registrationFee: row.registration_fee }),
-    ...(row?.points_value       != null && { pointsValue: row.points_value }),
-    // inject currentParticipants
+    ...(row?.id                    && { id: row.id }),
+    ...(row?.name                  && { name: row.name }),
+    ...(row?.date                  && { date: row.date }),
+    ...(row?.time                  && { time: row.time }),
+    ...(row?.location              && { location: row.location }),
+    ...(row?.description           && { description: row.description }),
+    ...(row?.max_participants  != null && { maxParticipants: row.max_participants }),
+    ...(row?.prize                 && { prize: row.prize }),
+    ...(row?.registration_fee      && { registrationFee: row.registration_fee }),
+    ...(row?.points_value      != null && { pointsValue: row.points_value }),
     ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
-    ...(row?.date_actual && { date_actual: row.date_actual }),
-    ...(row?.start_at && {start_at: row.start_at}),
-    
+    ...(row?.date_actual           && { date_actual: row.date_actual }),
+    ...(row?.start_at              && { start_at: row.start_at }),
+    ...(row?.image                 && { image: row.image }),
+    ...(row?.payment_link      && { paymentLink: row.payment_link }),
   }
+
+  // always override type from open_play
+  return {
+    ...base,
+    type: row
+      ? (row.open_play ? 'open-play' : 'tournament')
+      : fallback.type,
+  } as StaticEvent
 }
+
 
 /** Fetch & merge all tournaments */
 export async function getAllTournaments(): Promise<StaticEvent[]> {
