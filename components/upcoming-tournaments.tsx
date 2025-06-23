@@ -11,6 +11,7 @@ type Tournament = {
   id: string
   name: string
   date: string  // stored as text, e.g. "May 15, 2025"
+  open_play?: boolean
 }
 
 export default function UpcomingTournaments() {
@@ -25,7 +26,7 @@ export default function UpcomingTournaments() {
 
       const { data, error } = await supabase
         .from("tournaments")
-        .select("id, name, date")
+        .select("id, name, date, open_play")
 
       if (error) {
         console.error("Error loading tournaments:", error)
@@ -35,6 +36,7 @@ export default function UpcomingTournaments() {
         const today = new Date()
         const upcoming = data
           .filter((t) => {
+            if (t.open_play) return false // skip open play events
             const parsed = new Date(t.date)
             return !isNaN(parsed.getTime()) && parsed >= today
           })
