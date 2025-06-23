@@ -198,6 +198,7 @@ export function PlayEvents({ events }: PlayEventProps) {
 
   // Split open play events into upcoming and past
   const upcomingOpenPlayEvents = openPlayEvents.filter((event) => !event.isPast)
+  upcomingOpenPlayEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   const pastOpenPlayEvents = openPlayEvents.filter((event) => event.isPast)
   pastOpenPlayEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
