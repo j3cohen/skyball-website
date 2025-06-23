@@ -50,6 +50,7 @@ const registrationSchema = z.object({
       message: "Please enter a valid date of birth (not in the future)",
     },
   ),
+  zip: z.string().min(5, "ZIP code must be at least 5 characters").max(10, "ZIP code must be at most 10 characters"),
   tournamentId: z.string(),
   tournamentName: z.string(),
   tournamentDate: z.string(),
@@ -65,6 +66,7 @@ export async function submitRegistration(formData: FormData) {
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
       dob: formData.get("dob") as string,
+      zip: formData.get("zip") as string,
       tournamentId: formData.get("tournamentId") as string,
       tournamentName: formData.get("tournamentName") as string,
       tournamentDate: formData.get("tournamentDate") as string,
@@ -174,6 +176,7 @@ async function sendTelegramNotification(data: RegistrationData) {
 *Email:* ${data.email}
 *Phone:* ${data.phone}
 *Date of Birth:* ${data.dob}
+*ZIP Code:* ${data.zip}
 
 _Registration received at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_`
 

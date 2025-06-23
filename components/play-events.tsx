@@ -16,11 +16,117 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 import RaceTo300Announcement from "@/components/race-to-300-banner"
+import { submitRegistration } from "@/app/actions/registration"
 
 type TabValue = "open-play" | "tournaments"
 
 interface PlayEventProps {
   events: Event[]
+}
+
+function Modal({ open, onClose, children }: { open: boolean; onClose(): void; children: React.ReactNode }) {
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <button className="text-gray-500 mb-4" onClick={onClose}>✕ Close</button>
+        {children}
+      </div>
+    </div>
+  )
+}
+function TelegramRegistrationForm({
+  event,
+  onSuccess,
+}: {
+  event: Event
+  onSuccess(): void
+}) {
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [zip, setZip] = useState("")
+  const [dob, setDob] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+    const formData = new FormData()
+    formData.append("tournamentId", event.id)
+    formData.append("tournamentName", event.name)
+    formData.append("tournamentDate", event.date)
+    formData.append("name", name)
+    formData.append("email", email)
+    formData.append("phone", phone)
+    formData.append("zip", zip)
+    formData.append("dob", dob)
+    const result = await submitRegistration(formData)
+    if (result.success) {
+      onSuccess()
+    } else {
+      setError(result.message ?? "Submission failed")
+      setSubmitting(false)
+    }
+  }
+
+   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p className="text-red-600">{error}</p>}
+      <div>
+        <Label>Name</Label>
+        <input
+          required
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+      </div>
+      <div>
+        <Label>Email</Label>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+      </div>
+      <div>
+        <Label>Phone</Label>
+        <input
+          required
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+      </div>
+      <div>
+        <Label>ZIP Code</Label>
+        <input
+          required
+          value={zip}
+          onChange={e => setZip(e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+      </div>
+      <div>
+        <Label>Date of Birth</Label>
+        <input
+          type="date"
+          required
+          value={dob}
+          onChange={e => setDob(e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+      </div>
+      <Button type="submit" disabled={submitting}>
+        {submitting ? "Submitting…" : "Submit Registration"}
+      </Button>
+    </form>
+  )
 }
 
 export function PlayEvents({ events }: PlayEventProps) {
@@ -32,6 +138,9 @@ export function PlayEvents({ events }: PlayEventProps) {
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab)
   const [includePastEvents, setIncludePastEvents] = useState(false)
+
+  const [modalEvent, setModalEvent] = useState<Event | null>(null)
+
 
   // Update URL when tab changes
   const handleTabChange = (value: TabValue) => {
@@ -154,7 +263,7 @@ export function PlayEvents({ events }: PlayEventProps) {
               <div className="bg-sky-50 rounded-lg p-5 mb-4">
                 <h3 className="text-lg font-semibold mb-3">About Open Play</h3>
                 <p className="text-gray-700 text-sm mb-3">
-                  Open Play sessions are free and open to everyone! No registration required - just show up and play.
+                  Open Play sessions are open to everyone! We provide all equipment - just show up and play.
                   Perfect for beginners and experienced players alike.
                 </p>
                 <p className="text-gray-700 text-sm">
@@ -210,7 +319,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                           {event.description && <p className="text-gray-600 mt-2 text-sm">{event.description}</p>}
                         </div>
 
-                        <div className="flex justify-end">
+                        <div className="flex flex-col items-end space-y-2 mt-4">
                           <AddToCalendarDropdown
                             name={event.name}
                             date={event.date}
@@ -218,6 +327,20 @@ export function PlayEvents({ events }: PlayEventProps) {
                             location={event.location}
                             description={event.description}
                           />
+                          {event.paymentLink ? (
+                            <a
+                              href={event.paymentLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm"
+                            >
+                              Register
+                            </a>
+                          ) : (
+                            <Button size="sm" onClick={() => setModalEvent(event)}>
+                              Register
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -465,6 +588,14 @@ export function PlayEvents({ events }: PlayEventProps) {
           </div>
         </section>
       )}
+      <Modal open={!!modalEvent} onClose={() => setModalEvent(null)}>
+        {modalEvent && (
+          <TelegramRegistrationForm
+            event={modalEvent}
+            onSuccess={() => setModalEvent(null)}
+          />
+        )}
+      </Modal>
     </div>
   )
 }

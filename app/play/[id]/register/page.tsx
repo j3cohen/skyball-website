@@ -128,6 +128,10 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 <label className="block text-sm font-medium">Date of Birth</label>
                 <input name="dob" type="date" required className="mt-1 block w-full border rounded p-2" />
               </div>
+              <div>
+                <label className="block text-sm font-medium">ZIP Code</label>
+                <input name="zip" required className="mt-1 block w-full border rounded p-2" />
+              </div>
 
               <Button type="submit" disabled={loading}>
                 {loading ? "Submitting…" : "Submit Registration"}
