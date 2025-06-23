@@ -16,7 +16,7 @@ export default function ConversionPage() {
 
   const steps = [
     "Start with a standard pickleball court",
-    "Add a service line 6.5ft behind the kitchen line",
+    "Add a service line 5ft behind the kitchen line",
     "Extend the centerline to the net to create service boxes",
     "Complete SkyBall court",
   ]
@@ -124,11 +124,11 @@ export default function ConversionPage() {
                     {step === 0 &&
                       "Start with a standard pickleball court layout. The kitchen (non-volley zone) line is 7ft from the net. Note that the centerline divides each side but stops at the kitchen."}
                     {step === 1 &&
-                      "Measure and draw a service line 6.5 feet behind the kitchen line (which places it 13.5 feet from the net)."}
+                      "Measure and draw a service line 5 feet behind the kitchen line (which places it 12 feet from the net)."}
                     {step === 2 &&
                       "Extend the existing centerline through the kitchen area to the net. This creates the service boxes for SkyBall."}
                     {step === 3 &&
-                      "Your SkyBall court is now ready for play! The service boxes are clearly defined for proper serving. Next, we'll add singles lines for singles play."}
+                      "Your SkyBall court is now ready for play! The service boxes are clearly defined for proper serving."}
                     {/* {step === 4 &&
                       "For singles play, add singles lines 2 feet in from each sideline, creating a narrower court similar to tennis singles. The area between the singles line and sideline is called the 'doubles alley'."} */}
                   </p>
@@ -187,8 +187,8 @@ export default function ConversionPage() {
                 <h2 className="text-lg font-semibold mb-2 text-sky-800">About SkyBall Courts</h2>
                 <p className="mb-3 text-gray-700 text-sm">
                   SkyBall can be played on a standard pickleball court with a few simple modifications. The kitchen line
-                  in pickleball is 7 feet from the net. The SkyBall service line is placed 6.5 feet behind the kitchen
-                  line (13.5 feet from the net), and service boxes are created by extending the existing centerline
+                  in pickleball is 7 feet from the net. The SkyBall service line is placed 5 feet behind the kitchen
+                  line (12 feet from the net), and service boxes are created by extending the existing centerline
                   through the kitchen to the net.
                 </p>
                 {/* <p className="text-gray-700 text-sm">

@@ -34,7 +34,7 @@ export function SkyBallCourtAnimation({
   const courtWidth = 20 // Standard pickleball court width
   const courtLength = 44 // Standard pickleball court length
   const kitchenDepth = 7 // 7ft (non-volley zone from net)
-  const serviceLineDistance = 13.5 // 13.5ft from net (service line)
+  const serviceLineDistance = 12 // 12ft from net (service line)
 
   // Calculate positions for overlay elements.
   const getPosition = (x: number, y: number) => {
@@ -348,7 +348,7 @@ export function SkyBallCourtAnimation({
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 items-start">
             <motion.div className="flex items-center justify-start" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 1.0 }}>
               <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-sm font-medium text-red-700">
-                Service Line (6.5ft behind kitchen)
+                Service Line (5ft behind kitchen)
               </div>
             </motion.div>
             <motion.div className="flex items-center justify-start" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 1.7 }}>
@@ -365,13 +365,13 @@ export function SkyBallCourtAnimation({
           {/* 6.5ft measurement indicators */}
           <motion.div className="absolute flex flex-col items-center justify-center z-50" style={{ left: topServicePosition.x + 80, top: (topKitchenPosition.y + topServicePosition.y) / 2 - 25, width: 60, height: 50 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}>
             <div className="bg-red-100 px-2 py-1 rounded text-sm font-bold text-red-700 shadow-sm border border-red-200 mb-1">
-              6.5ft
+              5ft
             </div>
             <ArrowUp className="h-5 w-5 text-red-600" />
           </motion.div>
           <motion.div className="absolute flex flex-col items-center justify-center z-50" style={{ left: bottomServicePosition.x + 80, top: (bottomKitchenPosition.y + bottomServicePosition.y) / 2 - 25, width: 60, height: 50 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}>
             <div className="bg-red-100 px-2 py-1 rounded text-sm font-bold text-red-700 shadow-sm border border-red-200 mb-1">
-              6.5ft
+              5ft
             </div>
             <ArrowDown className="h-5 w-5 text-red-600" />
           </motion.div>
@@ -485,7 +485,7 @@ export function SkyBallCourtAnimation({
                   transition={{ duration: 0.5, delay: 0.3 }}
                 >
                   <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-sm font-medium text-red-700">
-                    Service Line (6.5ft behind kitchen)
+                    Service Line (5ft behind kitchen)
                   </div>
                 </motion.div>
                 <motion.div
@@ -497,7 +497,7 @@ export function SkyBallCourtAnimation({
                   transition={{ duration: 0.5, delay: 0.3 }}
                 >
                   <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-sm font-medium text-red-700">
-                    Service Line (6.5ft behind kitchen)
+                    Service Line (5ft behind kitchen)
                   </div>
                 </motion.div>
               </>
@@ -515,7 +515,7 @@ export function SkyBallCourtAnimation({
                   transition={{ duration: 0.5, delay: 0.5 }}
                 >
                   <div className="bg-red-100 px-2 py-1 rounded text-sm font-bold text-red-700 shadow-sm border border-red-200 mb-1">
-                    6.5ft
+                    5ft
                   </div>
                   <ArrowUp className="h-5 w-5 text-red-600" />
                 </motion.div>
@@ -528,7 +528,7 @@ export function SkyBallCourtAnimation({
                   transition={{ duration: 0.5, delay: 0.5 }}
                 >
                   <div className="bg-red-100 px-2 py-1 rounded text-sm font-bold text-red-700 shadow-sm border border-red-200 mb-1">
-                    6.5ft
+                    5ft
                   </div>
                   <ArrowDown className="h-5 w-5 text-red-600" />
                 </motion.div>
