@@ -8,7 +8,7 @@ const rulesSections = [
     icon: Ruler,
     content: [
       "Court Size: 44 feet long and 20 feet wide for singles and doubles",
-      "Service Line: 20 feet wide and positioned 13.5 feet from the net and 8.5 ft from the basaeline", 
+      "Service Line: 20 feet wide and positioned 12 feet from the net and 10 feet from the baseline",
       "Service Box: Service boxes are created by drawing a line from the center of the service line to the net",
       "Net Height: 34 inches at the center, 36 inches at the sidelines",
       "Racquets: 21-inch stringed racquets (textured or hexagonal strings are prohibited)",
