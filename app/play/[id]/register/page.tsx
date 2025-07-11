@@ -200,7 +200,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
                   <h3 className="text-lg font-semibold mb-2">Register as Guest</h3>
                   <p className="text-gray-600 mb-4">
-                    Register quickly without creating an account. You'll be redirected to complete payment.
+                    Register quickly without creating an account. You&apos;ll be redirected to complete payment.
                   </p>
                   <Button onClick={handleGuestRegistration} className="w-full bg-blue-600 hover:bg-blue-700">
                     Continue as Guest

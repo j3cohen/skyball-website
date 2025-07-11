@@ -1,14 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink } from 'lucide-react'
 
 interface GuestRegistrationButtonProps {
   paymentLink: string
-  tournamentName: string
 }
 
-export default function GuestRegistrationButton({ paymentLink, tournamentName }: GuestRegistrationButtonProps) {
+export default function GuestRegistrationButton({ paymentLink }: GuestRegistrationButtonProps) {
   const handleGuestRegistration = () => {
     window.open(paymentLink, "_blank")
   }

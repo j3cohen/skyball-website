@@ -159,9 +159,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                       <RegistrationStatus tournamentId={event.id} />
 
                       {/* Guest Registration Option */}
-                      {event.paymentLink && (
-                        <GuestRegistrationButton paymentLink={event.paymentLink} tournamentName={event.name} />
-                      )}
+                      {event.paymentLink && <GuestRegistrationButton paymentLink={event.paymentLink} />}
                     </div>
                   </>
                 )}
