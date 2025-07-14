@@ -42,6 +42,7 @@ export const products: Product[] = [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_nj.jpg",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_ages.PNG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_oltc_serve.jpg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/equipment.jpeg",
 
       
     ],
