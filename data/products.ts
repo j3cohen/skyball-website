@@ -61,6 +61,9 @@ export const products: Product[] = [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-1.JPG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_grass.jpeg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_nj.jpeg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_central_park.jpeg",
     ],
     description: "1 net, 2 rackets, 2 SkyBall 3-packs",
     details:
