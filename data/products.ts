@@ -37,6 +37,14 @@ export const products: Product[] = [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_kingofthecourt.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_serve.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_nj.jpg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_ages.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_oltc_serve.jpg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/equipment.jpeg",
+
+      
     ],
     description:
       "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines.",
@@ -54,6 +62,9 @@ export const products: Product[] = [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-1.JPG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_grass.jpeg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_nj.jpeg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_central_park.jpeg",
     ],
     description: "1 net, 2 rackets, 2 SkyBall 3-packs",
     details:
