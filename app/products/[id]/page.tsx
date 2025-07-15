@@ -32,6 +32,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   <div className="border-t border-b py-4 my-6">
                     <h2 className="text-xl font-semibold mb-2">Product Details</h2>
                     <p className="text-gray-700">{product.details}</p>
+                    {product.features && (
+                      <div className="mt-4">
+                        <h3 className="text-lg font-semibold mb-2">Key Features</h3>
+                        <ul className="list-disc list-inside space-y-1 text-gray-700">
+                          {product.features.map((feat) => (
+                            <li key={feat}>{feat}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {product.stripeLink ? (
