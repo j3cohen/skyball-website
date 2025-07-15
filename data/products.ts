@@ -5,6 +5,7 @@ export interface Product {
   images: string[] // Changed from single image to array of images
   description: string
   details: string
+  features?: string[] // Optional features array
   stripeLink?: string
 }
 
@@ -27,6 +28,11 @@ export const products: Product[] = [
     description: "21-inch stringed racket, perfect for SkyBall™",
     details:
       "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
+    features: [
+      "Weight: 190 g (strung)",
+      "40 lb string tension",
+      "Longer handle length (6 in.)",
+    ],
     stripeLink: "https://buy.stripe.com/3cIdR9d7Pf9zb407uyes007",
   },
   {
