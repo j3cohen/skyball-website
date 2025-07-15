@@ -45,13 +45,29 @@ function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
     ...(row?.payment_link      && { paymentLink: row.payment_link }),
   }
 
+  // Determine type based on open_play field
+  const type = row ? (row.open_play ? 'open-play' : 'tournament') : fallback.type
+
+  //build merged object
+  const merged = {...base, type  } as StaticEvent & {isPast?: boolean }
+
+  // Set isPast based on date
+  const referenceDate = row?.start_at
+    ?? row?.date_actual
+    ?? row?.date
+    ?? fallback.date
+
+  merged.isPast = new Date(referenceDate).getTime() < Date.now()
+
+  return merged as StaticEvent
+
   // always override type from open_play
-  return {
-    ...base,
-    type: row
-      ? (row.open_play ? 'open-play' : 'tournament')
-      : fallback.type,
-  } as StaticEvent
+  // return {
+  //   ...base,
+  //   type
+  //     ? (row.open_play ? 'open-play' : 'tournament')
+  //     : fallback.type,
+  // } as StaticEvent
 }
 
 
