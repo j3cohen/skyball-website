@@ -25,11 +25,11 @@ export default function RaceTo300Announcement({ className = "" }: RaceTo300Annou
         </button>
 
         <p className="font-medium mb-1">
-          🎯 The Race to 300 is on — first to 300 ranking points wins $300.
+          🎯 Congrats to Oliver He for winning The Race to 300 — and taking home the $300.
         </p>
         <p>
-          Each tournament earns you points. Every winner gets $50.
-          <span className="ml-1 font-semibold italic">Let&apos;s see who hits 300 first.</span>
+          More tournaments coming soon!
+          <span className="ml-1 font-semibold italic">Cash prizes at every tournament.</span>
         </p>
 
         <div className="mt-3 flex gap-3">
