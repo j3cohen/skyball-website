@@ -77,4 +77,27 @@ export const products: Product[] = [
       "The complete SkyBall™ experience! Our Anywhere Kit includes a portable net, 2 official rackets, and 2 3-packs of high-density foam balls. Set up and play anywhere!",
     stripeLink: "https://buy.stripe.com/8x200j5Fn2mNegceX0es009",
   },
+
+  {
+    id: "5",
+    name: "SkyBall Partners Pack",
+    price: 109.99,
+    description: "4 rackets, 1 SkyBall 3-pack",
+    details:
+      "The perfect pack for partners! Includes 4 official SkyBall™ rackets and 1 SkyBall™ 3-pack. Ideal for doubles matches or practice sessions with friends.",
+    images: [
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_kingofthecourt.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_serve.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_nj.jpg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_ages.PNG",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_oltc_serve.jpg",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/equipment.jpeg",
+
+      
+    ],
+    stripeLink: "https://buy.stripe.com/aFaaEX4Bj1iJdc82aees00k"
+  },
 ]
