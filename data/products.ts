@@ -100,5 +100,15 @@ export const products: Product[] = [
     ],
     stripeLink: "https://buy.stripe.com/aFaaEX4Bj1iJdc82aees00k"
   },
+    {
+    id: "6",
+    name: "SkyBall 50-pack",
+    price: 109.99,
+    description: "50 SkyBall™ balls",
+    details:
+      "Stock up on your SkyBall™ supplies with this 50-pack! Perfect for schools, clubs, or just having fun with friends.",
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
+    stripeLink: "https://buy.stripe.com/bJe3cv9VDf9zegcdSWes00f"
+  },
 ]
 
