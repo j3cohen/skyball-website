@@ -21,21 +21,6 @@ export const products: Product[] = [
     stripeLink: "https://buy.stripe.com/bIYfZg0lK1RC6643cd",
   },
   {
-    id: "2",
-    name: "SkyBall Racket",
-    price: 28.99,
-    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png"],
-    description: "21-inch stringed racket, perfect for SkyBall™",
-    details:
-      "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
-    features: [
-      "Weight: 190 g (strung)",
-      "40 lb string tension",
-      "Longer handle length (6 in.)",
-    ],
-    stripeLink: "https://buy.stripe.com/3cIdR9d7Pf9zb407uyes007",
-  },
-  {
     id: "3",
     name: "SkyBall Essentials",
     price: 64.99,
@@ -100,7 +85,17 @@ export const products: Product[] = [
     ],
     stripeLink: "https://buy.stripe.com/aFaaEX4Bj1iJdc82aees00k"
   },
-    {
+  {
+    id: "7",
+    name: "SkyBall 12-pack",
+    price: 42.99,
+    description: "12 SkyBall™ balls",
+    details:
+      "Stock up on your SkyBall™ supplies with this 12-pack! Perfect for the competitive player or just having fun with friends.",
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
+    stripeLink: "https://buy.stripe.com/eVq5kD0l3d1regc4imes00l"
+  },
+  {
     id: "6",
     name: "SkyBall 50-pack",
     price: 129.99,
@@ -111,14 +106,19 @@ export const products: Product[] = [
     stripeLink: "https://buy.stripe.com/bJe3cv9VDf9zegcdSWes00f"
   },
   {
-    id: "7",
-    name: "SkyBall 12-pack",
-    price: 42.99,
-    description: "12 SkyBall™ balls",
+    id: "2",
+    name: "SkyBall Racket",
+    price: 28.99,
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png"],
+    description: "21-inch stringed racket, perfect for SkyBall™",
     details:
-      "Stock up on your SkyBall™ supplies with this 12-pack! Perfect for the competitive player or just having fun with friends.",
-    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
-    stripeLink: "https://buy.stripe.com/eVq5kD0l3d1regc4imes00l"
+      "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
+    features: [
+      "Weight: 190 g (strung)",
+      "40 lb string tension",
+      "Longer handle length (6 in.)",
+    ],
+    stripeLink: "https://buy.stripe.com/3cIdR9d7Pf9zb407uyes007",
   },
 ]
 
