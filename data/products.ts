@@ -110,5 +110,15 @@ export const products: Product[] = [
     images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
     stripeLink: "https://buy.stripe.com/bJe3cv9VDf9zegcdSWes00f"
   },
+  {
+    id: "7",
+    name: "SkyBall 12-pack",
+    price: 42.99,
+    description: "12 SkyBall™ balls",
+    details:
+      "Stock up on your SkyBall™ supplies with this 12-pack! Perfect for the competitive player or just having fun with friends.",
+    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png"],
+    stripeLink: "https://buy.stripe.com/eVq5kD0l3d1regc4imes00l"
+  },
 ]
 
