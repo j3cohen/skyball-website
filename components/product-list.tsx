@@ -26,7 +26,13 @@ export default function ProductList() {
             style={{ transitionDelay: `${index * 100}ms` }}
           >
             <div className="relative h-48">
-              <Image src={product.images[0] || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+              <Image
+              src={product.images[0] || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-contain"
+              style={{ backgroundColor: "#fff" }} // optional: looks clean if image has transparency or padding
+            />
             </div>
             <div className="p-6">
               <h3 className="text-xl font-bold mb-2">{product.name}</h3>
