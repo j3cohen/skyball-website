@@ -103,7 +103,7 @@ export const products: Product[] = [
     {
     id: "6",
     name: "SkyBall 50-pack",
-    price: 109.99,
+    price: 129.99,
     description: "50 SkyBall™ balls",
     details:
       "Stock up on your SkyBall™ supplies with this 50-pack! Perfect for schools, clubs, or just having fun with friends.",
