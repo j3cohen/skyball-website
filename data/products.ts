@@ -25,8 +25,8 @@ export const products: Product[] = [
     name: "SkyBall Essentials",
     price: 64.99,
     images: [
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/skyball_essentials_722.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_in_bag.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_kingofthecourt.PNG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_serve.PNG",
@@ -40,7 +40,7 @@ export const products: Product[] = [
     description:
       "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines.",
     details:
-      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines. Get started with SkyBall™ right away on your local pickleball court!",
+      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines. Get started with SkyBall™ right away on your local pickleball court! Select professional overgrips in pink or white at checkout.",
     stripeLink: "https://buy.stripe.com/8x2aEXc3L5yZ3BybKOes008",
   },
   {
@@ -48,18 +48,20 @@ export const products: Product[] = [
     name: "SkyBall Anywhere Kit",
     price: 139.99,
     images: [
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/anywhere-kit-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/skyball_anywhere_722.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-2.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/net-1.JPG",
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_722.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_in_bag.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_grass.jpeg",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_nj.jpeg",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_anywhere_central_park.jpeg",
+      
     ],
     description: "1 net, 2 rackets, 2 SkyBall 3-packs",
     details:
-      "The complete SkyBall™ experience! Our Anywhere Kit includes a portable net, 2 official rackets, and 2 3-packs of high-density foam balls. Set up and play anywhere!",
+      "The complete SkyBall™ experience! Our Anywhere Kit includes a portable net, 2 official rackets, and 2 3-packs of high-density foam balls. Set up and play anywhere! Select professional overgrips in pink or white at checkout.",
     stripeLink: "https://buy.stripe.com/8x200j5Fn2mNegceX0es009",
   },
 
@@ -69,11 +71,13 @@ export const products: Product[] = [
     price: 109.99,
     description: "4 rackets, 1 SkyBall 3-pack",
     details:
-      "The perfect pack for partners! Includes 4 official SkyBall™ rackets and 1 SkyBall™ 3-pack. Ideal for doubles matches or practice sessions with friends.",
+      "The perfect pack for partners! Includes 4 official SkyBall™ rackets and 1 SkyBall™ 3-pack. Ideal for doubles matches or practice sessions with friends. Select professional overgrips in pink or white at checkout.",
     images: [
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/essentials-1.png",
-      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/skyball_essentials_722.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_722.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/ball-1.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_in_bag.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/skyball_essentials_pink.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_kingofthecourt.PNG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_vegas_serve.PNG",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_nj.jpg",
@@ -109,7 +113,12 @@ export const products: Product[] = [
     id: "2",
     name: "SkyBall Racket",
     price: 28.99,
-    images: ["https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket-1.png"],
+    images: [
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_722.png", 
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_pink.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_in_bag.png",
+      "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_photo_text.png",
+    ],
     description: "21-inch stringed racket, perfect for SkyBall™",
     details:
       "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
