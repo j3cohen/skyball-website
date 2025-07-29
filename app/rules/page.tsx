@@ -5,12 +5,12 @@ import RulesContent from "@/components/rules-content"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Rankings",
-  description: "SkyBall Rankings",
+  title: "Rules",
+  description: "SkyBall Rules",
   openGraph: {
-    title: "Rankings",
-    description: "SkyBall Rankings",
-    url: "https://skyball.com/rankings",
+    title: "SkyBall Rules",
+    description: "SkyBall Rules",
+    url: "https://skyball.com/rules",
   },
 }
 
