@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BellIcon as Whistle, Ruler, Trophy, Users, AlertTriangle, Info } from "lucide-react"
+import { BellIcon as Whistle, Ruler, Trophy, Users, AlertTriangle, Info } from 'lucide-react'
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { PickleballCourt } from "@/components/pickleball-court"
 
 const rulesSections = [
   {
@@ -8,8 +10,7 @@ const rulesSections = [
     icon: Ruler,
     content: [
       "Court Size: 44 feet long and 20 feet wide for singles and doubles",
-      "Service Line: 20 feet wide and positioned 12 feet from the net and 10 feet from the baseline",
-      "Service Box: Service boxes are created by drawing a line from the center of the service line to the net",
+      // Moved Service Line / Service Box bullets to Serving Rules (see below)
       "Net Height: 34 inches at the center, 36 inches at the sidelines",
       "Racquets: 21-inch stringed racquets (textured or hexagonal strings are prohibited)",
       "Balls: High-density foam balls approved by SkyBall™",
@@ -28,7 +29,6 @@ const rulesSections = [
     content: [
       "Only one serve attempt is allowed",
       "Serves that touch the net and land in the correct service box are considered lets and must be replayed",
-      "Any form of serve is allowed, with players traditionally using an overhead serve",
       "The returner must allow the serve to bounce before hitting it",
     ],
   },
@@ -46,8 +46,8 @@ const rulesSections = [
     icon: Users,
     content: [
       "After the serve, the receiving side must make at least one groundstroke prior to volleying the ball",
-      "If a player releases their racquet to make a shot, it counts as long as the racquet doesn't land on the opponent's side",
-      "If the ball comes into contact with any part of a player's body during a live point, that player loses the point",
+      "If a player releases their racquet to make a shot, it counts as long as the racquet doesn&apos;t land on the opponent&apos;s side",
+      "If the ball comes into contact with any part of a player&apos;s body during a live point, that player loses the point",
       "Players switch sides after every game",
     ],
   },
@@ -56,7 +56,7 @@ const rulesSections = [
     icon: Users,
     content: [
       "One player from each team must remain inside the service line and alleyway until the ball bounces in court",
-      "The receiver's partner must be in the box directly opposite the server",
+      "The receiver&apos;s partner must be in the box directly opposite the server",
     ],
   },
   {
@@ -64,10 +64,10 @@ const rulesSections = [
     icon: AlertTriangle,
     content: [
       "The ball is hit out of bounds",
-      "The ball doesn't clear the net",
+      "The ball doesn&apos;t clear the net",
       "The ball bounces twice before being hit",
       "A serve lands outside the correct service box",
-      "A player touches the net or enters the opponent's court during play",
+      "A player touches the net or enters the opponent&apos;s court during play",
       "Player reaches over the net to hit the ball before it comes to their side",
       "Foot fault: Server steps on or over the baseline before serving the ball",
       "Double hit: The ball is hit twice by the same player in one stroke",
@@ -108,11 +108,56 @@ export default function RulesContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                  {section.content.map((rule, ruleIndex) => (
+                <ul className="list-disc list-inside space-y-2 mb-6">
+                  {section.content.map((rule: string, ruleIndex: number) => (
                     <li key={ruleIndex}>{rule}</li>
                   ))}
                 </ul>
+
+                {section.title === "Serving Rules" ? (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          Standard Play
+                          <Badge variant="secondary">Any Pickleball Court</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <PickleballCourt showKitchen={true} showServing={true} servingFormat="standard" />
+                        <ul className="text-sm space-y-1">
+                          <li>• Serve underhand only</li>
+                          <li>• Serve crosscourt anywhere in bounds</li>
+                          <li>• Entire crosscourt half is valid (including kitchen)</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          Service Box Play
+                          <Link href="/conversion">
+                            <Badge variant="secondary" className="cursor-pointer hover:bg-gray-200">
+                              Court Conversion
+                            </Badge>
+                          </Link>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <PickleballCourt showServiceBox={true} showServing={true} servingFormat="servicebox" />
+                        <ul className="text-sm space-y-1">
+                          <li>• Any serve style allowed</li>
+                          <li>
+                            • Must land in diagonal service box (between service line (12&apos;) and net)
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : null}
+
+                {"footer" in section && section.footer}
               </CardContent>
             </Card>
           ))}
@@ -121,4 +166,3 @@ export default function RulesContent() {
     </section>
   )
 }
-
