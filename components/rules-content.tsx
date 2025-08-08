@@ -46,8 +46,8 @@ const rulesSections = [
     icon: Users,
     content: [
       "After the serve, the receiving side must make at least one groundstroke prior to volleying the ball",
-      "If a player releases their racquet to make a shot, it counts as long as the racquet doesn&apos;t land on the opponent&apos;s side",
-      "If the ball comes into contact with any part of a player&apos;s body during a live point, that player loses the point",
+      "If a player releases their racquet to make a shot, it counts as long as the racquet doesn't land on the opponent's side",
+      "If the ball comes into contact with any part of a player's body during a live point, that player loses the point",
       "Players switch sides after every game",
     ],
   },
@@ -64,7 +64,7 @@ const rulesSections = [
     icon: AlertTriangle,
     content: [
       "The ball is hit out of bounds",
-      "The ball doesn&apos;t clear the net",
+      "The ball doesn't clear the net",
       "The ball bounces twice before being hit",
       "A serve lands outside the correct service box",
       "A player touches the net or enters the opponent&apos;s court during play",
