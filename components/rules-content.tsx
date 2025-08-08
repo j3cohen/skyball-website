@@ -56,7 +56,7 @@ const rulesSections = [
     icon: Users,
     content: [
       "One player from each team must remain inside the service line and alleyway until the ball bounces in court",
-      "The receiver&apos;s partner must be in the box directly opposite the server",
+      "The receiver's partner must be in the box directly opposite the server",
     ],
   },
   {
@@ -67,7 +67,7 @@ const rulesSections = [
       "The ball doesn't clear the net",
       "The ball bounces twice before being hit",
       "A serve lands outside the correct service box",
-      "A player touches the net or enters the opponent&apos;s court during play",
+      "A player touches the net or enters the opponent's court during play",
       "Player reaches over the net to hit the ball before it comes to their side",
       "Foot fault: Server steps on or over the baseline before serving the ball",
       "Double hit: The ball is hit twice by the same player in one stroke",
