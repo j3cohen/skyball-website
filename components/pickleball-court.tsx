@@ -172,7 +172,7 @@ export function PickleballCourt({
                 {/* Server behind left baseline */}
                 <circle cx={10} cy={courtHeight * 0.75 + 10} r="6" fill="#3b82f6" />
                 <text x={10} y={courtHeight * 0.75 + 25} textAnchor="middle" fontSize="10" fill="#374151">
-                  Serve
+                  
                 </text>
 
                 {/* Target area - entire crosscourt half including kitchen */}
@@ -209,7 +209,7 @@ export function PickleballCourt({
                 {/* Server behind right baseline */}
                 <circle cx={courtWidth + 30} cy={courtHeight * 0.25 + 10} r="6" fill="#3b82f6" />
                 <text x={courtWidth + 30} y={courtHeight * 0.25 + 25} textAnchor="middle" fontSize="10" fill="#374151">
-                  Serve
+                  
                 </text>
 
                 {/* Target area - diagonal service box only (between service line and net) */}
