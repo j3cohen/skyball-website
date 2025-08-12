@@ -48,8 +48,7 @@ const rulesSections = [
     title: "Doubles Specific Rules",
     icon: Users,
     content: [
-      "One player from each team must remain inside the service line and alleyway until the ball bounces in court",
-      "The receiver's partner must be in the box directly opposite the server",
+      "One player from each team must remain inside the court boundaries until the ball bounces in court",
     ],
   },
   {

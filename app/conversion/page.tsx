@@ -67,7 +67,7 @@ export default function ConversionPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Follow these steps to convert a standard pickleball court into a overhand serve ready SkyBall court
+            Follow these steps to convert a standard pickleball court into an overhand serve ready SkyBall court
           </motion.p>
 
           <div className="flex flex-col gap-6">
