@@ -38,9 +38,9 @@ export const products: Product[] = [
       
     ],
     description:
-      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines.",
+      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets and 3 balls.",
     details:
-      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets, 3 balls, and chalk for marking service lines. Get started with SkyBall™ right away on your local pickleball court! Select professional overgrips in pink or white at checkout.",
+      "Everything you need to play SkyBall on a pickleball court with a net: 2 rackets and 3 balls. Get started with SkyBall™ right away on your local pickleball court! Select professional overgrips in pink or white at checkout.",
     stripeLink: "https://buy.stripe.com/8x2aEXc3L5yZ3BybKOes008",
   },
   {
