@@ -15,13 +15,6 @@ const rulesSections = [
       "Racquets: 21-inch stringed racquets (textured or hexagonal strings are prohibited)",
       "Balls: High-density foam balls approved by SkyBall™",
     ],
-    footer: (
-      <div className="mt-4 pt-3 border-t border-gray-200">
-        <Link href="/conversion" className="text-sky-600 hover:text-sky-800 flex items-center">
-          <span className="mr-2">→</span> View our interactive court conversion guide
-        </Link>
-      </div>
-    ),
   },
   {
     title: "Serving Rules",
@@ -55,8 +48,7 @@ const rulesSections = [
     title: "Doubles Specific Rules",
     icon: Users,
     content: [
-      "One player from each team must remain inside the service line and alleyway until the ball bounces in court",
-      "The receiver's partner must be in the box directly opposite the server",
+      "One player from each team must remain inside the court boundaries until the ball bounces in court",
     ],
   },
   {
@@ -80,7 +72,18 @@ export default function RulesContent() {
   return (
     <section className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-12">SkyBall™ Official Rules</h1>
+        <h1 className="text-4xl font-bold text-center mb-12">SkyBall™ Rules</h1>
+                {/* Download link */}
+        <div className="text-center mb-12">
+          <Link
+            href="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/SkyBall+Official+Rules.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-600 hover:text-sky-800 underline"
+          >
+            Download Official Rules
+          </Link>
+        </div>
 
         <div className="max-w-4xl mx-auto space-y-8">
           <Card>
@@ -152,12 +155,15 @@ export default function RulesContent() {
                             • Must land in diagonal service box (between service line (12&apos;) and net)
                           </li>
                         </ul>
+                          <div className="mt-4 pt-3 border-t border-gray-200">
+                            <Link href="/conversion" className="text-sky-600 hover:text-sky-800 flex items-center">
+                              <span className="mr-2">→</span> View our interactive court conversion guide
+                            </Link>
+                          </div>
                       </CardContent>
                     </Card>
                   </div>
                 ) : null}
-
-                {"footer" in section && section.footer}
               </CardContent>
             </Card>
           ))}
