@@ -67,7 +67,7 @@ export default function ConversionPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Follow these steps to convert a standard pickleball court into a SkyBall court
+            Follow these steps to convert a standard pickleball court into a overhand serve ready SkyBall court
           </motion.p>
 
           <div className="flex flex-col gap-6">
@@ -186,7 +186,7 @@ export default function ConversionPage() {
               <div className="bg-white rounded-xl p-4 shadow-md border border-sky-100 mt-4">
                 <h2 className="text-lg font-semibold mb-2 text-sky-800">About SkyBall Courts</h2>
                 <p className="mb-3 text-gray-700 text-sm">
-                  SkyBall can be played on a standard pickleball court with a few simple modifications. The kitchen line
+                  SkyBall can be played on a standard pickleball court using an underhand serve without any modifications. To accommodate overhand serves, SkyBall courts require a service box. The kitchen line
                   in pickleball is 7 feet from the net. The SkyBall service line is placed 5 feet behind the kitchen
                   line (12 feet from the net), and service boxes are created by extending the existing centerline
                   through the kitchen to the net.
