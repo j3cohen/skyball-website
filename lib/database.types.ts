@@ -1,7 +1,600 @@
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      inventory_bill_of_materials: {
+        Row: {
+          component_product_id: number
+          created_at: string
+          id: number
+          kit_product_id: number
+          quantity: number
+          unit_of_measure: string
+          updated_at: string
+        }
+        Insert: {
+          component_product_id: number
+          created_at?: string
+          id?: number
+          kit_product_id: number
+          quantity: number
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Update: {
+          component_product_id?: number
+          created_at?: string
+          id?: number
+          kit_product_id?: number
+          quantity?: number
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_bill_of_materials_kit_product_id_fkey"
+            columns: ["kit_product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      inventory_inventory_transactions: {
+        Row: {
+          change_qty: number
+          date: string
+          id: number
+          product_id: number
+          reference_id: number | null
+          txn_type: string
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          change_qty: number
+          date?: string
+          id?: number
+          product_id: number
+          reference_id?: number | null
+          txn_type: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          change_qty?: number
+          date?: string
+          id?: number
+          product_id?: number
+          reference_id?: number | null
+          txn_type?: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_inventory_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      inventory_notifications: {
+        Row: {
+          id: number
+          notified_at: string
+          on_hand: number
+          product_id: number
+          reorder_level: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          notified_at?: string
+          on_hand: number
+          product_id: number
+          reorder_level: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          notified_at?: string
+          on_hand?: number
+          product_id?: number
+          reorder_level?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      inventory_products: {
+        Row: {
+          avg_cost: number
+          created_at: string
+          id: number
+          name: string
+          reorder_level: number
+          sku: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          avg_cost?: number
+          created_at?: string
+          id?: number
+          name: string
+          reorder_level?: number
+          sku: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          avg_cost?: number
+          created_at?: string
+          id?: number
+          name?: string
+          reorder_level?: number
+          sku?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_purchase_order_lines: {
+        Row: {
+          created_at: string
+          duty_alloc: number
+          freight_alloc: number
+          id: number
+          landed_unit_cost: number
+          other_alloc: number
+          product_id: number
+          purchase_order_id: number
+          qty: number
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duty_alloc?: number
+          freight_alloc?: number
+          id?: number
+          landed_unit_cost?: number
+          other_alloc?: number
+          product_id: number
+          purchase_order_id: number
+          qty: number
+          unit_cost: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duty_alloc?: number
+          freight_alloc?: number
+          id?: number
+          landed_unit_cost?: number
+          other_alloc?: number
+          product_id?: number
+          purchase_order_id?: number
+          qty?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_purchase_order_lines_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_purchase_orders: {
+        Row: {
+          created_at: string
+          date: string
+          freight_in: number
+          id: number
+          import_duty: number
+          other_charges: number
+          updated_at: string
+          vendor: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          freight_in?: number
+          id?: number
+          import_duty?: number
+          other_charges?: number
+          updated_at?: string
+          vendor: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          freight_in?: number
+          id?: number
+          import_duty?: number
+          other_charges?: number
+          updated_at?: string
+          vendor?: string
+        }
+        Relationships: []
+      }
+      inventory_sales_order_lines: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          product_id: number
+          qty: number
+          sales_order_id: number
+          unit_price_override: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          product_id: number
+          qty: number
+          sales_order_id: number
+          unit_price_override: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          product_id?: number
+          qty?: number
+          sales_order_id?: number
+          unit_price_override?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_base_valuation"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_kit_capacity"
+            referencedColumns: ["kit_id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_on_hand"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products_with_cost"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "low_stock_alerts"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "gift_order_summary"
+            referencedColumns: ["gift_id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_sales_order_lines_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_sales_orders: {
+        Row: {
+          comments: string | null
+          created_at: string
+          customer: string
+          date: string
+          id: number
+          is_gift: boolean
+          shipping_cost: number
+          total_cogs: number
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          customer: string
+          date?: string
+          id?: number
+          is_gift?: boolean
+          shipping_cost?: number
+          total_cogs?: number
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          customer?: string
+          date?: string
+          id?: number
+          is_gift?: boolean
+          shipping_cost?: number
+          total_cogs?: number
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       match_sets: {
         Row: {
           match_id: string
@@ -279,6 +872,7 @@ export type Database = {
           current_city: string | null
           full_name: string | null
           id: string
+          is_admin: boolean
           phone: string | null
           updated_at: string | null
         }
@@ -286,6 +880,7 @@ export type Database = {
           current_city?: string | null
           full_name?: string | null
           id: string
+          is_admin?: boolean
           phone?: string | null
           updated_at?: string | null
         }
@@ -293,6 +888,7 @@ export type Database = {
           current_city?: string | null
           full_name?: string | null
           id?: string
+          is_admin?: boolean
           phone?: string | null
           updated_at?: string | null
         }
@@ -353,12 +949,16 @@ export type Database = {
           date_actual: string | null
           description: string
           id: string
+          image: string | null
           location: string
           max_participants: number | null
           name: string
+          open_play: boolean
+          payment_link: string | null
           points_value: number
           prize: string | null
           registration_fee: string | null
+          start_at: string | null
           time: string
         }
         Insert: {
@@ -366,12 +966,16 @@ export type Database = {
           date_actual?: string | null
           description: string
           id: string
+          image?: string | null
           location: string
           max_participants?: number | null
           name: string
+          open_play?: boolean
+          payment_link?: string | null
           points_value?: number
           prize?: string | null
           registration_fee?: string | null
+          start_at?: string | null
           time: string
         }
         Update: {
@@ -379,12 +983,16 @@ export type Database = {
           date_actual?: string | null
           description?: string
           id?: string
+          image?: string | null
           location?: string
           max_participants?: number | null
           name?: string
+          open_play?: boolean
+          payment_link?: string | null
           points_value?: number
           prize?: string | null
           registration_fee?: string | null
+          start_at?: string | null
           time?: string
         }
         Relationships: []
@@ -413,6 +1021,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gift_cost_summary: {
+        Row: {
+          total_gift_cogs: number | null
+          total_gift_costs: number | null
+          total_gift_shipping: number | null
+        }
+        Relationships: []
+      }
+      gift_order_summary: {
+        Row: {
+          comments: string | null
+          customer: string | null
+          date: string | null
+          face_value: number | null
+          gift_id: number | null
+          items_given: number | null
+        }
+        Relationships: []
+      }
+      inventory_base_valuation: {
+        Row: {
+          avg_cost: number | null
+          inventory_value: number | null
+          name: string | null
+          on_hand: number | null
+          product_id: number | null
+          sku: string | null
+        }
+        Relationships: []
+      }
+      inventory_kit_capacity: {
+        Row: {
+          kit_id: number | null
+          kit_inventory_value: number | null
+          kit_name: string | null
+          kit_sku: string | null
+          possible_kits: number | null
+          unit_cost: number | null
+        }
+        Relationships: []
+      }
+      inventory_on_hand: {
+        Row: {
+          avg_cost: number | null
+          name: string | null
+          on_hand: number | null
+          product_id: number | null
+          reorder_level: number | null
+          sku: string | null
+        }
+        Relationships: []
+      }
+      inventory_products_with_cost: {
+        Row: {
+          avg_cost: number | null
+          computed_cost: number | null
+          created_at: string | null
+          id: number | null
+          name: string | null
+          reorder_level: number | null
+          sku: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      low_stock_alerts: {
+        Row: {
+          avg_cost: number | null
+          name: string | null
+          on_hand: number | null
+          product_id: number | null
+          reorder_level: number | null
+          sku: string | null
+        }
+        Relationships: []
       }
       player_records: {
         Row: {
@@ -469,18 +1154,39 @@ export type Database = {
           },
         ]
       }
+      sales_order_summary: {
+        Row: {
+          comments: string | null
+          customer: string | null
+          date: string | null
+          gross_margin_pct: number | null
+          gross_profit: number | null
+          id: number | null
+          is_gift: boolean | null
+          shipping_expense: number | null
+          total_cogs: number | null
+          total_revenue: number | null
+          units_sold: number | null
+        }
+        Relationships: []
+      }
       tournament_with_counts: {
         Row: {
           current_participants: number | null
           date: string | null
+          date_actual: string | null
           description: string | null
           id: string | null
+          image: string | null
           location: string | null
           max_participants: number | null
           name: string | null
+          open_play: boolean | null
+          payment_link: string | null
           points_value: number | null
           prize: string | null
           registration_fee: string | null
+          start_at: string | null
           time: string | null
         }
         Relationships: []
@@ -488,34 +1194,54 @@ export type Database = {
     }
     Functions: {
       consume_pass_and_register: {
-        Args: { pass_id: string; user_id: string; tournament_id: string }
+        Args: { pass_id: string; tournament_id: string; user_id: string }
         Returns: undefined
+      }
+      get_kpi_summary: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          cogs: number
+          gross_margin: number
+          net_margin_including_gifts: number
+          revenue: number
+          shipping_expense: number
+          total_gift_cogs: number
+          total_gift_shipping: number
+        }[]
       }
       get_match_details_by_tournament: {
         Args: { p_tournament_id: string }
         Returns: {
           match_id: string
-          round: string
-          player1_slug: string
           player1_name: string
           player1_seed: number
-          player2_slug: string
+          player1_slug: string
           player2_name: string
           player2_seed: number
+          player2_slug: string
+          round: string
+          sets: Json
           winner_slug: string
-          sets: JSON
         }[]
       }
       get_tournament_summary: {
         Args: { p_tournament_id: string }
         Returns: {
-          winner: string
           runner_up: string
           score: string
+          winner: string
         }[]
       }
+      record_purchase_receipt: {
+        Args: { po_id: number }
+        Returns: undefined
+      }
+      record_sale: {
+        Args: { sale_id: number }
+        Returns: undefined
+      }
       register_for_tournament: {
-        Args: { p_tournament_id: string; p_pass_id: string }
+        Args: { p_pass_id: string; p_tournament_id: string }
         Returns: string
       }
     }
@@ -528,21 +1254,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -560,14 +1290,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -583,14 +1315,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -606,14 +1340,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -621,19 +1357,24 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
