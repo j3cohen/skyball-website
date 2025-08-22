@@ -96,7 +96,20 @@ export default async function PlayerPage({
   const totalPoints = rankRow?.total_points ?? 0
 
   // —4️⃣ Fetch their tournament‐points (for the history list)
-  const { data: ptsRows, error: ptsError } = await supabase
+  type PlayerTournamentPointRow = {
+    points: number | null
+    tournament_id: string
+    tournament:
+      | {
+          id: string
+          name: string | null
+          date: string | null
+          points_value: number | null
+        }
+      | null
+  }
+
+  const { data: ptsRowsRaw, error: ptsError } = await supabase
     .from("player_tournament_points")
     .select(`
       points,
@@ -115,11 +128,13 @@ export default async function PlayerPage({
     throw ptsError
   }
 
-  const tournaments = (ptsRows ?? []).map((r) => ({
+  const ptsRows = (ptsRowsRaw ?? []) as PlayerTournamentPointRow[]
+
+  const tournaments = ptsRows.map((r) => ({
     id: r.tournament_id,
-    name: r.tournament.name!,
-    date: r.tournament.date!,
-    points: r.points,
+    name: r.tournament?.name!,
+    date: r.tournament?.date!,
+    points: r.points ?? 0,
     countedForRankings: true,
   }))
 
