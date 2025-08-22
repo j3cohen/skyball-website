@@ -39,8 +39,8 @@ export const nameSchema = z
 // zip validation schema
 export const zipSchema = z
   .string()
-  .length(5, "Zip code must be exactly 5 digits")
-  .regex(/^\d{5}$/, "Zip code must be exactly 5 digits")
+  .min(5, "Zip code must be at least 5 digits")
+  .max(10, "Zip code must be at most 10 digits")
   .optional()
   .or(z.literal(""))
 

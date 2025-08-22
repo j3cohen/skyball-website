@@ -55,7 +55,7 @@ export default async function PlayerPage({
     .single()
 
   if (recError && recError.code !== "PGRST116") {
-    // PGRST116 = “no rows returned” → treat as 0–0
+    // PGRST116 = “no rows returned” → treat as 0–0 
     throw recError
   }
   const wins = rec?.wins ?? 0
