@@ -132,8 +132,8 @@ export default async function PlayerPage({
 
   const tournaments = ptsRows.map((r) => ({
     id: r.tournament_id,
-    name: r.tournament?.name!,
-    date: r.tournament?.date!,
+    name: r.tournament?.name ?? "",
+    date: r.tournament?.date ?? "",
     points: r.points ?? 0,
     countedForRankings: true,
   }))
