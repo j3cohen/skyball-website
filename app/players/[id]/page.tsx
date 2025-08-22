@@ -76,7 +76,12 @@ export default async function PlayerPage({
   const losses = rec?.losses ?? 0
 
   // —3️⃣ Load current rank & total_points from your current_rankings view
-  const { data: rankRow, error: rankError } = await supabase
+  type RankRow = {
+    current_rank: number | null
+    total_points: number | null
+  }
+
+  const { data: rankRowRaw, error: rankError } = await supabase
     .from("current_rankings")
     .select(`current_rank, total_points`)
     .eq("player_id", player.id)
@@ -85,6 +90,8 @@ export default async function PlayerPage({
   if (rankError && rankError.code !== "PGRST116") {
     throw rankError
   }
+
+  const rankRow = rankRowRaw as RankRow | null
   const currentRank = rankRow?.current_rank
   const totalPoints = rankRow?.total_points ?? 0
 
