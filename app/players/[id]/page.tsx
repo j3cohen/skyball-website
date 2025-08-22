@@ -29,7 +29,9 @@ export default async function PlayerPage({
   const supabase = createServerComponentClient<Database>({ cookies })
 
   // —1️⃣ Load the core player row
-  const { data: player, error: playerError } = await supabase
+  type PlayerRow = Database["public"]["Tables"]["players"]["Row"]
+
+  const { data: playerData, error: playerError } = await supabase
     .from("players")
     .select(`
       id,
@@ -42,6 +44,8 @@ export default async function PlayerPage({
     `)
     .eq("slug", params.id)
     .single()
+
+  const player = playerData as PlayerRow | null
 
   if (playerError || !player) {
     return notFound()
