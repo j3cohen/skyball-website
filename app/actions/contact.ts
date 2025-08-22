@@ -6,6 +6,7 @@ const schema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   message: z.string().min(1, "Message is required"),
+  zip: z.string().min(5, "Zip code must be at least 5 characters").max(10, "Zip code must be at most 10 characters"),
 })
 
 export async function submitContactForm(formData: FormData) {
@@ -13,6 +14,7 @@ export async function submitContactForm(formData: FormData) {
     name: formData.get("name"),
     email: formData.get("email"),
     message: formData.get("message"),
+    zip: formData.get("zip"),
   })
 
   if (!validatedFields.success) {

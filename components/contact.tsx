@@ -157,7 +157,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <label htmlFor="zip" className="block text-sm font-medium text-gray-700">
-                      Zip Code (Optional)
+                      Zip Code 
                     </label>
                     <Input type="text" id="zip" name="zip" className="mt-1" />
                   </div>

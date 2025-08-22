@@ -6,7 +6,7 @@ import { z } from "zod"
 const subscriptionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  zip: z.string().optional(),
+  zip: z.string().min(5, "Zip code must be at least 5 characters").max(10, "Zip code must be at most 10 characters"),
   subject: z.string(),
 })
 

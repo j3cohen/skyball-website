@@ -36,11 +36,20 @@ export const nameSchema = z
   .min(2, "Name must be at least 2 characters")
   .max(100, "Name must be less than 100 characters")
 
+// zip validation schema
+export const zipSchema = z
+  .string()
+  .length(5, "Zip code must be exactly 5 digits")
+  .regex(/^\d{5}$/, "Zip code must be exactly 5 digits")
+  .optional()
+  .or(z.literal(""))
+
 // Define the shape of our notification data
 interface NotificationData {
   name: string
   email?: string
   phone?: string
+  zip?: string
   notifyOpenPlay?: boolean
   notifyTournaments?: boolean
   notifyPopUps?: boolean
@@ -53,6 +62,7 @@ export const notificationSignupSchema = z
     name: nameSchema,
     email: emailSchema,
     phone: phoneSchema,
+    zip: zipSchema,
     notifyOpenPlay: z.boolean().optional().default(false),
     notifyTournaments: z.boolean().optional().default(false),
     notifyPopUps: z.boolean().optional().default(false),

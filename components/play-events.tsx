@@ -606,6 +606,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [zip, setZip] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -629,6 +630,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
       formData.append("name", name)
       if (email) formData.append("email", email)
       if (phone) formData.append("phone", phone)
+      if (zip) formData.append("zip", zip)
 
       // Add notification preferences
       formData.append("notifyOpenPlay", notifyOpenPlay.toString())
@@ -644,6 +646,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
         setName("")
         setEmail("")
         setPhone("")
+        setZip("")
 
         // Reset success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000)
@@ -727,6 +730,22 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
               }`}
             />
             {fieldErrors.phone && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone[0]}</p>}
+          </div>
+          <div>
+            <Label htmlFor="notification-zip" className="text-sm">
+              Zip Code
+            </Label>
+            <input
+              id="notification-zip"
+              type="text"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              placeholder="12345"
+              className={`w-full mt-1 px-3 py-2 border rounded-md text-sm ${
+                fieldErrors.zip ? "border-red-300 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            {fieldErrors.zip && <p className="text-red-500 text-xs mt-1">{fieldErrors.zip[0]}</p>}
           </div>
 
           {fieldErrors.contact && <p className="text-red-500 text-xs mt-1">{fieldErrors.contact[0]}</p>}

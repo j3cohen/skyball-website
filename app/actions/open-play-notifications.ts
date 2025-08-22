@@ -24,6 +24,7 @@ export async function subscribeToOpenPlayNotifications(formData: FormData) {
       name: (formData.get("name") as string) || "",
       email: (formData.get("email") as string) || "",
       phone: (formData.get("phone") as string) || "",
+      zip: (formData.get("zip") as string) || "",
       notifyOpenPlay: parseBoolean(formData.get("notifyOpenPlay")),
       notifyTournaments: parseBoolean(formData.get("notifyTournaments")),
       notifyPopUps: parseBoolean(formData.get("notifyPopUps")),
@@ -129,6 +130,7 @@ async function sendTelegramNotification(data: NotificationSignupData) {
 ${data.name ? `*Name:* ${data.name}` : ""}
 ${data.email ? `*Email:* ${data.email}` : ""}
 ${formattedPhone ? `*Phone:* ${formattedPhone}` : ""}
+${data.zip ? `*Zip Code:* ${data.zip}` : ""}
 
 *Notification Preferences:*
 ${notificationTypes.join("\n")}
