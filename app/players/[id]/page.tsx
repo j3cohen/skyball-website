@@ -52,7 +52,13 @@ export default async function PlayerPage({
   }
 
   // —2️⃣ Load wins/losses from your player_records view
-  const { data: rec, error: recError } = await supabase
+  // define an explicit type for the returned row so TypeScript doesn't infer `never`
+  type PlayerRecordRow = {
+    wins: number
+    losses: number
+  }
+
+  const { data: recData, error: recError } = await supabase
     .from("player_records")
     .select(`wins, losses`)
     .eq("player_id", player.id)
@@ -62,6 +68,10 @@ export default async function PlayerPage({
     // PGRST116 = “no rows returned” → treat as 0–0 
     throw recError
   }
+
+  // cast the raw response to the explicit row type (or null)
+  const rec = recData as PlayerRecordRow | null
+
   const wins = rec?.wins ?? 0
   const losses = rec?.losses ?? 0
 
