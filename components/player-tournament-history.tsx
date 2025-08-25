@@ -65,7 +65,7 @@ export default function PlayerTournamentHistory({
     setMatchesByTour(prev => ({ ...prev, [tid]: null }))
     const params: { p_tournament_id: string } = { p_tournament_id: tid }
     const { data, error: rpcError } = await supabase
-      .rpc("get_match_details_by_tournament", params as unknown as never)
+      .rpc("get_match_details_by_tournament", params)
 
     if (rpcError) {
       console.error("RPC error:", rpcError)
