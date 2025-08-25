@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { Database, Json } from "@/lib/database.types"
+import type { Database } from "@/lib/database.types"
 import MatchScoreDisplay, { type Match as DisplayMatch } from "./match-score-display"
 import ScrollLink from "./scroll-link"
 
@@ -63,10 +63,12 @@ export default function PlayerTournamentHistory({
 
     if (matchesByTour[tid] === undefined) {
       setMatchesByTour(prev => ({ ...prev, [tid]: null }))
-      const { data, error: rpcError } = await supabase.rpc(
-        'get_match_details_by_tournament',
-        { p_tournament_id: tid }
-      );
+      const { data, error: rpcError } =
+        await supabase.rpc<'get_match_details_by_tournament'>(
+          'get_match_details_by_tournament',
+          { p_tournament_id: tid }
+        );
+
 
       if (rpcError) {
         console.error("RPC error:", rpcError)
