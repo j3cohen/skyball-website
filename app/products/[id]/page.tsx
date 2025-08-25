@@ -26,7 +26,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               </div>
               <div className="md:w-1/2 p-8">
                 <div className="mb-8">
-                  <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+                  <h1 className="text-3xl font-bold mb-4">{product.name} – Sold Out: New orders expected to be filled the first week of September.</h1>
                   <p className="text-gray-600 mb-6">{product.description}</p>
                   <div className="text-2xl font-bold text-sky-600 mb-6">${product.price.toFixed(2)}</div>
                   <div className="border-t border-b py-4 my-6">
