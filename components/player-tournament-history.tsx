@@ -8,6 +8,13 @@ import type { Database } from "@/lib/database.types"
 import MatchScoreDisplay, { type Match as DisplayMatch } from "./match-score-display"
 import ScrollLink from "./scroll-link"
 
+type MatchDetailsArgs =
+  Database["public"]["Functions"]["get_match_details_by_tournament"]["Args"]
+
+type MatchDetailsReturn =
+  Database["public"]["Functions"]["get_match_details_by_tournament"]["Returns"]
+
+
 // Raw RPC row including seeds and sets
 interface MatchRow {
   match_id:      string
@@ -63,8 +70,8 @@ export default function PlayerTournamentHistory({
 
     if (matchesByTour[tid] === undefined) {
       setMatchesByTour(prev => ({ ...prev, [tid]: null }))
-      const { data, error: rpcError } = await supabase
-        .rpc("get_match_details_by_tournament", { p_tournament_id: tid })
+      const args = { p_tournament_id: tid } satisfies MatchDetailsArgs
+      const { data, error: rpcError } = await supabase.rpc("get_match_details_by_tournament", args)
 
       if (rpcError) {
         console.error("RPC error:", rpcError)
