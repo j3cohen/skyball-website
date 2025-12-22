@@ -104,13 +104,15 @@ export default async function PlayerPage({
     throw ptsError
   }
 
-  const tournaments = (ptsRows ?? []).map((r) => ({
-    id: r.tournament_id,
-    name: r.tournament.name!,
-    date: r.tournament.date!,
-    points: r.points,
-    countedForRankings: true,
-  }))
+  const tournaments = (ptsRows ?? [])
+    .filter((r) => r.tournament)
+    .map((r) => ({
+      id: r.tournament_id,
+      name: r.tournament!.name,
+      date: r.tournament!.date,
+      points: r.points,
+      countedForRankings: true,
+    }))
 
   // —5️⃣ Compute age if you want
   let age: number | null = null
