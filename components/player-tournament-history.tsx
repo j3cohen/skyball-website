@@ -11,8 +11,8 @@ import ScrollLink from "./scroll-link"
 type MatchDetailsArgs =
   Database["public"]["Functions"]["get_match_details_by_tournament"]["Args"]
 
-type MatchDetailsReturn =
-  Database["public"]["Functions"]["get_match_details_by_tournament"]["Returns"]
+// type MatchDetailsReturn =
+//   Database["public"]["Functions"]["get_match_details_by_tournament"]["Returns"]
 
 
 // Raw RPC row including seeds and sets
