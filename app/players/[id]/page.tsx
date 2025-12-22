@@ -14,6 +14,11 @@ import type { Metadata } from "next"
 type PlayerRow = Database["public"]["Tables"]["players"]["Row"]
 type PlayerRecordsRow = Database["public"]["Views"]["player_records"]["Row"]
 type CurrentRankingsRow = Database["public"]["Views"]["current_rankings"]["Row"]
+type PlayerTournamentPointsRow =
+  Database["public"]["Tables"]["player_tournament_points"]["Row"] & {
+    tournament: Database["public"]["Tables"]["tournaments"]["Row"] | null
+  }
+
 
 export const metadata: Metadata = {
   title: "Player Profile",
@@ -93,6 +98,7 @@ export default async function PlayerPage({
     `)
     .eq("player_id", player.id)
     .order("date", { foreignTable: "tournament", ascending: false })
+    .returns<PlayerTournamentPointsRow[]>()
 
   if (ptsError) {
     throw ptsError
