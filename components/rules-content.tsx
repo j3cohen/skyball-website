@@ -23,7 +23,7 @@ const rulesSections = [
       "Only one serve attempt is allowed per point",
       "Serves must be made underhand into the diagonal service box",
       "Serves that land in the kitchen are considered out (touching the line is in)",
-      "No lets: the serve is live even if it touches the net",
+      "No Lets: the serve is live even if it touches the net",
       "The returner must allow the serve to bounce before hitting it",
     ],
   },
@@ -32,7 +32,7 @@ const rulesSections = [
     icon: Trophy,
     content: [
       "Games are played to 11 points (win by 2)",
-      "The initial serving player serves one point and then players alternate two serves each",
+      "Players alternate serving 2 points each, once from the right side and then once from the left side",
       "SkyBall Quickplay matches consist of a single game to 11, while tournament play is best of 3, 5, or 7 games.",
     ],
   },
@@ -41,9 +41,9 @@ const rulesSections = [
     icon: Users,
     content: [
       "After the serve, the receiving side must make at least one groundstroke prior to volleying the ball",
-      "If a player releases their racquet to make a shot, it counts as long as the racquet doesn't land on the opponent's side",
+      "If a player releases their racquet to make a shot, it counts if the racquet doesn't land on the opponent's side",
       "If the ball comes into contact with any part of a player's body during a live point, that player loses the point",
-      "Players switch sides after every game",
+      "Players switch sides after every game, and during the final game of a match, they switch sides every 6 points",
     ],
   },
   {
@@ -124,14 +124,15 @@ export default function RulesContent() {
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
-                          Standard Play
-                          <Badge variant="secondary">Any Pickleball Court</Badge>
+                          
+                          <Badge variant="secondary">Play On Any Pickleball Court</Badge>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <PickleballCourt showKitchen={true} showServing={true} servingFormat="standard" />
                         <ul className="text-sm space-y-1">
                           <li>• Serve underhand only</li>
+                          <li>• Server can drop or bounce the ball before serving</li>
                           <li>• Serve crosscourt anywhere in bounds</li>
                           <li>• Entire crosscourt half is valid (excluding kitchen)</li>
                         </ul>
