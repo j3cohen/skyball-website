@@ -20,8 +20,10 @@ const rulesSections = [
     title: "Serving Rules",
     icon: Whistle,
     content: [
-      "Only one serve attempt is allowed",
-      "Serves that touch the net and land in the correct service box are considered lets and must be replayed",
+      "Only one serve attempt is allowed per point",
+      "Serves must be made underhand into the diagonal service box",
+      "Serves that land in the kitchen are considered out (touching the line is in)",
+      "No lets: the serve is live even if it touches the net",
       "The returner must allow the serve to bounce before hitting it",
     ],
   },
@@ -118,7 +120,7 @@ export default function RulesContent() {
                 </ul>
 
                 {section.title === "Serving Rules" ? (
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-1 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -131,12 +133,12 @@ export default function RulesContent() {
                         <ul className="text-sm space-y-1">
                           <li>• Serve underhand only</li>
                           <li>• Serve crosscourt anywhere in bounds</li>
-                          <li>• Entire crosscourt half is valid (including kitchen)</li>
+                          <li>• Entire crosscourt half is valid (excluding kitchen)</li>
                         </ul>
                       </CardContent>
                     </Card>
 
-                    <Card>
+                    {/* <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           Service Box Play
@@ -161,7 +163,7 @@ export default function RulesContent() {
                             </Link>
                           </div>
                       </CardContent>
-                    </Card>
+                    </Card> */}
                   </div>
                 ) : null}
               </CardContent>
