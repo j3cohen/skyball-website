@@ -12,6 +12,8 @@ import type { Database } from "@/lib/database.types"
 import type { Metadata } from "next"
 
 type PlayerRow = Database["public"]["Tables"]["players"]["Row"]
+type PlayerRecordsRow = Database["public"]["Views"]["player_records"]["Row"]
+type CurrentRankingsRow = Database["public"]["Views"]["current_rankings"]["Row"]
 
 export const metadata: Metadata = {
   title: "Player Profile",
@@ -54,7 +56,7 @@ export default async function PlayerPage({
     .from("player_records")
     .select(`wins, losses`)
     .eq("player_id", player.id)
-    .single()
+    .single<PlayerRecordsRow>()
 
   if (recError && recError.code !== "PGRST116") {
     // PGRST116 = “no rows returned” → treat as 0–0
@@ -68,7 +70,7 @@ export default async function PlayerPage({
     .from("current_rankings")
     .select(`current_rank, total_points`)
     .eq("player_id", player.id)
-    .single()
+    .single<CurrentRankingsRow>()
 
   if (rankError && rankError.code !== "PGRST116") {
     throw rankError
