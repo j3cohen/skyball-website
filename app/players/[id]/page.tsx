@@ -1,4 +1,4 @@
-// app/players/[slug]/page.tsx
+// app/players/[id]/page.tsx
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -10,6 +10,8 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import type { Database } from "@/lib/database.types"
 import type { Metadata } from "next"
+
+type PlayerRow = Database["public"]["Tables"]["players"]["Row"]
 
 export const metadata: Metadata = {
   title: "Player Profile",
@@ -41,7 +43,7 @@ export default async function PlayerPage({
       hometown
     `)
     .eq("slug", params.id)
-    .single()
+    .single<PlayerRow>()
 
   if (playerError || !player) {
     return notFound()
