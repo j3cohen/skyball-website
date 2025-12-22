@@ -75,7 +75,7 @@ export function PickleballCourt({
               x1={serviceLeft + 20}
               y1={courtHeight / 2 + 10}
               x2={netPosition + 20}
-              y2={courtHeight / 2 + 10}
+              y2={courtHeight / 2 + 10} 
               stroke="#ffffff"
               strokeWidth="1"
             />
@@ -177,9 +177,9 @@ export function PickleballCourt({
 
                 {/* Target area - entire crosscourt half including kitchen */}
                 <rect
-                  x={netPosition + 20}
+                  x={kitchenRight + 20}
                   y={10}
-                  width={courtWidth / 2}
+                  width={courtWidth / 2 + (netPosition - kitchenRight)}
                   height={courtHeight / 2}
                   fill="rgba(249, 115, 22, 0.2)"
                   stroke="#f97316"
@@ -196,7 +196,7 @@ export function PickleballCourt({
                 <line
                   x1={16}
                   y1={courtHeight * 0.75 + 10}
-                  x2={netPosition + 40}
+                  x2={kitchenRight + 40}
                   y2={courtHeight * 0.25 + 10}
                   stroke="#374151"
                   strokeWidth="2"
