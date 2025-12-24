@@ -41,6 +41,7 @@ const rulesSections = [
     icon: Users,
     content: [
       "After the serve, the receiving side must make at least one groundstroke prior to volleying the ball",
+      "After the serve, there is no kitchen rule - players may volley from anywhere on the court",
       "If a player releases their racquet to make a shot, it counts if the racquet doesn't land on the opponent's side",
       "If the ball comes into contact with any part of a player's body during a live point, that player loses the point",
       "Players switch sides after every game, and during the final game of a match, they switch sides every 6 points",

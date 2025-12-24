@@ -7,7 +7,7 @@ import Link from "next/link"
 
 const rules = [
   "Played on a 44 feet long and 20 feet wide court (singles and doubles)",
-  "One serve only (lets are replayed)",
+  "One serve only per point, underhand into diagonal service box",
   "Games are played to 11 points (win by 2)",
   "Matches are typically played best of 3 games",
 ]
