@@ -15,7 +15,6 @@ import { supabase } from "@/lib/supabaseClient"
 import type { Session } from "@supabase/supabase-js"
 import { useCart } from "@/components/cart-provider";
 
-
 interface NavItem {
   name: string
   href: string

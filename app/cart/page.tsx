@@ -17,6 +17,20 @@ type CartLine = {
   slug: string;
 };
 
+type ProductJoin = {
+  slug: string;
+  name: string;
+  active: boolean;
+};
+
+type PriceRowJoin = {
+  id: string;
+  unit_amount: number;
+  currency: string;
+  active: boolean;
+  product: ProductJoin | null;
+};
+
 function formatMoney(cents: number, currency: string) {
   const amount = cents / 100;
   return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(amount);
@@ -24,6 +38,7 @@ function formatMoney(cents: number, currency: string) {
 
 export default function CartPage() {
   const { items, hydrated, setQty, removeItem, clearCart } = useCart();
+
   const [lines, setLines] = useState<CartLine[]>([]);
   const [loadingLines, setLoadingLines] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -33,7 +48,6 @@ export default function CartPage() {
     return lines.reduce((sum, l) => sum + l.unit_amount * l.qty, 0);
   }, [lines]);
 
-  // Load product details for cart items from Supabase
   useEffect(() => {
     if (!hydrated) return;
 
@@ -50,7 +64,7 @@ export default function CartPage() {
       try {
         const priceRowIds = items.map((i) => i.priceRowId);
 
-        const { data, error } = await supabase
+        const { data, error: sbErr } = await supabase
           .from("product_prices")
           .select(
             `
@@ -67,48 +81,37 @@ export default function CartPage() {
           )
           .in("id", priceRowIds);
 
-        if (error) throw error;
+        if (sbErr) throw sbErr;
 
-        const byId = new Map(
-          (data ?? []).map((r: any) => [
-            r.id,
-            {
-              unit_amount: r.unit_amount,
-              currency: r.currency,
-              active: r.active,
-              product_active: r.product?.active,
-              name: r.product?.name ?? "Unknown item",
-              slug: r.product?.slug ?? "",
-            },
-          ])
-        );
+        const rows = (data ?? []) as PriceRowJoin[];
+        const byId = new Map<string, PriceRowJoin>(rows.map((r) => [r.id, r]));
 
         const nextLines: CartLine[] = items
           .map((it) => {
             const row = byId.get(it.priceRowId);
-            if (!row) return null;
+            if (!row || !row.product) return null;
 
-            // If price/product is inactive, still show it but warn.
             return {
               priceRowId: it.priceRowId,
               qty: it.qty,
-              name: row.name,
+              name: row.product.name ?? "Unknown item",
               unit_amount: row.unit_amount,
               currency: row.currency,
-              slug: row.slug,
+              slug: row.product.slug ?? "",
             };
           })
-          .filter(Boolean) as CartLine[];
+          .filter((x): x is CartLine => x !== null);
 
         setLines(nextLines);
-      } catch (e: any) {
-        setError(e?.message ?? "Failed to load cart items.");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Failed to load cart items.";
+        setError(message);
       } finally {
         setLoadingLines(false);
       }
     };
 
-    run();
+    void run();
   }, [items, hydrated]);
 
   async function checkout() {
@@ -124,12 +127,27 @@ export default function CartPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Checkout failed.");
+      const data: unknown = await res.json();
 
-      window.location.href = data.url;
-    } catch (e: any) {
-      setError(e?.message ?? "Checkout failed.");
+      if (!res.ok) {
+        const message =
+          typeof data === "object" && data !== null && "error" in data && typeof (data as { error: unknown }).error === "string"
+            ? (data as { error: string }).error
+            : "Checkout failed.";
+        throw new Error(message);
+      }
+
+      const url =
+        typeof data === "object" && data !== null && "url" in data && typeof (data as { url: unknown }).url === "string"
+          ? (data as { url: string }).url
+          : null;
+
+      if (!url) throw new Error("Checkout failed: missing redirect URL.");
+
+      window.location.href = url;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Checkout failed.";
+      setError(message);
       setCheckingOut(false);
     }
   }
@@ -174,7 +192,10 @@ export default function CartPage() {
                     <div className="text-gray-600">Loading items…</div>
                   ) : (
                     lines.map((line) => (
-                      <div key={line.priceRowId} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4">
+                      <div
+                        key={line.priceRowId}
+                        className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4"
+                      >
                         <div className="min-w-0">
                           <div className="font-semibold truncate">{line.name}</div>
                           <div className="text-sm text-gray-600">
@@ -221,9 +242,7 @@ export default function CartPage() {
                   <div className="text-2xl font-bold">
                     {lines.length ? formatMoney(subtotalCents, lines[0].currency) : "$0.00"}
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    Taxes/shipping not calculated (v1).
-                  </div>
+                  <div className="text-sm text-gray-500 mt-1">Taxes/shipping not calculated (v1).</div>
                 </div>
 
                 <div className="flex gap-3">
