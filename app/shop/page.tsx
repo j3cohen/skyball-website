@@ -10,6 +10,8 @@ import ProductList from "@/components/product-list"
 import InfoRequestForm from "@/components/info-request-form"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+// import { BuyNowButton } from "@/components/buy-now-button"
+import AddToCart from "@/components/add-to-cart"
 
 
 export default function ShopPage() {
@@ -29,8 +31,12 @@ export default function ShopPage() {
           </div>
 
 
-
+          <div className="text-center mt-8">
+          </div>
           <ProductList />
+          {/* <BuyNowButton /> */}
+          <AddToCart />
+         
 
           {/* terms and conditions apply */}
           <Alert className="mb-12 border-sky-200 bg-sky-50">
