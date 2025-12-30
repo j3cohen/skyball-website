@@ -1,15 +1,30 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 
-export default function AddToCart() {
+type Props = {
+  priceRowId: string;
+  qty?: number;
+  label?: string;
+  className?: string;
+};
+
+export default function AddToCart({
+  priceRowId,
+  qty = 1,
+  label = "Add to cart",
+  className,
+}: Props) {
   const { addItem } = useCart();
 
   return (
     <Button
-      onClick={() => addItem("cf3ff560-9d22-44dd-a5aa-4a58d9bdc60f", 1)}
+      className={className}
+      onClick={() => addItem(priceRowId, qty)}
+      type="button"
     >
-      Add SkyBall Racket Pro to Cart
+      {label}
     </Button>
   );
 }
