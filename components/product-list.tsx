@@ -1,17 +1,33 @@
-"use client"
+"use client";
 
-import { useInView } from "react-intersection-observer"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import Image from "next/image"
-import { products } from "@/data/products"
+import { useInView } from "react-intersection-observer";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import Image from "next/image";
 
-export default function ProductList() {
+export type ShopListProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  images: string[];
+  priceCents: number;
+  currency: string;
+};
+
+function formatMoney(cents: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100);
+}
+
+export default function ProductList({ products }: { products: ShopListProduct[] }) {
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
-  })
+  });
 
   return (
     <section ref={ref} className="py-12">
@@ -21,25 +37,30 @@ export default function ProductList() {
             key={product.id}
             className={cn(
               "bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
             style={{ transitionDelay: `${index * 100}ms` }}
           >
             <div className="relative h-48">
               <Image
-              src={product.images[0] || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-contain"
-              style={{ backgroundColor: "#fff" }} // optional: looks clean if image has transparency or padding
-            />
+                src={product.images[0] || "/placeholder.svg"}
+                alt={product.name}
+                fill
+                className="object-contain"
+                style={{ backgroundColor: "#fff" }}
+              />
             </div>
+
             <div className="p-6">
               <h3 className="text-xl font-bold mb-2">{product.name}</h3>
-              <p className="text-gray-600 mb-4">{product.description}</p>
+              <p className="text-gray-600 mb-4">{product.description ?? ""}</p>
+
               <div className="flex justify-between items-center">
-                <span className="text-sky-600 font-bold">${product.price.toFixed(2)}</span>
-                <Link href={`/products/${product.id}`}>
+                <span className="text-sky-600 font-bold">
+                  {formatMoney(product.priceCents, product.currency)}
+                </span>
+
+                <Link href={`/products/${product.slug}`}>
                   <Button variant="outline" size="sm">
                     View Details
                   </Button>
@@ -50,5 +71,5 @@ export default function ProductList() {
         ))}
       </div>
     </section>
-  )
+  );
 }
