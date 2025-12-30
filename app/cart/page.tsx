@@ -1,3 +1,4 @@
+// app/cart/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -17,10 +18,23 @@ type CartLine = {
   slug: string;
 };
 
+type CartItem = {
+  priceRowId: string;
+  qty: number;
+};
+
 type ProductJoin = {
   slug: string;
   name: string;
   active: boolean;
+};
+
+type PriceRowJoinRaw = {
+  id: string;
+  unit_amount: number;
+  currency: string;
+  active: boolean;
+  product: ProductJoin | ProductJoin[] | null;
 };
 
 type PriceRowJoin = {
@@ -31,9 +45,40 @@ type PriceRowJoin = {
   product: ProductJoin | null;
 };
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isProductJoin(v: unknown): v is ProductJoin {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.slug === "string" &&
+    typeof v.name === "string" &&
+    typeof v.active === "boolean"
+  );
+}
+
+function normalizeProduct(v: unknown): ProductJoin | null {
+  if (isProductJoin(v)) return v;
+  if (Array.isArray(v) && v.length > 0 && isProductJoin(v[0])) return v[0];
+  return null;
+}
+
+function isPriceRowJoinRaw(v: unknown): v is PriceRowJoinRaw {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.id === "string" &&
+    typeof v.unit_amount === "number" &&
+    typeof v.currency === "string" &&
+    typeof v.active === "boolean" &&
+    "product" in v
+  );
+}
+
 function formatMoney(cents: number, currency: string) {
   const amount = cents / 100;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(amount);
+  const cur = currency.toUpperCase();
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(amount);
 }
 
 export default function CartPage() {
@@ -62,42 +107,56 @@ export default function CartPage() {
       setLoadingLines(true);
 
       try {
-        const priceRowIds = items.map((i) => i.priceRowId);
+        const cartItems: CartItem[] = items.map((i) => ({ priceRowId: i.priceRowId, qty: i.qty }));
+        const priceRowIds = cartItems.map((i) => i.priceRowId);
 
         const { data, error: sbErr } = await supabase
           .from("product_prices")
           .select(
             `
-            id,
-            unit_amount,
-            currency,
-            active,
-            product:products (
-              slug,
-              name,
-              active
-            )
-          `
+              id,
+              unit_amount,
+              currency,
+              active,
+              product:products (
+                slug,
+                name,
+                active
+              )
+            `
           )
           .in("id", priceRowIds);
 
         if (sbErr) throw sbErr;
 
-        const rows = (data ?? []) as PriceRowJoin[];
+        const raw: unknown = data ?? [];
+        const arr: unknown[] = Array.isArray(raw) ? raw : [];
+
+        const rows: PriceRowJoin[] = arr
+          .filter(isPriceRowJoinRaw)
+          .map((r) => ({
+            id: r.id,
+            unit_amount: r.unit_amount,
+            currency: r.currency,
+            active: r.active,
+            product: normalizeProduct(r.product),
+          }));
+
         const byId = new Map<string, PriceRowJoin>(rows.map((r) => [r.id, r]));
 
-        const nextLines: CartLine[] = items
+        const nextLines: CartLine[] = cartItems
           .map((it) => {
             const row = byId.get(it.priceRowId);
-            if (!row || !row.product) return null;
+            const prod = row?.product;
+            if (!row || !prod) return null;
 
             return {
               priceRowId: it.priceRowId,
               qty: it.qty,
-              name: row.product.name ?? "Unknown item",
+              name: prod.name,
               unit_amount: row.unit_amount,
               currency: row.currency,
-              slug: row.product.slug ?? "",
+              slug: prod.slug,
             };
           })
           .filter((x): x is CartLine => x !== null);
@@ -131,14 +190,20 @@ export default function CartPage() {
 
       if (!res.ok) {
         const message =
-          typeof data === "object" && data !== null && "error" in data && typeof (data as { error: unknown }).error === "string"
+          typeof data === "object" &&
+          data !== null &&
+          "error" in data &&
+          typeof (data as { error: unknown }).error === "string"
             ? (data as { error: string }).error
             : "Checkout failed.";
         throw new Error(message);
       }
 
       const url =
-        typeof data === "object" && data !== null && "url" in data && typeof (data as { url: unknown }).url === "string"
+        typeof data === "object" &&
+        data !== null &&
+        "url" in data &&
+        typeof (data as { url: unknown }).url === "string"
           ? (data as { url: string }).url
           : null;
 
@@ -151,6 +216,8 @@ export default function CartPage() {
       setCheckingOut(false);
     }
   }
+
+  const currency = lines.length ? lines[0].currency : "usd";
 
   return (
     <>
@@ -197,7 +264,11 @@ export default function CartPage() {
                         className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4"
                       >
                         <div className="min-w-0">
-                          <div className="font-semibold truncate">{line.name}</div>
+                          <div className="font-semibold truncate">
+                            <Link href={`/products/${line.slug}`} className="hover:underline">
+                              {line.name}
+                            </Link>
+                          </div>
                           <div className="text-sm text-gray-600">
                             {formatMoney(line.unit_amount, line.currency)} each
                           </div>
@@ -239,9 +310,7 @@ export default function CartPage() {
               <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <div className="text-gray-600">Subtotal</div>
-                  <div className="text-2xl font-bold">
-                    {lines.length ? formatMoney(subtotalCents, lines[0].currency) : "$0.00"}
-                  </div>
+                  <div className="text-2xl font-bold">{formatMoney(subtotalCents, currency)}</div>
                   <div className="text-sm text-gray-500 mt-1">Taxes/shipping not calculated (v1).</div>
                 </div>
 
