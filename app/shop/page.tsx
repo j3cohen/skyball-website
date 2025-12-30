@@ -64,7 +64,13 @@ export default async function ShopPage() {
     notFound();
   }
 
-  const rows = (data ?? []) as unknown as ProductRow[];
+  const rows: ProductRow[] = (data ?? []).map((p) => ({
+    ...p,
+    product_prices: Array.isArray(p.product_prices)
+      ? p.product_prices
+      : [],
+  }));
+
 
   const products: ShopListProduct[] = rows
     .map((p) => {
