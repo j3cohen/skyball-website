@@ -35,10 +35,10 @@ type PriceRowJoin = {
   product: ProductJoin | null;
 };
 
-type AddonMappingRow = {
-  base_product_id: string;
-  addon_product_id: string;
-};
+// type AddonMappingRow = {
+//   base_product_id: string;
+//   addon_product_id: string;
+// };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
