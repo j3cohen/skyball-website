@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { supabase } from "@/lib/supabaseClient";
 
+
+
 type CartLine = {
   priceRowId: string;
   qty: number;

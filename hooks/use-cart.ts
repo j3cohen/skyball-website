@@ -1,14 +1,15 @@
+// hooks/use-cart.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CART_STORAGE_KEY, CartItem, normalizeCart } from "@/lib/cart";
+import { CART_STORAGE_KEY, CartItem, CartItemMeta, normalizeCart } from "@/lib/cart";
 
 function readCartFromStorage(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(CART_STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return normalizeCart(parsed);
   } catch {
@@ -25,33 +26,50 @@ export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Hydrate once on mount
   useEffect(() => {
     setItems(readCartFromStorage());
     setHydrated(true);
   }, []);
 
-  // Persist on change (after hydration)
   useEffect(() => {
     if (!hydrated) return;
     writeCartToStorage(items);
   }, [items, hydrated]);
 
-  const addItem = useCallback((priceRowId: string, qty: number = 1) => {
-    setItems((prev) => normalizeCart([...prev, { priceRowId, qty }]));
-  }, []);
+  // Add a new line item (unique id). Caller can pass meta (e.g. gripColors)
+  const addItem = useCallback(
+    (priceRowId: string, qty: number = 1, meta?: CartItemMeta) => {
+      const safeQty = Number.isInteger(qty) ? Math.max(1, Math.min(20, qty)) : 1;
+      const next: CartItem = {
+        id: crypto.randomUUID(),
+        priceRowId,
+        qty: safeQty,
+        meta,
+      };
+      setItems((prev) => normalizeCart([...prev, next]));
+    },
+    []
+  );
 
-  const setQty = useCallback((priceRowId: string, qty: number) => {
+  const setQty = useCallback((id: string, qty: number) => {
     setItems((prev) => {
+      const safeQty = Number.isInteger(qty) ? qty : 0;
       const next = prev
-        .map((it) => (it.priceRowId === priceRowId ? { ...it, qty } : it))
+        .map((it) => (it.id === id ? { ...it, qty: safeQty } : it))
         .filter((it) => it.qty > 0);
       return normalizeCart(next);
     });
   }, []);
 
-  const removeItem = useCallback((priceRowId: string) => {
-    setItems((prev) => prev.filter((it) => it.priceRowId !== priceRowId));
+  const updateMeta = useCallback((id: string, meta: CartItemMeta | undefined) => {
+    setItems((prev) => {
+      const next = prev.map((it) => (it.id === id ? { ...it, meta } : it));
+      return normalizeCart(next);
+    });
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((it) => it.id !== id));
   }, []);
 
   const clearCart = useCallback(() => {
@@ -60,5 +78,5 @@ export function useCart() {
 
   const count = useMemo(() => items.reduce((sum, it) => sum + it.qty, 0), [items]);
 
-  return { items, hydrated, count, addItem, setQty, removeItem, clearCart };
+  return { items, hydrated, count, addItem, setQty, updateMeta, removeItem, clearCart };
 }

@@ -289,7 +289,7 @@ export async function POST(request: Request) {
               { label: "Google", value: "google" },
               { label: "YouTube", value: "youtube" },
               { label: "Friend", value: "friend" },
-              { label: "Local Racquet Club/Facility", value: "local_club" },
+              { label: "Local Racquet Club or Facility", value: "local_club" },
               { label: "Other", value: "other" },
             ],
           },
