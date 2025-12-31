@@ -22,6 +22,14 @@ function writeCartToStorage(items: CartItem[]) {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
 }
 
+function sameMeta(a?: CartItemMeta, b?: CartItemMeta): boolean {
+  const ac = a?.gripColors ?? [];
+  const bc = b?.gripColors ?? [];
+  if (ac.length !== bc.length) return false;
+  for (let i = 0; i < ac.length; i++) if (ac[i] !== bc[i]) return false;
+  return true;
+}
+
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -36,47 +44,66 @@ export function useCart() {
     writeCartToStorage(items);
   }, [items, hydrated]);
 
-  // Add a new line item (unique id). Caller can pass meta (e.g. gripColors)
-  const addItem = useCallback(
-    (priceRowId: string, qty: number = 1, meta?: CartItemMeta) => {
-      const safeQty = Number.isInteger(qty) ? Math.max(1, Math.min(20, qty)) : 1;
-      const next: CartItem = {
-        id: crypto.randomUUID(),
-        priceRowId,
-        qty: safeQty,
-        meta,
-      };
-      setItems((prev) => normalizeCart([...prev, next]));
+  const addItem = useCallback((priceRowId: string, qty: number = 1) => {
+    setItems((prev) => normalizeCart([...prev, { priceRowId, qty }]));
+  }, []);
+
+  const addItemWithMeta = useCallback(
+    (priceRowId: string, meta: CartItemMeta, qty: number = 1) => {
+      setItems((prev) => normalizeCart([...prev, { priceRowId, qty, meta }]));
     },
     []
   );
 
-  const setQty = useCallback((id: string, qty: number) => {
+  // For editing meta on an existing cart line, we identify by priceRowId + oldMeta
+  const updateItemMeta = useCallback(
+    (priceRowId: string, oldMeta: CartItemMeta | undefined, newMeta: CartItemMeta) => {
+      setItems((prev) => {
+        const next: CartItem[] = [];
+        for (const it of prev) {
+          if (it.priceRowId === priceRowId && sameMeta(it.meta, oldMeta)) {
+            next.push({ ...it, meta: newMeta });
+          } else {
+            next.push(it);
+          }
+        }
+        return normalizeCart(next);
+      });
+    },
+    []
+  );
+
+  const setQty = useCallback((priceRowId: string, qty: number) => {
     setItems((prev) => {
-      const safeQty = Number.isInteger(qty) ? qty : 0;
       const next = prev
-        .map((it) => (it.id === id ? { ...it, qty: safeQty } : it))
+        .map((it) => (it.priceRowId === priceRowId ? { ...it, qty } : it))
         .filter((it) => it.qty > 0);
       return normalizeCart(next);
     });
   }, []);
 
-  const updateMeta = useCallback((id: string, meta: CartItemMeta | undefined) => {
-    setItems((prev) => {
-      const next = prev.map((it) => (it.id === id ? { ...it, meta } : it));
-      return normalizeCart(next);
-    });
+  const removeItem = useCallback((priceRowId: string) => {
+    setItems((prev) => prev.filter((it) => it.priceRowId !== priceRowId));
   }, []);
 
-  const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((it) => it.id !== id));
+  const removeLine = useCallback((priceRowId: string, meta?: CartItemMeta) => {
+    setItems((prev) => prev.filter((it) => !(it.priceRowId === priceRowId && sameMeta(it.meta, meta))));
   }, []);
 
-  const clearCart = useCallback(() => {
-    setItems([]);
-  }, []);
+  const clearCart = useCallback(() => setItems([]), []);
 
   const count = useMemo(() => items.reduce((sum, it) => sum + it.qty, 0), [items]);
 
-  return { items, hydrated, count, addItem, setQty, updateMeta, removeItem, clearCart };
+  return {
+    items,
+    hydrated,
+    count,
+    addItem,
+    addItemWithMeta,
+    updateItemMeta,
+    setQty,
+    removeItem,
+    removeLine,
+    clearCart,
+  };
 }

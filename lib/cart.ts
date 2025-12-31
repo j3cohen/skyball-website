@@ -1,13 +1,20 @@
 // lib/cart.ts
 export const CART_STORAGE_KEY = "skyball_cart_v1";
 
+export type GripColor =
+  | "white"
+  | "blue"
+  | "orange"
+  | "yellow"
+  | "pink";
+
 export type CartItemMeta = {
-  gripColors?: string[]; // e.g. ["pink", "white"] (duplicates allowed)
+  // Only used for grip add-ons right now
+  gripColors?: GripColor[];
 };
 
 export type CartItem = {
-  id: string;          // local unique id (so same priceRowId can exist with different metadata)
-  priceRowId: string;  // public.product_prices.id
+  priceRowId: string; // public.product_prices.id
   qty: number;
   meta?: CartItemMeta;
 };
@@ -16,67 +23,70 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
-function toStringArray(v: unknown): string[] | undefined {
-  if (!Array.isArray(v)) return undefined;
-  const out: string[] = [];
-  for (const x of v) if (typeof x === "string") out.push(x);
-  return out;
+function isGripColor(v: unknown): v is GripColor {
+  return (
+    v === "white" ||
+    v === "blue" ||
+    v === "orange" ||
+    v === "yellow" ||
+    v === "pink"
+  );
 }
 
 function normalizeMeta(v: unknown): CartItemMeta | undefined {
   if (!isRecord(v)) return undefined;
 
-  const gripColors = "gripColors" in v ? toStringArray(v.gripColors) : undefined;
-  const meta: CartItemMeta = {};
-  if (gripColors && gripColors.length > 0) meta.gripColors = gripColors;
+  const out: CartItemMeta = {};
 
-  return Object.keys(meta).length > 0 ? meta : undefined;
-}
-
-function normalizeItem(v: unknown): CartItem | null {
-  if (!isRecord(v)) return null;
-
-  const id = typeof v.id === "string" ? v.id : crypto.randomUUID();
-  const priceRowId = typeof v.priceRowId === "string" ? v.priceRowId : "";
-  const qty = typeof v.qty === "number" && Number.isInteger(v.qty) ? v.qty : 0;
-
-  if (!priceRowId || qty <= 0) return null;
-
-  const meta = "meta" in v ? normalizeMeta(v.meta) : undefined;
-
-  return { id, priceRowId, qty, meta };
-}
-
-// We do NOT auto-merge items with different meta.
-// We ONLY merge if both priceRowId and meta are the same.
-function sameMeta(a?: CartItemMeta, b?: CartItemMeta): boolean {
-  const aColors = a?.gripColors ?? [];
-  const bColors = b?.gripColors ?? [];
-  if (aColors.length !== bColors.length) return false;
-  for (let i = 0; i < aColors.length; i++) {
-    if (aColors[i] !== bColors[i]) return false; // order matters (user picked specific sequence)
+  if ("gripColors" in v && Array.isArray(v.gripColors)) {
+    const colors: GripColor[] = [];
+    for (const c of v.gripColors) if (isGripColor(c)) colors.push(c);
+    if (colors.length > 0) out.gripColors = colors;
   }
-  return true;
+
+  return Object.keys(out).length ? out : undefined;
+}
+
+// Merge items by priceRowId + meta signature (so different color selections don’t get merged incorrectly)
+function metaKey(meta?: CartItemMeta): string {
+  const colors = meta?.gripColors ?? [];
+  // keep order: it matters to the user
+  return `grips:${colors.join(",")}`;
 }
 
 export function normalizeCart(raw: unknown[]): CartItem[] {
-  const cleaned: CartItem[] = [];
+  const items: CartItem[] = [];
+
   for (const v of raw) {
-    const it = normalizeItem(v);
-    if (it) cleaned.push(it);
+    if (!isRecord(v)) continue;
+    if (typeof v.priceRowId !== "string" || v.priceRowId.length === 0) continue;
+
+    const qty = typeof v.qty === "number" && Number.isInteger(v.qty) ? v.qty : 0;
+    if (qty <= 0) continue;
+
+    const meta = "meta" in v ? normalizeMeta(v.meta) : undefined;
+
+    items.push({
+      priceRowId: v.priceRowId,
+      qty,
+      meta,
+    });
   }
 
-  const merged: CartItem[] = [];
-  for (const it of cleaned) {
-    const existing = merged.find(
-      (m) => m.priceRowId === it.priceRowId && sameMeta(m.meta, it.meta)
-    );
-    if (existing) {
-      existing.qty = Math.min(20, existing.qty + it.qty);
-    } else {
-      merged.push({ ...it });
-    }
+  // merge
+  const map = new Map<string, CartItem>();
+  for (const it of items) {
+    const key = `${it.priceRowId}|${metaKey(it.meta)}`;
+    const prev = map.get(key);
+    if (!prev) map.set(key, { ...it });
+    else map.set(key, { ...prev, qty: prev.qty + it.qty });
   }
 
-  return merged;
+  // clamp qty
+  const out = Array.from(map.values()).map((it) => ({
+    ...it,
+    qty: Math.min(Math.max(it.qty, 1), 20),
+  }));
+
+  return out;
 }
