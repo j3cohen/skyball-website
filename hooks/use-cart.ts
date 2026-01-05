@@ -82,6 +82,18 @@ export function useCart() {
     });
   }, []);
 
+  const setLineQty = useCallback((priceRowId: string, meta: CartItemMeta | undefined, qty: number) => {
+    setItems((prev) => {
+      const next = prev
+        .map((it) =>
+          it.priceRowId === priceRowId && sameMeta(it.meta, meta) ? { ...it, qty } : it
+        )
+        .filter((it) => it.qty > 0);
+      return normalizeCart(next);
+    });
+  }, []);
+
+
   const removeItem = useCallback((priceRowId: string) => {
     setItems((prev) => prev.filter((it) => it.priceRowId !== priceRowId));
   }, []);
@@ -102,6 +114,7 @@ export function useCart() {
     addItemWithMeta,
     updateItemMeta,
     setQty,
+    setLineQty,
     removeItem,
     removeLine,
     clearCart,

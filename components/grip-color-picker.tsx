@@ -1,3 +1,4 @@
+// components/grip-color-picker.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -6,6 +7,7 @@ import type { GripColor } from "@/lib/cart";
 import { cn } from "@/lib/utils";
 
 const COLORS: { key: GripColor; label: string }[] = [
+  { key: "random", label: "Random" }, // ✅ add
   { key: "white", label: "White" },
   { key: "blue", label: "Blue" },
   { key: "orange", label: "Orange" },
@@ -19,15 +21,13 @@ function titleForCount(n: number): string {
 }
 
 export function GripColorPicker(props: {
-  requiredCount: number; // 1, 2, 4 (or qty*packSize)
+  requiredCount: number;
   onConfirm: (colors: GripColor[]) => void;
   className?: string;
 }) {
   const { requiredCount, onConfirm, className } = props;
 
   const [selected, setSelected] = useState<GripColor[]>([]);
-
-  const canConfirm = selected.length === requiredCount;
 
   const remaining = useMemo(() => {
     const r = requiredCount - selected.length;
@@ -41,6 +41,13 @@ export function GripColorPicker(props: {
 
   function removeAt(idx: number) {
     setSelected((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function confirm() {
+    // ✅ pad defaults with "random"
+    const out = [...selected];
+    while (out.length < requiredCount) out.push("random");
+    onConfirm(out);
   }
 
   return (
@@ -61,9 +68,9 @@ export function GripColorPicker(props: {
         ))}
       </div>
 
-      {selected.length > 0 && (
-        <div className="text-sm text-gray-700">
-          Selected ({selected.length}/{requiredCount}):
+      <div className="text-sm text-gray-700">
+        Selected ({selected.length}/{requiredCount})
+        {selected.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {selected.map((c, idx) => (
               <button
@@ -77,20 +84,16 @@ export function GripColorPicker(props: {
               </button>
             ))}
           </div>
-          {remaining > 0 && (
-            <div className="mt-2 text-xs text-gray-500">
-              Select {remaining} more.
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
-      <Button
-        type="button"
-        className="w-full"
-        onClick={() => onConfirm(selected)}
-        disabled={!canConfirm}
-      >
+        {remaining > 0 && (
+          <div className="mt-2 text-xs text-gray-500">
+            If you don’t pick the remaining {remaining}, they’ll default to <b>random</b>.
+          </div>
+        )}
+      </div>
+
+      <Button type="button" className="w-full" onClick={confirm}>
         Add grips to cart
       </Button>
     </div>

@@ -1,3 +1,4 @@
+// components/addon-add-to-cart.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -20,9 +21,13 @@ function packSizeForGripSlug(slug: string): number {
   return 4;
 }
 
+function makeRandomColors(n: number): GripColor[] {
+  return Array.from({ length: n }, () => "random");
+}
+
 export function AddonAddToCart(props: {
-  priceRowId: string;     // product_prices.id
-  addonSlug: string;      // products.slug
+  priceRowId: string;
+  addonSlug: string;
   label?: string;
 }) {
   const { addItem, addItemWithMeta } = useCart();
@@ -31,7 +36,10 @@ export function AddonAddToCart(props: {
   const [open, setOpen] = useState(false);
 
   const isGrip = useMemo(() => isGripSlug(addonSlug), [addonSlug]);
-  const packSize = useMemo(() => (isGrip ? packSizeForGripSlug(addonSlug) : 0), [isGrip, addonSlug]);
+  const packSize = useMemo(
+    () => (isGrip ? packSizeForGripSlug(addonSlug) : 0),
+    [isGrip, addonSlug]
+  );
 
   if (!isGrip) {
     return (
@@ -44,14 +52,27 @@ export function AddonAddToCart(props: {
   return (
     <div className="space-y-3">
       {!open ? (
-        <Button type="button" onClick={() => setOpen(true)}>
-          {props.label ?? "Choose colors"}
-        </Button>
+        <div className="flex flex-col gap-2">
+          {/* ✅ Default behavior: add with random colors */}
+          <Button
+            type="button"
+            onClick={() => {
+              addItemWithMeta(priceRowId, { gripColors: makeRandomColors(packSize) }, 1);
+            }}
+          >
+            {props.label ?? "Add to cart (random)"}
+          </Button>
+
+          <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+            Choose colors
+          </Button>
+        </div>
       ) : (
         <div className="rounded-xl border p-4 bg-white">
           <GripColorPicker
             requiredCount={packSize}
             onConfirm={(colors: GripColor[]) => {
+              // GripColorPicker already pads to random; this is safe either way.
               addItemWithMeta(priceRowId, { gripColors: colors }, 1);
               setOpen(false);
             }}

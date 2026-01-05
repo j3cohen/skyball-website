@@ -6,7 +6,8 @@ export type GripColor =
   | "blue"
   | "orange"
   | "yellow"
-  | "pink";
+  | "pink"
+  | "random";
 
 export type CartItemMeta = {
   // Only used for grip add-ons right now
@@ -29,7 +30,8 @@ function isGripColor(v: unknown): v is GripColor {
     v === "blue" ||
     v === "orange" ||
     v === "yellow" ||
-    v === "pink"
+    v === "pink" ||
+    v === "random"
   );
 }
 

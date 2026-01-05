@@ -9,6 +9,7 @@ import ProductImageGallery from "@/components/product-image-gallery";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AddToCart from "@/components/add-to-cart";
+import { AddonAddToCart } from "@/components/addon-add-to-cart";
 
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
 
@@ -39,6 +40,7 @@ type ProductRow = {
 
 type AddonCard = {
   productId: string;
+  slug: string;
   name: string;
   description: string | null;
   priceRowId: string; // product_prices.id
@@ -185,6 +187,7 @@ function parseAddonCardRow(v: unknown): AddonCard | null {
 
   return {
     productId: prod.id,
+    slug: prod.slug,
     name: prod.name,
     description: prod.description,
     priceRowId: activePrice.id,
@@ -347,10 +350,10 @@ export default async function ProductPage({
                               <div className="font-semibold">
                                 {formatMoney(a.unit_amount, a.currency)}
                               </div>
-                              <AddToCart
+                              <AddonAddToCart
                                 priceRowId={a.priceRowId}
+                                addonSlug={a.slug}
                                 label="Add"
-                                className="bg-sky-600 hover:bg-sky-700 text-white"
                               />
                             </div>
                           </div>

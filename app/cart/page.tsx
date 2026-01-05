@@ -8,11 +8,15 @@ import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { supabase } from "@/lib/supabaseClient";
+import { cartLineKey } from "@/lib/cart-line-key";
+import type { CartItemMeta } from "@/lib/cart";
+
 
 
 
 type CartLine = {
   priceRowId: string;
+  meta: CartItemMeta | undefined;
   qty: number;
   name: string;
   unit_amount: number; // cents
@@ -23,6 +27,7 @@ type CartLine = {
 type CartItem = {
   priceRowId: string;
   qty: number;
+  meta: CartItemMeta | undefined;
 };
 
 type ProductJoin = {
@@ -84,7 +89,7 @@ function formatMoney(cents: number, currency: string) {
 }
 
 export default function CartPage() {
-  const { items, hydrated, setQty, removeItem, clearCart } = useCart();
+  const { items, hydrated, setLineQty, removeLine, clearCart } = useCart();
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [loadingLines, setLoadingLines] = useState(false);
@@ -109,7 +114,11 @@ export default function CartPage() {
       setLoadingLines(true);
 
       try {
-        const cartItems: CartItem[] = items.map((i) => ({ priceRowId: i.priceRowId, qty: i.qty }));
+        const cartItems: CartItem[] = items.map((i) => ({
+          priceRowId: i.priceRowId,
+          qty: i.qty,
+          meta: i.meta,
+        }));
         const priceRowIds = cartItems.map((i) => i.priceRowId);
 
         const { data, error: sbErr } = await supabase
@@ -154,6 +163,7 @@ export default function CartPage() {
 
             return {
               priceRowId: it.priceRowId,
+              meta: it.meta,
               qty: it.qty,
               name: prod.name,
               unit_amount: row.unit_amount,
@@ -184,7 +194,7 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({ priceRowId: i.priceRowId, qty: i.qty })),
+          items: items.map((i) => ({ priceRowId: i.priceRowId, qty: i.qty, meta: i.meta })),
         }),
       });
 
@@ -262,7 +272,7 @@ export default function CartPage() {
                   ) : (
                     lines.map((line) => (
                       <div
-                        key={line.priceRowId}
+                        key={cartLineKey(line.priceRowId, line.meta)}
                         className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4"
                       >
                         <div className="min-w-0">
@@ -273,6 +283,11 @@ export default function CartPage() {
                           </div>
                           <div className="text-sm text-gray-600">
                             {formatMoney(line.unit_amount, line.currency)} each
+                            {line.meta?.gripColors?.length ? (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Grips: {line.meta.gripColors.join(", ")}
+                            </div>
+                          ) : null}
                           </div>
                         </div>
 
@@ -280,7 +295,7 @@ export default function CartPage() {
                           <div className="flex items-center border rounded-lg overflow-hidden">
                             <button
                               className="px-3 py-2 hover:bg-gray-100"
-                              onClick={() => setQty(line.priceRowId, Math.max(0, line.qty - 1))}
+                              onClick={() => setLineQty(line.priceRowId, line.meta, Math.max(0, line.qty - 1))}
                               aria-label="Decrease quantity"
                             >
                               –
@@ -288,7 +303,7 @@ export default function CartPage() {
                             <div className="px-3 py-2 min-w-[2.5rem] text-center">{line.qty}</div>
                             <button
                               className="px-3 py-2 hover:bg-gray-100"
-                              onClick={() => setQty(line.priceRowId, Math.min(20, line.qty + 1))}
+                              onClick={() => setLineQty(line.priceRowId, line.meta, Math.min(20, line.qty + 1))}
                               aria-label="Increase quantity"
                             >
                               +
@@ -299,7 +314,7 @@ export default function CartPage() {
                             {formatMoney(line.unit_amount * line.qty, line.currency)}
                           </div>
 
-                          <Button variant="outline" onClick={() => removeItem(line.priceRowId)}>
+                          <Button variant="outline" onClick={() => removeLine(line.priceRowId, line.meta)}>
                             Remove
                           </Button>
                         </div>
@@ -313,7 +328,7 @@ export default function CartPage() {
                 <div>
                   <div className="text-gray-600">Subtotal</div>
                   <div className="text-2xl font-bold">{formatMoney(subtotalCents, currency)}</div>
-                  <div className="text-sm text-gray-500 mt-1">Taxes/shipping not calculated (v1).</div>
+                  <div className="text-sm text-gray-500 mt-1">Taxes not calculated.</div>
                 </div>
 
                 <div className="flex gap-3">

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
 type ProductKind = "base" | "addon" | "bundle";
 
-type GripColor = "white" | "blue" | "orange" | "yellow" | "pink";
+type GripColor = "white" | "blue" | "orange" | "yellow" | "pink" | "random";
 
 type CheckoutItemMeta = {
   gripColors?: GripColor[];
@@ -51,7 +51,7 @@ function isProductKind(v: unknown): v is ProductKind {
 }
 
 function isGripColor(v: unknown): v is GripColor {
-  return v === "white" || v === "blue" || v === "orange" || v === "yellow" || v === "pink";
+  return v === "white" || v === "blue" || v === "orange" || v === "yellow" || v === "pink" || v === "random";
 }
 
 function isProductJoin(v: unknown): v is ProductJoin {
@@ -160,6 +160,21 @@ type GripSelectionForStripe = {
   selectedColors: GripColor[]; // can be empty
   unselectedCount: number; // packSize*qty - selectedColors.length (>=0)
 };
+
+function formatGripFulfillment(grips: GripSelectionForStripe[]): string {
+  if (grips.length === 0) return "No grip add-ons.";
+
+  return grips
+    .map((g) => {
+      const colors = g.selectedColors.length
+        ? g.selectedColors.join(", ")
+        : "all random";
+
+      return `Overgrips (${g.packSize * g.qty} total): ${colors}`;
+    })
+    .join(" | ");
+}
+
 
 export async function POST(request: Request) {
   try {
@@ -324,6 +339,14 @@ export async function POST(request: Request) {
       return { price: row!.stripe_price_id, quantity: item.qty };
     });
 
+
+    const gripFulfillment = formatGripFulfillment(gripSelections);
+
+    const gripMeta = {
+      grip_fulfillment: gripFulfillment,
+      grip_selections_json: JSON.stringify(gripSelections),
+    };
+
     // FIX: Stripe dropdown option "value" must be alphanumeric only.
     // Use values like: instagram, facebook, tiktok, google, youtube, friend, localclub, other
     const session = await stripe.checkout.sessions.create({
@@ -362,9 +385,9 @@ export async function POST(request: Request) {
         },
       ],
       // For fulfillment: visible in Stripe Dashboard (Session → Metadata)
-      metadata: {
-        grip_selections_json: JSON.stringify(gripSelections),
-        grip_note: "If unselectedCount > 0, fill remaining grips with random colors.",
+      metadata: gripMeta,
+      payment_intent_data: {
+        metadata: gripMeta,
       },
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
