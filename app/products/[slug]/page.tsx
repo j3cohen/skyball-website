@@ -341,7 +341,9 @@ export default async function ProductPage({
                             className="flex items-center justify-between gap-4 border rounded-lg p-4"
                           >
                             <div className="min-w-0">
-                              <div className="font-semibold truncate">{a.name}</div>
+                              <div className="font-semibold whitespace-normal break-words leading-snug">
+                                {a.name}
+                              </div>
                               {a.description && (
                                 <div className="text-sm text-gray-600">{a.description}</div>
                               )}
