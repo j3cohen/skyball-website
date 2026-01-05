@@ -12,7 +12,8 @@ import AddToCart from "@/components/add-to-cart";
 
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
 
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ProductKind = "base" | "addon" | "bundle";
 
@@ -100,6 +101,8 @@ function parseProductRow(v: unknown): ProductRow | null {
   const active = v.active;
   const kind = v.kind;
   const product_prices = v.product_prices;
+
+  console.log("PRDOUCT", v.slug, "images:", toStringArray(images), "imageLen:", Array.isArray(images) ? images.length : "N/A");
 
   if (typeof id !== "string") return null;
   if (typeof slug !== "string") return null;
@@ -271,6 +274,7 @@ export default async function ProductPage({
   // Use first image as the /shop cover,
   // but only remove it from the gallery if there are other images to show.
   const galleryImages = allImages.length > 1 ? allImages.slice(1) : allImages;
+
   return (
     <>
       <Navbar />
