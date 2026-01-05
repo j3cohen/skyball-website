@@ -43,8 +43,12 @@ export function AddonAddToCart(props: {
 
   if (!isGrip) {
     return (
-      <Button type="button" onClick={() => addItem(priceRowId, 1)}>
-        {props.label ?? "Add to cart"}
+      <Button
+        type="button"
+        className="w-auto px-4 py-2 h-auto text-sm"
+        onClick={() => addItem(priceRowId, 1)}
+      >
+        {props.label ?? "Add"}
       </Button>
     );
   }
@@ -52,27 +56,33 @@ export function AddonAddToCart(props: {
   return (
     <div className="space-y-3">
       {!open ? (
-        <div className="flex flex-col gap-2">
-          {/* ✅ Default behavior: add with random colors */}
+        /* CLOSED STATE (this is what was breaking mobile layout) */
+        <div className="flex flex-col gap-2 items-end">
           <Button
             type="button"
+            className="w-auto px-4 py-2 h-auto text-sm"
             onClick={() => {
               addItemWithMeta(priceRowId, { gripColors: makeRandomColors(packSize) }, 1);
             }}
           >
-            {props.label ?? "Add to cart (random)"}
+            {props.label ?? "Add"}
           </Button>
 
-          <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-auto px-4 py-2 h-auto text-sm whitespace-normal leading-tight text-center max-w-[140px]"
+            onClick={() => setOpen(true)}
+          >
             Choose colors
           </Button>
         </div>
       ) : (
+        /* OPEN STATE (already fine) */
         <div className="rounded-xl border p-4 bg-white">
           <GripColorPicker
             requiredCount={packSize}
             onConfirm={(colors: GripColor[]) => {
-              // GripColorPicker already pads to random; this is safe either way.
               addItemWithMeta(priceRowId, { gripColors: colors }, 1);
               setOpen(false);
             }}

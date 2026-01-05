@@ -334,35 +334,47 @@ export default async function ProductPage({
                   {addons.length > 0 && (
                     <div className="mt-10">
                       <h3 className="text-lg font-semibold mb-3">Add-ons</h3>
+
                       <div className="space-y-3">
                         {addons.map((a) => (
-                          <div
-                            key={a.priceRowId}
-                            className="flex items-center justify-between gap-4 border rounded-lg p-4"
-                          >
-                            <div className="min-w-0">
-                              <div className="font-semibold whitespace-normal break-words leading-snug">
-                                {a.name}
+                          <div key={a.priceRowId} className="border rounded-lg p-4">
+                            {/* Mobile: stack.  sm+: row */}
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                              {/* Left: name + description */}
+                              <div className="min-w-0">
+                                <div className="font-semibold whitespace-normal break-normal [hyphens:auto] leading-snug">
+                                  {a.name}
+                                </div>
+
+                                {a.description && (
+                                  <div className="text-sm text-gray-600 whitespace-normal break-normal [hyphens:auto] mt-1">
+                                    {a.description}
+                                  </div>
+                                )}
                               </div>
-                              {a.description && (
-                                <div className="text-sm text-gray-600">{a.description}</div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="font-semibold">
-                                {formatMoney(a.unit_amount, a.currency)}
+
+                              {/* Right: price + buttons */}
+                              <div className="flex items-center justify-between gap-3 sm:justify-end sm:shrink-0">
+                                <div className="font-semibold">
+                                  {formatMoney(a.unit_amount, a.currency)}
+                                </div>
+
+                                {/* keep the button cluster from taking the whole row on mobile */}
+                                <div className="max-w-[170px] sm:max-w-none">
+                                  <AddonAddToCart
+                                    priceRowId={a.priceRowId}
+                                    addonSlug={a.slug}
+                                    label="Add"
+                                  />
+                                </div>
                               </div>
-                              <AddonAddToCart
-                                priceRowId={a.priceRowId}
-                                addonSlug={a.slug}
-                                label="Add"
-                              />
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+
                 </div>
 
                 <div className="mt-8">
