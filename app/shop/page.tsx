@@ -5,6 +5,7 @@ import { getSupabasePublic } from "@/lib/server/supabasePublic";
 import type { ShopListProduct } from "@/components/product-list";
 import { notFound } from "next/navigation";
 
+
 type PriceRow = {
   id: string;
   unit_amount: number;
