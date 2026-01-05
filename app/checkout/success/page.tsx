@@ -7,6 +7,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
+import { CART_STORAGE_KEY } from "@/lib/cart";
 
 export default function CheckoutSuccessPage({
   searchParams,
@@ -14,14 +15,16 @@ export default function CheckoutSuccessPage({
   searchParams: { session_id?: string };
 }) {
   const sessionId = searchParams?.session_id;
-  const { clearCart } = useCart();
+  const { clearCart, hydrated } = useCart();
 
-  // ✅ Clear cart ONLY after confirmed Stripe redirect
   useEffect(() => {
-    if (sessionId) {
-      clearCart();
-    }
-  }, [sessionId, clearCart]);
+    if (!sessionId) return;      // only clear after real Stripe redirect
+    if (!hydrated) return;       // wait until cart finished loading from storage
+
+    // belt + suspenders: clear storage AND state
+    window.localStorage.removeItem(CART_STORAGE_KEY);
+    clearCart();
+  }, [sessionId, hydrated, clearCart]);
 
   return (
     <>
@@ -34,8 +37,7 @@ export default function CheckoutSuccessPage({
               Thank you! We’ve received your order.
             </p>
             <p className="text-gray-700 mt-2">
-              You will receive an email receipt shortly. Another email will be sent with tracking information
-              when your order ships.
+              You will receive an email receipt shortly. Another email will be sent when your order ships.
             </p>
             <p className="text-gray-700 mt-2">See you on the court!</p>
 
