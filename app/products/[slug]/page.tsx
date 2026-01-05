@@ -272,7 +272,7 @@ export default async function ProductPage({
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/2">
-                <ProductImageGallery images={product.images} alt={product.name} />
+                <ProductImageGallery images={product.images.slice(1)} alt={product.name} />
               </div>
 
               <div className="md:w-1/2 p-8">
