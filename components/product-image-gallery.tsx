@@ -1,6 +1,7 @@
+// components/product-image-gallery.tsx
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
@@ -11,6 +12,10 @@ interface ProductImageGalleryProps {
 
 export default function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(0)
+
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [images]);
 
   // If there's only one image, just show it without thumbnails
   if (images.length === 1) {
@@ -42,7 +47,7 @@ export default function ProductImageGallery({ images, alt }: ProductImageGallery
       <div className="flex space-x-2 overflow-x-auto pb-2">
         {images.map((image, index) => (
           <button
-            key={index}
+            key={image}
             onClick={() => setSelectedImage(index)}
             className={cn(
               "relative h-16 w-16 border-2 rounded overflow-hidden flex-shrink-0 transition-all",

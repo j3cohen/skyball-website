@@ -9,6 +9,7 @@ import SupabaseProvider from "@/components/supabase-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import PageViewTracker from '@/components/page-view-tracker'
 import AnalyticsWrapper from "@/components/analytics-wrapper"
+import { CartProvider } from "@/components/cart-provider";
 
 
 export const metadata: Metadata = {
@@ -28,7 +29,9 @@ export default function RootLayout({
           <ScrollToTop />
         </Suspense>
         <SupabaseProvider>
-          {children}
+          <CartProvider>
+            {children}
+          </CartProvider>
         </SupabaseProvider>
         <Analytics /> 
         <AnalyticsWrapper />

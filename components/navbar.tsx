@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Menu, X, ChevronDown, User, AlertCircle, CheckCircle } from "lucide-react"
+import { Menu, X, ChevronDown, User, AlertCircle, CheckCircle, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { libreFranklin } from "@/app/fonts"
 import { motion, AnimatePresence } from "framer-motion"
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { supabase } from "@/lib/supabaseClient"
 import type { Session } from "@supabase/supabase-js"
+import { useCart } from "@/components/cart-provider";
 
 interface NavItem {
   name: string
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { name: "Play", href: "/play" },
   { name: "Rankings", href: "/rankings" },
   { name: "Shop", href: "/shop" },
+
 ]
 
 export default function Navbar() {
@@ -34,6 +36,9 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const pathname = usePathname()
   const router = useRouter()
+
+  const {count, hydrated} = useCart();
+  const cartCount = hydrated ? count : 0;
 
   // auth state
   const [session, setSession] = useState<Session | null>(null)
@@ -162,6 +167,19 @@ export default function Navbar() {
               )}
             </div>
           ))}
+          {/* Cart icon (desktop) */}
+          <button
+            onClick={() => handleNavClick("/cart")}
+            aria-label="Cart"
+            className="relative text-white hover:text-sky-600 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-sky-500 text-white text-[11px] leading-[18px] text-center font-semibold">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+          </button>
 
           {/* Auth popover trigger */}
           <Popover>
@@ -303,6 +321,19 @@ export default function Navbar() {
             </PopoverContent>
           </Popover>
 
+          {/* Cart icon (mobile) */}
+          <button
+            onClick={() => handleNavClick("/cart")}
+            aria-label="Cart"
+            className="relative text-white p-1 hover:text-sky-600 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-sky-500 text-white text-[10px] leading-[16px] text-center font-semibold">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+          </button>
           {/* Mobile menu toggle */}
           <button className="text-white p-1" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
