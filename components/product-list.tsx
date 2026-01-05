@@ -4,7 +4,6 @@ import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image";
 import GradientImageFrame from "@/components/gradient-image-frame";
 
 export type ShopListProduct = {
