@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
+import GradientImageFrame from "@/components/gradient-image-frame";
 
 export type ShopListProduct = {
   id: string;
@@ -41,15 +42,15 @@ export default function ProductList({ products }: { products: ShopListProduct[] 
             )}
             style={{ transitionDelay: `${index * 100}ms` }}
           >
-            <div className="relative h-48">
-              <Image
-                src={product.images[0] || "/placeholder.svg"}
-                alt={product.name}
-                fill
-                className="object-contain"
-                style={{ backgroundColor: "#fff" }}
-              />
-            </div>
+
+            <GradientImageFrame
+              src={product.images[0] || "/placeholder.svg"}
+              alt={product.name}
+              aspectClassName="aspect-[4/3]"
+              paddingClassName="p-6"
+              className="rounded-none"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
 
             <div className="p-6">
               <h3 className="text-xl font-bold mb-2">{product.name}</h3>
