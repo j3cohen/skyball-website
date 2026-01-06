@@ -5,6 +5,8 @@ import { getSupabasePublic } from "@/lib/server/supabasePublic";
 import type { ShopListProduct } from "@/components/product-list";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type PriceRow = {
   id: string;
