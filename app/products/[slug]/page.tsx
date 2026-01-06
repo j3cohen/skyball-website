@@ -303,7 +303,10 @@ export default async function ProductPage({
 
                   <div className="border-t border-b py-4 my-6">
                     <h2 className="text-xl font-semibold mb-2">Product Details</h2>
-                    <p className="text-gray-700">{product.details ?? ""}</p>
+                    <p className="text-gray-700 whitespace-pre-line">
+                      {product.details ?? ""}
+                    </p>
+
 
                     {product.features.length > 0 && (
                       <div className="mt-4">
