@@ -13,6 +13,8 @@ import { AddonAddToCart } from "@/components/addon-add-to-cart";
 
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
 
+import { ProductDetailsText } from "@/components/product-details-text";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -304,7 +306,7 @@ export default async function ProductPage({
                   <div className="border-t border-b py-4 my-6">
                     <h2 className="text-xl font-semibold mb-2">Product Details</h2>
                     <p className="text-gray-700 whitespace-pre-line">
-                      {product.details ?? ""}
+                      {product.details ? <ProductDetailsText text={product.details} /> : null}
                     </p>
 
 
