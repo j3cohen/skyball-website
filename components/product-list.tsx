@@ -1,5 +1,4 @@
 "use client";
-
 import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,25 +40,27 @@ export default function ProductList({ products }: { products: ShopListProduct[] 
             )}
             style={{ transitionDelay: `${index * 100}ms` }}
           >
-
-            <GradientImageFrame
-              src={product.images[0] || "/placeholder.svg"}
-              alt={product.name}
-              aspectClassName="aspect-[4/3]"
-              paddingClassName="p-6"
-              className="rounded-none"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-
+            <Link href={`/products/${product.slug}`} className="block cursor-pointer">
+              <GradientImageFrame
+                src={product.images[0] || "/placeholder.svg"}
+                alt={product.name}
+                aspectClassName="aspect-[4/3]"
+                paddingClassName="p-6"
+                className="rounded-none transition-transform duration-300 hover:scale-[1.02]"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            </Link>
             <div className="p-6">
-              <h3 className="text-xl font-bold mb-2">{product.name}</h3>
+              <Link href={`/products/${product.slug}`}>
+                <h3 className="text-xl font-bold mb-2 hover:text-sky-600 transition-colors">
+                  {product.name}
+                </h3>
+              </Link>
               <p className="text-gray-600 mb-4">{product.description ?? ""}</p>
-
               <div className="flex justify-between items-center">
                 <span className="text-sky-600 font-bold">
                   {formatMoney(product.priceCents, product.currency)}
                 </span>
-
                 <Link href={`/products/${product.slug}`}>
                   <Button variant="outline" size="sm">
                     View Details
