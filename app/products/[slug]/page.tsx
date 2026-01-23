@@ -21,8 +21,8 @@ export const revalidate = 0;
 type ProductKind = "base" | "addon" | "bundle";
 
 type PriceRow = {
-  id: string; // product_prices.id (what we store in cart)
-  unit_amount: number; // cents
+  id: string;
+  unit_amount: number;
   currency: string;
   active: boolean;
 };
@@ -45,7 +45,7 @@ type AddonCard = {
   slug: string;
   name: string;
   description: string | null;
-  priceRowId: string; // product_prices.id
+  priceRowId: string;
   unit_amount: number;
   currency: string;
 };
@@ -66,7 +66,6 @@ function toStringArray(v: unknown): string[] {
 }
 
 function toTextArray(v: unknown): string[] {
-  // features is text[] (or null). Treat non-array as empty.
   return toStringArray(v);
 }
 
@@ -105,8 +104,6 @@ function parseProductRow(v: unknown): ProductRow | null {
   const active = v.active;
   const kind = v.kind;
   const product_prices = v.product_prices;
-
-  console.log("PRDOUCT", v.slug, "images:", toStringArray(images), "imageLen:", Array.isArray(images) ? images.length : "N/A");
 
   if (typeof id !== "string") return null;
   if (typeof slug !== "string") return null;
@@ -170,18 +167,16 @@ async function fetchProductBySlug(slug: string): Promise<ProductRow | null> {
 }
 
 type AddonJoinRaw = {
-  addon_product: unknown; // embedded product row
+  addon_product: unknown;
 };
 
 function parseAddonCardRow(v: unknown): AddonCard | null {
-  // We select addon_product:products(...) and inside it product_prices(...)
   if (!isRecord(v)) return null;
 
   const addon_product = v.addon_product;
   const prod = parseProductRow(addon_product);
   if (!prod) return null;
 
-  // Only allow active addon products
   if (!prod.active || prod.kind !== "addon") return null;
 
   const activePrice = prod.product_prices.find((p) => p.active) ?? null;
@@ -257,6 +252,14 @@ export async function generateMetadata(
   };
 }
 
+function isGripAddon(slug: string): boolean {
+  return (
+    slug === "professional-over-grip-skyball" ||
+    slug === "professional-over-grips-skyball-2-pack" ||
+    slug === "professional-over-grips-skyball-4-pack"
+  );
+}
+
 export default async function ProductPage({
   params,
 }: {
@@ -268,111 +271,139 @@ export default async function ProductPage({
   const activePrice = product.product_prices.find((p) => p.active) ?? null;
   if (!activePrice) notFound();
 
-  // Only fetch addons for base/bundle (your intended behavior)
   const addons =
     product.kind === "base" || product.kind === "bundle"
       ? await fetchAllowedAddons(product.id)
       : [];
 
-  const allImages = toStringArray(product.images);
+  // Separate grips from other add-ons
+  const gripAddons = addons.filter((a) => isGripAddon(a.slug));
+  const otherAddons = addons.filter((a) => !isGripAddon(a.slug));
 
-  // Use first image as the /shop cover,
-  // but only remove it from the gallery if there are other images to show.
+  const allImages = toStringArray(product.images);
   const galleryImages = allImages.length > 1 ? allImages.slice(1) : allImages;
+
+  // Product details component (reused in two places conditionally)
+  const ProductDetailsSection = ({ className = "" }: { className?: string }) => (
+    <div className={className}>
+      <details className="group" open>
+        <summary className="text-lg font-semibold cursor-pointer list-none flex items-center justify-between">
+          Product Details
+          <svg
+            className="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <div className="mt-3">
+          {product.details && (
+            <div className="text-gray-700">
+              <ProductDetailsText text={product.details} />
+            </div>
+          )}
+
+          {product.features.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-base font-semibold mb-2">Key Features</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+                {product.features.map((feat) => (
+                  <li key={feat}>{feat}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </details>
+
+      <details className="border-t pt-4 mt-4 group">
+        <summary className="text-lg font-semibold cursor-pointer list-none flex items-center justify-between">
+          Shipping & Returns
+          <svg
+            className="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <div className="mt-3 text-sm text-gray-700 space-y-3">
+          <p>
+            <span className="font-medium">Shipping:</span> Free shipping on all orders within the United States. 
+            Standard delivery takes 3-5 business days. For international orders, contact{" "}
+            <a href="mailto:info@skyball.us" className="text-sky-600 hover:underline">
+              info@skyball.us
+            </a>.
+          </p>
+          <p>
+            <span className="font-medium">Returns:</span> 30-day return policy for unused, unopened products 
+            in original packaging. Customer responsible for return shipping.
+          </p>
+        </div>
+      </details>
+    </div>
+  );
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-24">
         <div className="container mx-auto px-4">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl shadow-lg">
             <div className="md:flex">
-              <div className="md:w-1/2">
+              {/* Left column: Gallery + Product Details (on wide screens) */}
+              <div className="md:w-1/2 flex flex-col">
                 <ProductImageGallery images={galleryImages} alt={product.name} />
+                
+                {/* Product Details - shown here on md+ screens */}
+                <ProductDetailsSection className="hidden md:block p-6 border-t flex-1" />
               </div>
 
-              <div className="md:w-1/2 p-8">
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+              {/* Right column: Title, Price, CTAs, Add-ons */}
+              <div className="md:w-1/2 p-6 md:p-8 md:border-l">
+                <div className="mb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
 
                   {product.description && (
-                    <p className="text-gray-600 mb-6">{product.description}</p>
+                    <p className="text-gray-600 mb-4">{product.description}</p>
                   )}
 
-                  <div className="text-2xl font-bold text-sky-600 mb-6">
+                  <div className="text-2xl font-bold text-sky-600 mb-4">
                     {formatMoney(activePrice.unit_amount, activePrice.currency)}
                   </div>
+                </div>
 
-                  <div className="border-t border-b py-4 my-6">
-                    <h2 className="text-xl font-semibold mb-2">Product Details</h2>
-                    <p className="text-gray-700 whitespace-pre-line">
-                      {product.details ? <ProductDetailsText text={product.details} /> : null}
-                    </p>
-
-
-                    {product.features.length > 0 && (
-                      <div className="mt-4">
-                        <h3 className="text-lg font-semibold mb-2">Key Features</h3>
-                        <ul className="list-disc list-inside space-y-1 text-gray-700">
-                          {product.features.map((feat) => (
-                            <li key={feat}>{feat}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <AddToCart
-                      priceRowId={activePrice.id}
-                      label="Add to cart"
-                      className="w-full md:w-auto"
-                    />
-                    <Link href="/cart">
-                      <Button variant="outline" className="w-full md:w-auto">
-                        View cart
-                      </Button>
-                    </Link>
-                  </div>
-
-                  {/* Add-ons */}
-                  {addons.length > 0 && (
-                    <div className="mt-10">
-                      <h3 className="text-lg font-semibold mb-3">Add-ons</h3>
-
+                {/* Main CTA Section */}
+                <div className="border rounded-lg p-4 bg-gray-50 mb-6">
+                  {/* Grip upsell - ABOVE main add to cart */}
+                  {gripAddons.length > 0 && (
+                    <div className="mb-4 pb-4 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-700 mb-3">
+                        Enhance your grip
+                      </p>
                       <div className="space-y-3">
-                        {addons.map((a) => (
-                          <div key={a.priceRowId} className="border rounded-lg p-4">
-                            {/* Mobile: stack.  sm+: row */}
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                              {/* Left: name + description */}
-                              <div className="min-w-0">
-                                <div className="font-semibold whitespace-normal break-normal [hyphens:auto] leading-snug">
-                                  {a.name}
-                                </div>
-
-                                {a.description && (
-                                  <div className="text-sm text-gray-600 whitespace-normal break-normal [hyphens:auto] mt-1">
-                                    {a.description}
-                                  </div>
-                                )}
+                        {gripAddons.map((a) => (
+                          <div
+                            key={a.priceRowId}
+                            className="flex items-center justify-between gap-3 bg-white rounded-lg p-3 border"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-sm leading-tight">
+                                {a.name}
                               </div>
-
-                              {/* Right: price + buttons */}
-                              <div className="flex items-center justify-between gap-3 sm:justify-end sm:shrink-0">
-                                <div className="font-semibold">
-                                  {formatMoney(a.unit_amount, a.currency)}
-                                </div>
-
-                                {/* keep the button cluster from taking the whole row on mobile */}
-                                <div className="max-w-[170px] sm:max-w-none">
-                                  <AddonAddToCart
-                                    priceRowId={a.priceRowId}
-                                    addonSlug={a.slug}
-                                    label="Add"
-                                  />
-                                </div>
+                              <div className="text-sm text-sky-600 font-semibold mt-0.5">
+                                {formatMoney(a.unit_amount, a.currency)}
                               </div>
+                            </div>
+                            <div className="shrink-0">
+                              <AddonAddToCart
+                                priceRowId={a.priceRowId}
+                                addonSlug={a.slug}
+                                label="Add"
+                              />
                             </div>
                           </div>
                         ))}
@@ -380,51 +411,75 @@ export default async function ProductPage({
                     </div>
                   )}
 
+                  <div className="flex flex-col gap-3">
+                    <AddToCart
+                      priceRowId={activePrice.id}
+                      label="Add to cart"
+                      className="w-full text-base py-3"
+                    />
+                    <Link href="/cart" className="w-full">
+                      <Button variant="outline" className="w-full">
+                        View cart
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold mb-2">Shipping Information</h3>
-                  <p className="text-gray-700 mb-4">
-                    Free shipping on all orders within the United States. Standard
-                    delivery takes approximately 3-5 business days - we will send
-                    tracking information when available. For international orders,
-                    please contact{" "}
-                    <a href="mailto:info@skyball.us" className="text-sky-600 hover:underline">
-                      info@skyball.us
-                    </a>
-                    .
-                  </p>
+                {/* Other Add-ons (bags, etc.) - compact row */}
+                {otherAddons.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Frequently bought together
+                    </p>
+                    <div className="space-y-2">
+                      {otherAddons.map((a) => (
+                        <div
+                          key={a.priceRowId}
+                          className="flex items-center justify-between gap-3 border rounded-lg p-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm">{a.name}</div>
+                            <div className="text-sm text-sky-600 font-semibold">
+                              {formatMoney(a.unit_amount, a.currency)}
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            <AddonAddToCart
+                              priceRowId={a.priceRowId}
+                              addonSlug={a.slug}
+                              label="Add"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                  <h3 className="text-lg font-semibold mb-2">Returns</h3>
-                  <p className="text-gray-700">
-                    We offer a 30-day return policy for unused, unopened products in
-                    original packaging only. Customers are responsible for return
-                    shipping costs.
-                  </p>
-                </div>
+                {/* Product Details - shown here on mobile only (below add-ons) */}
+                <ProductDetailsSection className="md:hidden border-t pt-4 mt-4" />
               </div>
-            </div>
-
-            <div className="px-8 mt-6">
-              <Alert className="mb-12 border-sky-200 bg-sky-50">
-                <AlertDescription className="text-center py-2">
-                  <span className="font-semibold text-sky-800">
-                    Terms and Conditions Apply
-                  </span>{" "}
-                  – By completing your purchase, you agree to our Terms and Conditions.
-                  <Link
-                    href="/shop/terms-conditions"
-                    className="text-sky-600 hover:text-sky-800 underline ml-1"
-                  >
-                    Terms and Conditions Apply
-                  </Link>
-                  .
-                </AlertDescription>
-              </Alert>
             </div>
           </div>
 
-          <div className="mt-12 text-center">
+          {/* Terms alert - outside the white card */}
+          <Alert className="mt-6 border-sky-200 bg-sky-50">
+            <AlertDescription className="text-center py-2 text-sm">
+              <span className="font-semibold text-sky-800">
+                Terms and Conditions Apply
+              </span>{" "}
+              – By completing your purchase, you agree to our{" "}
+              <Link
+                href="/shop/terms-conditions"
+                className="text-sky-600 hover:text-sky-800 underline"
+              >
+                Terms and Conditions
+              </Link>
+              .
+            </AlertDescription>
+          </Alert>
+
+          <div className="mt-8 text-center">
             <Link href="/shop">
               <Button variant="outline">Back to Shop</Button>
             </Link>
