@@ -18,7 +18,7 @@ const features = [
   {
     icon: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/tenniscourttransparent.png",
     title: "Pickleball Court Size",
-    description: "Play on existing courts or easily set up your own anywhere.",
+    description: "Play on existing pickleball courts or easily set up your own anywhere.",
   },
 ]
 
@@ -66,7 +66,7 @@ export default function WhatIsSkyBall() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="text-lg text-center max-w-3xl mx-auto"
         >
-          SkyBall™ emerged from a passion for innovative, accessible sports that bring people together. It combines the
+          SkyBall™ emerged from a passion for innovative, accessible sports that bring people together. SkyBall™ is a fast, social racket sport that combines the
           excitement of tennis with the availability of pickleball. Perfect for
           urban environments and community centers, SkyBall™ offers instant playability for beginners while providing
           enough depth to challenge skilled athletes.
