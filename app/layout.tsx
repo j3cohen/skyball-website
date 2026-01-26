@@ -1,20 +1,60 @@
-import { libreFranklin, jetbrainsMono, poppins } from "./fonts"
-import "./globals.css"
+// app/layout.tsx
 import type { Metadata } from "next"
 import type React from "react"
+import "./globals.css"
+import { libreFranklin, jetbrainsMono, poppins } from "./fonts"
 import { Analytics } from "@vercel/analytics/react"
-import ScrollToTop from "@/components/scroll-to-top"
-import { Suspense } from "react"
-import SupabaseProvider from "@/components/supabase-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import PageViewTracker from '@/components/page-view-tracker'
+import { Suspense } from "react"
+import ScrollToTop from "@/components/scroll-to-top"
+import SupabaseProvider from "@/components/supabase-provider"
+import PageViewTracker from "@/components/page-view-tracker"
 import AnalyticsWrapper from "@/components/analytics-wrapper"
-import { CartProvider } from "@/components/cart-provider";
+import { CartProvider } from "@/components/cart-provider"
 
+const SITE_URL = "https://skyball.us" 
+const OG_IMAGE =
+  "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_Home_Logo.jpg"
 
 export const metadata: Metadata = {
-  title: "SkyBall - Rally Ready",
-  description: "The exciting new sport combining the best of tennis and pickleball",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "SkyBall™ — Rally Ready",
+    template: "%s | SkyBall™",
+  },
+  description:
+    "SkyBall™ is a fast, social racket sport that blends the best of tennis and pickleball. Learn the rules, watch highlights, and get started.",
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "SkyBall™",
+    title: "SkyBall™ — Rally Ready",
+    description:
+      "SkyBall™ is a fast, social racket sport that blends the best of tennis and pickleball. Learn the rules, watch highlights, and get started.",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "SkyBall™ — Rally Ready",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SkyBall™ — Rally Ready",
+    description:
+      "SkyBall™ is a fast, social racket sport that blends the best of tennis and pickleball. Learn the rules, watch highlights, and get started.",
+    images: [OG_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 }
 
 export default function RootLayout({
@@ -23,22 +63,24 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${libreFranklin.variable} ${jetbrainsMono.variable} ${poppins.variable}`}>
+    <html
+      lang="en"
+      className={`${libreFranklin.variable} ${jetbrainsMono.variable} ${poppins.variable}`}
+    >
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <ScrollToTop />
         </Suspense>
+
         <SupabaseProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          <CartProvider>{children}</CartProvider>
         </SupabaseProvider>
-        <Analytics /> 
+
+        <Analytics />
         <AnalyticsWrapper />
         <PageViewTracker />
-        <SpeedInsights/>
+        <SpeedInsights />
       </body>
     </html>
   )
 }
-
