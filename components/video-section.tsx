@@ -9,7 +9,7 @@ import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-reac
 
 interface VideoPlayerProps {
   src: string
-  aspectRatio: "square" | "video"
+  aspectRatio: "square" | "video" | "portrait"
   objectFit?: "cover" | "contain"
 }
 
@@ -21,49 +21,36 @@ interface HTMLVideoElementExtended extends HTMLVideoElement {
   webkitEnterFullscreen?: () => void
 }
 
-
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit = "cover" }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Container ref for requestFullscreen()
   const containerRef = useRef<HTMLDivElement>(null)
-  // Video ref for play/pause and fullscreen on iOS
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-      setIsPlaying(!isPlaying)
-    }
+    if (!videoRef.current) return
+    if (isPlaying) videoRef.current.pause()
+    else videoRef.current.play()
+    setIsPlaying(!isPlaying)
   }
 
   const handleMuteUnmute = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
+    if (!videoRef.current) return
+    videoRef.current.muted = !isMuted
+    setIsMuted(!isMuted)
   }
 
-  // Toggle fullscreen for containerRef (and use iOS-specific API when applicable)
   const handleToggleFullscreen = (e: React.MouseEvent) => {
     e.stopPropagation()
-  
+
     const win = window as WindowWithMSStream
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !win.MSStream
-  
-    if (
-      isIOS &&
-      videoRef.current &&
-      (videoRef.current as HTMLVideoElementExtended).webkitEnterFullscreen
-    ) {
-      (videoRef.current as HTMLVideoElementExtended).webkitEnterFullscreen!()
+
+    if (isIOS && videoRef.current && (videoRef.current as HTMLVideoElementExtended).webkitEnterFullscreen) {
+      ;(videoRef.current as HTMLVideoElementExtended).webkitEnterFullscreen!()
     } else {
       if (!document.fullscreenElement && containerRef.current) {
         containerRef.current.requestFullscreen?.()
@@ -72,27 +59,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
       }
     }
   }
-  
-  
 
-  // Listen for changes in fullscreen state so we can update the icon or perform side effects
   useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onFullscreenChange)
-    return () => {
-      document.removeEventListener("fullscreenchange", onFullscreenChange)
-    }
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange)
   }, [])
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden rounded-xl shadow-2xl cursor-pointer max-h-[70vh]",
-        aspectRatio === "square" ? "aspect-square" : "aspect-video"
+        "video-fs relative overflow-hidden rounded-xl shadow-2xl cursor-pointer max-h-[70vh]",
+        aspectRatio === "square" ? "aspect-square" : aspectRatio === "portrait" ? "aspect-[9/16]" : "aspect-video"
       )}
       onClick={handlePlayPause}
     >
@@ -108,9 +87,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
         muted={isMuted}
       />
 
-      {/* Overlay for dimming + controls */}
       <div className="absolute inset-0 bg-black bg-opacity-40 transition-opacity duration-300 ease-in-out">
-        {/* Large center play button if paused */}
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Button
@@ -125,9 +102,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
           </div>
         )}
 
-        {/* Bottom-right controls */}
         <div className="absolute bottom-4 right-4 flex items-center space-x-2">
-          {/* Small play/pause button if currently playing */}
           {isPlaying && (
             <Button
               onClick={(e) => {
@@ -140,7 +115,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
             </Button>
           )}
 
-          {/* Mute/unmute */}
           <Button
             onClick={handleMuteUnmute}
             className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-transform duration-300 hover:scale-110"
@@ -148,7 +122,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </Button>
 
-          {/* Fullscreen toggle */}
           <Button
             onClick={handleToggleFullscreen}
             className="bg-sky-600 hover:bg-sky-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-transform duration-300 hover:scale-110"
@@ -164,47 +137,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, aspectRatio, objectFit =
 export default function VideoSection() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 })
 
+  const videos = [
+    "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_homepage_videos/LakeLV_Rally.MOV",
+    "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_homepage_videos/skyball_info_video.mp4",
+    "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_homepage_videos/PBCourtRally.mov",
+  ]
+
   return (
     <section ref={ref} className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <h2
           className={cn(
-            "text-3xl md:text-4xl font-bold text-center mb-12",
+            "text-3xl md:text-4xl font-bold text-center mb-12 transition-all duration-700",
             inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           )}
         >
           Experience SkyBall™
         </h2>
-        <div className="flex flex-col lg:flex-row gap-8 items-center">
-          <div
-            className={cn(
-              "transition-all duration-700 delay-200 w-full lg:w-1/3 flex justify-center",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            )}
-          >
-            <div className="w-full max-w-[min(100%,70vh)]">
-              <VideoPlayer
-                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_video_outside_website_homepage.mov"
-                aspectRatio="square"
-                objectFit="cover"
-              />
-            </div>
-          </div>
 
-          <div
-            className={cn(
-              "transition-all duration-700 delay-300 w-full lg:w-2/3 flex justify-center",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            )}
-          >
-            <div className="w-full">
-              <VideoPlayer
-                src="https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/skyball_rally_website_homepage.mp4"
-                aspectRatio="video"
-                objectFit="contain"
-              />
+        {/* 1 column on mobile, 3 columns on lg+ */}
+        <div
+          className={cn(
+            "grid grid-cols-1 lg:grid-cols-3 gap-8 items-start transition-all duration-700 delay-200",
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          )}
+        >
+          {videos.map((src) => (
+            <div key={src} className="w-full">
+              <VideoPlayer src={src} aspectRatio="portrait" objectFit="cover" />
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

@@ -75,3 +75,20 @@
   }
 }
 
+/* Fullscreen “theater mode” for our custom video player */
+.video-fs:fullscreen {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Override absolute positioning + center the video */
+.video-fs:fullscreen video {
+  position: static !important;   /* <-- THIS fixes the left-aligned bug */
+  width: min(70vw, 900px);
+  height: auto;
+  max-height: 92vh;
+  object-fit: contain;
+}
