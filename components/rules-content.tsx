@@ -32,6 +32,7 @@ const rulesSections = [
     icon: Trophy,
     content: [
       "Games are played to 11 points (win by 2)",
+      "Rally Scoring: A point is scored on every serve, regardless of who served",
       "Players alternate serving 2 points each, once from the right side and then once from the left side",
       "SkyBall Quickplay matches consist of a single game to 11, while tournament play is best of 3, 5, or 7 games.",
     ],
