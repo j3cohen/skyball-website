@@ -359,7 +359,7 @@ export default async function ProductPage({
           {isProSlug && (
             <SoldOutBanner
               className="mb-6"
-              message="SkyBall Pro Rackets are currently sold out. Orders will ship beginning the week of February 15th."
+              message="SkyBall Pro Rackets are currently sold out. Orders will ship beginning in March — feel free to reach out with any questions."
             />
           )}
           <div className="bg-white rounded-xl shadow-lg">
