@@ -355,7 +355,7 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
       billing_address_collection: "required",
       shipping_address_collection: {
-        allowed_countries: ["US", "CA"],
+        allowed_countries: ["US"],
       },
       phone_number_collection: { enabled: true },
       custom_fields: [
