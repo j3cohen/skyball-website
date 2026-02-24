@@ -52,6 +52,7 @@ function requiresBallColorSelection(
   if (!slug || !kind) return false;
   if (kind !== "base" && kind !== "bundle") return false;
   if (slug.toLowerCase().includes("crewneck")) return false;
+  if (slug.toLowerCase().includes("racket")) return false;
   return true;
 }
 
@@ -169,7 +170,7 @@ export default function AddToCart({
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Choose your ball color</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Pick the color of SkyBall™ you'd like.
+                Pick the color of SkyBall™ you&apos;d like.
               </p>
             </div>
 
