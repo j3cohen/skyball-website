@@ -426,6 +426,8 @@ export default async function ProductPage({
                       priceRowId={activePrice.id}
                       label="Add to cart"
                       className="w-full text-base py-3"
+                      productSlug={product.slug}
+                      productKind={product.kind}
                     />
                     <Link href="/cart" className="w-full">
                       <Button variant="outline" className="w-full">
