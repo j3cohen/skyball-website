@@ -55,14 +55,6 @@ function requiresBallColorSelection(
   return true;
 }
 
-/**
- * How many balls does this product contain?
- * Currently all qualifying products are treated as single-unit (qty=1 ball per cart qty).
- * Extend this if you ever sell multi-ball packs.
- */
-function ballsPerUnit(_slug: string): number {
-  return 1;
-}
 
 export default function AddToCart({
   priceRowId,
@@ -82,7 +74,7 @@ export default function AddToCart({
   );
 
   const requiredColorCount = useMemo(
-    () => (needsColorPick && productSlug ? ballsPerUnit(productSlug) * qty : 0),
+    () => (needsColorPick && productSlug ? 1 * qty : 0),
     [needsColorPick, productSlug, qty]
   );
 
