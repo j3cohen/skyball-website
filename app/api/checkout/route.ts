@@ -6,9 +6,11 @@ import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 type ProductKind = "base" | "addon" | "bundle";
 
 type GripColor = "white" | "blue" | "orange" | "yellow" | "pink" | "random";
+type BallColor = "blue" | "orange";
 
 type CheckoutItemMeta = {
   gripColors?: GripColor[];
+  ballColors?: BallColor[];
 };
 
 type CheckoutItem = {
@@ -54,6 +56,10 @@ function isGripColor(v: unknown): v is GripColor {
   return v === "white" || v === "blue" || v === "orange" || v === "yellow" || v === "pink" || v === "random";
 }
 
+function isBallColor(v: unknown): v is BallColor {
+  return v === "blue" || v === "orange";
+}
+
 function isProductJoin(v: unknown): v is ProductJoin {
   if (!isRecord(v)) return false;
   return (
@@ -93,6 +99,14 @@ function parseItemMeta(v: unknown): CheckoutItemMeta | undefined {
     if (colors.length > 0) out.gripColors = colors;
   }
 
+  if ("ballColors" in v && Array.isArray(v.ballColors)) {
+    const colors: BallColor[] = [];
+    for (const c of v.ballColors) {
+      if (isBallColor(c)) colors.push(c);
+    }
+    if (colors.length > 0) out.ballColors = colors;
+  }
+
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
@@ -127,6 +141,13 @@ function isGripSlug(slug: string): boolean {
   );
 }
 
+/** Products that require a ball color selection: base or bundle, not a crewneck. */
+function requiresBallColor(slug: string, kind: ProductKind): boolean {
+  if (kind !== "base" && kind !== "bundle") return false;
+  if (slug.toLowerCase().includes("crewneck")) return false;
+  return true;
+}
+
 type GripSlug =
   | "professional-over-grip-skyball"
   | "professional-over-grips-skyball-2-pack"
@@ -146,9 +167,7 @@ function gripPackSize(slug: GripSlug): number {
 }
 
 function isRacketLikeProduct(slug: string, kind: ProductKind): boolean {
-  // V1: any bundle counts as “has racket”
   if (kind === "bundle") return true;
-  // base rackets contain "skyball-racket" in slug in your catalog
   if (kind === "base" && slug.includes("skyball-racket")) return true;
   return false;
 }
@@ -157,21 +176,32 @@ type GripSelectionForStripe = {
   priceRowId: string;
   qty: number;
   packSize: number;
-  selectedColors: GripColor[]; // can be empty
-  unselectedCount: number; // packSize*qty - selectedColors.length (>=0)
+  selectedColors: GripColor[];
+  unselectedCount: number;
+};
+
+type BallSelectionForStripe = {
+  priceRowId: string;
+  slug: string;
+  qty: number;
+  // One color per cart line item (not per ball in the pack)
+  color: BallColor;
 };
 
 function formatGripFulfillment(grips: GripSelectionForStripe[]): string {
   if (grips.length === 0) return "No grip add-ons.";
-
   return grips
     .map((g) => {
-      const colors = g.selectedColors.length
-        ? g.selectedColors.join(", ")
-        : "all random";
-
+      const colors = g.selectedColors.length ? g.selectedColors.join(", ") : "all random";
       return `Overgrips (${g.packSize * g.qty} total): ${colors}`;
     })
+    .join(" | ");
+}
+
+function formatBallFulfillment(balls: BallSelectionForStripe[]): string {
+  if (balls.length === 0) return "No ball color selections.";
+  return balls
+    .map((b) => `${b.slug} (qty ${b.qty}): ${b.color}`)
     .join(" | ");
 }
 
@@ -272,7 +302,6 @@ export async function POST(request: Request) {
     const invalidAddonSlugs: string[] = [];
     for (const addon of addonProducts) {
       if (isCoverSlug(addon.slug) && !hasRacketOrBundle) invalidAddonSlugs.push(addon.slug);
-      // grips allowed with any base/bundle; since we already have hasBaseOrBundle if addons exist, this is basically ok
       if (isGripSlug(addon.slug) && !hasBaseOrBundle) invalidAddonSlugs.push(addon.slug);
     }
 
@@ -293,8 +322,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parts.join(" ") }, { status: 400 });
     }
 
-    // 3) Optional grip metadata validation (NOT required to be complete)
-    // If they pick some colors, we record them. If they pick none or not enough, remainder is "random".
+    // 3) Optional grip metadata validation
     const gripSelections: GripSelectionForStripe[] = [];
 
     for (const item of body.items) {
@@ -311,12 +339,11 @@ export async function POST(request: Request) {
       const picked = item.meta?.gripColors ?? [];
       const selectedColors: GripColor[] = picked.filter(isGripColor);
 
-      // If user provided MORE than expected, fail (that’s almost certainly a bug / tampering)
       if (selectedColors.length > expectedTotal) {
         return NextResponse.json(
           {
             error:
-              `Too many grip colors were selected for your grips add-on. Please review your cart and try again. For custom orders or any questions, email info@skyball.us.`,
+              "Too many grip colors were selected for your grips add-on. Please review your cart and try again. For custom orders or any questions, email info@skyball.us.",
           },
           { status: 400 }
         );
@@ -333,22 +360,53 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4) Create Stripe Checkout Session line items
+    // 4) Ball color validation
+    // One color per cart line item (regardless of how many balls are in the pack).
+    const ballSelections: BallSelectionForStripe[] = [];
+
+    for (const item of body.items) {
+      const prod = byId.get(item.priceRowId)?.product;
+      if (!prod) continue;
+      if (!requiresBallColor(prod.slug, prod.kind)) continue;
+
+      const picked = item.meta?.ballColors ?? [];
+      const validColors = picked.filter(isBallColor);
+
+      // Exactly one color must be provided per line item
+      if (validColors.length !== 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Please select a ball color (Blue or Orange) for each SkyBall product in your cart.",
+          },
+          { status: 400 }
+        );
+      }
+
+      ballSelections.push({
+        priceRowId: item.priceRowId,
+        slug: prod.slug,
+        qty: item.qty,
+        color: validColors[0],
+      });
+    }
+
+    // 5) Create Stripe Checkout Session line items
     const line_items = body.items.map((item) => {
       const row = byId.get(item.priceRowId);
       return { price: row!.stripe_price_id, quantity: item.qty };
     });
 
-
     const gripFulfillment = formatGripFulfillment(gripSelections);
+    const ballFulfillment = formatBallFulfillment(ballSelections);
 
-    const gripMeta = {
+    const sessionMeta = {
       grip_fulfillment: gripFulfillment,
       grip_selections_json: JSON.stringify(gripSelections),
+      ball_fulfillment: ballFulfillment,
+      ball_selections_json: JSON.stringify(ballSelections),
     };
 
-    // FIX: Stripe dropdown option "value" must be alphanumeric only.
-    // Use values like: instagram, facebook, tiktok, google, youtube, friend, localclub, other
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items,
@@ -384,10 +442,9 @@ export async function POST(request: Request) {
           text: {},
         },
       ],
-      // For fulfillment: visible in Stripe Dashboard (Session → Metadata)
-      metadata: gripMeta,
+      metadata: sessionMeta,
       payment_intent_data: {
-        metadata: gripMeta,
+        metadata: sessionMeta,
       },
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
