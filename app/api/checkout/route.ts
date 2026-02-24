@@ -145,6 +145,7 @@ function isGripSlug(slug: string): boolean {
 function requiresBallColor(slug: string, kind: ProductKind): boolean {
   if (kind !== "base" && kind !== "bundle") return false;
   if (slug.toLowerCase().includes("crewneck")) return false;
+  if (slug.toLowerCase().includes("racket")) return false;
   return true;
 }
 
