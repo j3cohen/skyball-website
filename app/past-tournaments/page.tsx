@@ -1,9 +1,21 @@
+import type { Metadata } from "next"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { pastTournaments } from "@/data/tournaments"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, MapPinIcon, TrophyIcon } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Past Tournaments",
+  description: "Browse results and brackets from past SkyBall™ tournaments. See who won, the prize pools, and the full tournament history.",
+  alternates: { canonical: "https://skyball.us/past-tournaments" },
+  openGraph: {
+    title: "Past SkyBall™ Tournaments",
+    description: "Browse results and brackets from past SkyBall™ tournaments. See who won, the prize pools, and the full tournament history.",
+    url: "https://skyball.us/past-tournaments",
+  },
+}
 
 export default function PastTournamentsPage() {
   return (

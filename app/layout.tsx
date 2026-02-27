@@ -57,6 +57,19 @@ export const metadata: Metadata = {
   },
 }
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SkyBall™",
+  url: "https://skyball.us",
+  logo: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_Home_Logo.jpg",
+  contactPoint: {
+    "@type": "ContactPoint",
+    email: "info@skyball.us",
+    contactType: "customer service",
+  },
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -67,6 +80,12 @@ export default function RootLayout({
       lang="en"
       className={`${libreFranklin.variable} ${jetbrainsMono.variable} ${poppins.variable}`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <ScrollToTop />

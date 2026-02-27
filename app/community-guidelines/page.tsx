@@ -1,5 +1,17 @@
+import type { Metadata } from "next"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: "Community Guidelines",
+  description: "SkyBall™ community guidelines — how we play with respect, fair play, and good sportsmanship on and off the court.",
+  alternates: { canonical: "https://skyball.us/community-guidelines" },
+  openGraph: {
+    title: "SkyBall™ Community Guidelines",
+    description: "SkyBall™ community guidelines — how we play with respect, fair play, and good sportsmanship on and off the court.",
+    url: "https://skyball.us/community-guidelines",
+  },
+}
 
 const guidelines = [
   {

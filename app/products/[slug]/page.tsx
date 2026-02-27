@@ -351,8 +351,29 @@ export default async function ProductPage({
     </div>
   );
 
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description ?? undefined,
+    image: product.images.length ? product.images[0] : undefined,
+    brand: { "@type": "Brand", name: "SkyBall™" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: activePrice.currency.toUpperCase(),
+      price: (activePrice.unit_amount / 100).toFixed(2),
+      availability: "https://schema.org/InStock",
+      url: `https://skyball.us/products/${product.slug}`,
+      seller: { "@type": "Organization", name: "SkyBall™" },
+    },
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-24">
         <div className="container mx-auto px-4">
