@@ -6,10 +6,11 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "About Us",
   description: "Learn more about SkyBall, the future of racket sports combining the best of Tennis and Pickleball.",
+  alternates: { canonical: "https://skyball.us/about" },
   openGraph: {
     title: "About Us",
     description: "Learn more about SkyBall, the future of racket sports combining the best of Tennis and Pickleball.",
-    url: "https://skyball.com/about",
+    url: "https://skyball.us/about",
   },
 }
 

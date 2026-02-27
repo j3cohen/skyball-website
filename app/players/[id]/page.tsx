@@ -20,14 +20,34 @@ type PlayerTournamentPointsRow =
   }
 
 
-export const metadata: Metadata = {
-  title: "Player Profile",
-  description: "View player profile and tournament history.",
-  openGraph: {
-    title: "Player Profile",
-    description: "View player profile and tournament history.",
-    url: "https://skyball.com/players/[slug]",
-  },
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string }
+}): Promise<Metadata> {
+  const supabase = createServerComponentClient<Database>({ cookies })
+  const { data: player } = await supabase
+    .from("players")
+    .select("name, hometown, headshot_url")
+    .eq("slug", params.id)
+    .single()
+
+  if (!player) return { title: "Player Not Found" }
+
+  const title = `${player.name} — SkyBall™ Player Profile`
+  const description = `View ${player.name}'s SkyBall™ rankings, win/loss record, and full tournament history.${player.hometown ? ` From ${player.hometown}.` : ""}`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `https://skyball.us/players/${params.id}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://skyball.us/players/${params.id}`,
+      ...(player.headshot_url ? { images: [{ url: player.headshot_url }] } : {}),
+    },
+  }
 }
 
 export default async function PlayerPage({

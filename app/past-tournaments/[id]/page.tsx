@@ -1,9 +1,28 @@
 import { pastTournaments } from "@/data/tournaments"
 import { notFound } from "next/navigation"
+import type { Metadata } from "next"
 import Image from "next/image"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { CalendarIcon, MapPinIcon, TrophyIcon, Award, DollarSign, Star } from "lucide-react"
+
+export function generateMetadata({ params }: { params: { id: string } }): Metadata {
+  const tournament = pastTournaments.find((t) => t.id === params.id)
+  if (!tournament) return { title: "Tournament Not Found" }
+
+  const description = `Results from ${tournament.name} — ${tournament.date} at ${tournament.location}. Winner: ${tournament.winner}.`
+
+  return {
+    title: tournament.name,
+    description,
+    alternates: { canonical: `https://skyball.us/past-tournaments/${params.id}` },
+    openGraph: {
+      title: tournament.name,
+      description,
+      url: `https://skyball.us/past-tournaments/${params.id}`,
+    },
+  }
+}
 
 export default function PastTournamentPage({ params }: { params: { id: string } }) {
   const tournament = pastTournaments.find((t) => t.id === params.id)
