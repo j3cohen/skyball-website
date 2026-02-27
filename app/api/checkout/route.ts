@@ -26,6 +26,7 @@ type CheckoutBody = {
 type ProductJoin = {
   id: string;
   slug: string;
+  name: string;
   kind: ProductKind;
   active: boolean;
 };
@@ -33,6 +34,8 @@ type ProductJoin = {
 type PriceRowJoinRaw = {
   id: string;
   stripe_price_id: string;
+  unit_amount: number;
+  currency: string;
   active: boolean;
   product: ProductJoin | ProductJoin[] | null;
 };
@@ -40,6 +43,8 @@ type PriceRowJoinRaw = {
 type PriceRowJoin = {
   id: string;
   stripe_price_id: string;
+  unit_amount: number;
+  currency: string;
   active: boolean;
   product: ProductJoin | null;
 };
@@ -65,6 +70,7 @@ function isProductJoin(v: unknown): v is ProductJoin {
   return (
     typeof v.id === "string" &&
     typeof v.slug === "string" &&
+    typeof v.name === "string" &&
     isProductKind(v.kind) &&
     typeof v.active === "boolean"
   );
@@ -81,6 +87,8 @@ function isPriceRowJoinRaw(v: unknown): v is PriceRowJoinRaw {
   return (
     typeof v.id === "string" &&
     typeof v.stripe_price_id === "string" &&
+    typeof v.unit_amount === "number" &&
+    typeof v.currency === "string" &&
     typeof v.active === "boolean" &&
     "product" in v
   );
@@ -237,10 +245,13 @@ export async function POST(request: Request) {
         `
           id,
           stripe_price_id,
+          unit_amount,
+          currency,
           active,
           product:products (
             id,
             slug,
+            name,
             kind,
             active
           )
@@ -261,6 +272,8 @@ export async function POST(request: Request) {
       .map((r) => ({
         id: r.id,
         stripe_price_id: r.stripe_price_id,
+        unit_amount: r.unit_amount,
+        currency: r.currency,
         active: r.active,
         product: normalizeProduct(r.product),
       }));
@@ -401,11 +414,53 @@ export async function POST(request: Request) {
     const gripFulfillment = formatGripFulfillment(gripSelections);
     const ballFulfillment = formatBallFulfillment(ballSelections);
 
+    // 6) Build order summary metadata
+    function fmtMoney(cents: number, cur: string): string {
+      return "$" + (cents / 100).toFixed(2) + " " + cur.toUpperCase();
+    }
+
+    const orderItems = body.items.map((item) => {
+      const row = byId.get(item.priceRowId)!;
+      const prod = row.product!;
+      const entry: Record<string, unknown> = {
+        name: prod.name,
+        qty: item.qty,
+        unit: fmtMoney(row.unit_amount, row.currency),
+        subtotal: fmtMoney(row.unit_amount * item.qty, row.currency),
+      };
+      const ballSel = ballSelections.find((b) => b.priceRowId === item.priceRowId);
+      if (ballSel) entry.ball_color = ballSel.color;
+      const gripSel = gripSelections.find((g) => g.priceRowId === item.priceRowId);
+      if (gripSel) entry.grip_colors = gripSel.selectedColors.length > 0 ? gripSel.selectedColors : ["random"];
+      return entry;
+    });
+
+    const totalCents = body.items.reduce((sum, item) => {
+      return sum + byId.get(item.priceRowId)!.unit_amount * item.qty;
+    }, 0);
+    const firstCurrency = byId.get(body.items[0].priceRowId)?.currency ?? "usd";
+    const orderTotal = fmtMoney(totalCents, firstCurrency);
+
+    const summaryParts = orderItems.map((it) => {
+      let s = `${it.qty}x ${it.name} (${it.subtotal})`;
+      if (it.ball_color) s += ` [ball:${it.ball_color}]`;
+      if (it.grip_colors) s += ` [grips:${(it.grip_colors as string[]).join(",")}]`;
+      return s;
+    });
+    const orderSummaryRaw = summaryParts.join(" | ") + ` | Total: ${orderTotal}`;
+    const orderSummary = orderSummaryRaw.length > 499 ? orderSummaryRaw.slice(0, 496) + "…" : orderSummaryRaw;
+
+    const orderItemsJsonRaw = JSON.stringify(orderItems);
+    const orderItemsJson = orderItemsJsonRaw.length > 499 ? orderItemsJsonRaw.slice(0, 496) + "…" : orderItemsJsonRaw;
+
     const sessionMeta = {
       grip_fulfillment: gripFulfillment,
       grip_selections_json: JSON.stringify(gripSelections),
       ball_fulfillment: ballFulfillment,
       ball_selections_json: JSON.stringify(ballSelections),
+      order_summary: orderSummary,
+      order_total: orderTotal,
+      order_items_json: orderItemsJson,
     };
 
     const session = await stripe.checkout.sessions.create({
