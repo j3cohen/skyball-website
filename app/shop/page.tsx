@@ -4,9 +4,21 @@ import ShopClient from "@/components/shop-client";
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
 import type { ShopListProduct } from "@/components/product-list";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Shop SkyBall Equipment",
+  description: "Shop official SkyBall™ rackets, foam balls, kits, and accessories. Everything you need to play the fastest-growing new racket sport. Ships across the US.",
+  alternates: { canonical: "https://skyball.us/shop" },
+  openGraph: {
+    title: "Shop SkyBall™ Equipment — Rackets, Balls & Kits",
+    description: "Shop official SkyBall™ rackets, foam balls, kits, and accessories. Everything you need to play the fastest-growing new racket sport. Ships across the US.",
+    url: "https://skyball.us/shop",
+  },
+};
 
 type PriceRow = {
   id: string;

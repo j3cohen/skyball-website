@@ -247,6 +247,7 @@ export async function generateMetadata(
   return {
     title,
     description,
+    alternates: { canonical: `https://skyball.us/products/${props.params.slug}` },
     openGraph: ogImage
       ? { title, description, images: [{ url: ogImage }] }
       : { title, description },
