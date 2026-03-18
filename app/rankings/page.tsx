@@ -5,11 +5,12 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Rankings",
-  description: "SkyBall Rankings",
+  description: "Official SkyBall™ player rankings. See who's leading the national standings, track points earned from tournaments, and find top players near you.",
+  alternates: { canonical: "https://skyball.us/rankings" },
   openGraph: {
-    title: "Rankings",
-    description: "SkyBall Rankings",
-    url: "https://skyball.com/rankings",
+    title: "SkyBall™ Player Rankings",
+    description: "Official SkyBall™ player rankings. See who's leading the national standings, track points earned from tournaments, and find top players near you.",
+    url: "https://skyball.us/rankings",
   },
 }
 

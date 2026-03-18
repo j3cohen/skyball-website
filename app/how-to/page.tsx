@@ -4,12 +4,13 @@ import HowToPlay from "@/components/how-to-play"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "How to SkyBall",
-  description: "Quick and easy guide on how to play SkyBall, the exciting new racket sport that combines elements of Tennis and Pickleball.",
+  title: "How to Play SkyBall",
+  description: "Learn how to play SkyBall™ in minutes. Step-by-step guide covering the court, equipment, scoring, and basic strategy for this tennis-pickleball hybrid racket sport.",
+  alternates: { canonical: "https://skyball.us/how-to" },
   openGraph: {
-    title: "How to SkyBall",
-    description: "Quick and easy guide on how to play SkyBall, the exciting new racket sport that combines elements of Tennis and Pickleball.",
-    url: "https://skyball.com/how-to",
+    title: "How to Play SkyBall™ — Beginner's Guide",
+    description: "Learn how to play SkyBall™ in minutes. Step-by-step guide covering the court, equipment, scoring, and basic strategy for this tennis-pickleball hybrid racket sport.",
+    url: "https://skyball.us/how-to",
   },
 }
 

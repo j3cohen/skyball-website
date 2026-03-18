@@ -6,11 +6,12 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Rules",
-  description: "SkyBall Rules",
+  description: "Official SkyBall™ rules — court dimensions, scoring, serving, and gameplay for this fast-paced racket sport that blends tennis and pickleball.",
+  alternates: { canonical: "https://skyball.us/rules" },
   openGraph: {
-    title: "SkyBall Rules",
-    description: "SkyBall Rules",
-    url: "https://skyball.com/rules",
+    title: "SkyBall™ Rules — Official Rulebook",
+    description: "Official SkyBall™ rules — court dimensions, scoring, serving, and gameplay for this fast-paced racket sport that blends tennis and pickleball.",
+    url: "https://skyball.us/rules",
   },
 }
 

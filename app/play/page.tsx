@@ -17,12 +17,13 @@ import { getAllTournaments } from "@/lib/tournaments"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Play",
-  description: "Join us for tournaments, open play sessions, and special events. Find the perfect way to experience SkyBall!",
+  title: "Play SkyBall",
+  description: "Find SkyBall™ open play sessions, tournaments, and events near you. Register online and start playing the fastest-growing new racket sport.",
+  alternates: { canonical: "https://skyball.us/play" },
   openGraph: {
-    title: "Play",
-    description: "Join us for tournaments, open play sessions, and special events. Find the perfect way to experience SkyBall!",
-    url: "https://skyball.com/play",
+    title: "Play SkyBall™ — Find Events Near You",
+    description: "Find SkyBall™ open play sessions, tournaments, and events near you. Register online and start playing the fastest-growing new racket sport.",
+    url: "https://skyball.us/play",
   },
 }
 
