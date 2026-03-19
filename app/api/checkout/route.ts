@@ -7,10 +7,12 @@ type ProductKind = "base" | "addon" | "bundle";
 
 type GripColor = "white" | "blue" | "orange" | "yellow" | "pink" | "random";
 type BallColor = "blue" | "orange";
+type CrewneckSize = "xs" | "s" | "m" | "l" | "xl" | "xxl";
 
 type CheckoutItemMeta = {
   gripColors?: GripColor[];
   ballColors?: BallColor[];
+  crewneckSize?: CrewneckSize;
 };
 
 type CheckoutItem = {
@@ -65,6 +67,14 @@ function isBallColor(v: unknown): v is BallColor {
   return v === "blue" || v === "orange";
 }
 
+function isCrewneckSize(v: unknown): v is CrewneckSize {
+  return v === "xs" || v === "s" || v === "m" || v === "l" || v === "xl" || v === "xxl";
+}
+
+function isCrewneckSlug(slug: string): boolean {
+  return slug === "skyball-crewneck-1";
+}
+
 function isProductJoin(v: unknown): v is ProductJoin {
   if (!isRecord(v)) return false;
   return (
@@ -113,6 +123,10 @@ function parseItemMeta(v: unknown): CheckoutItemMeta | undefined {
       if (isBallColor(c)) colors.push(c);
     }
     if (colors.length > 0) out.ballColors = colors;
+  }
+
+  if ("crewneckSize" in v && isCrewneckSize(v.crewneckSize)) {
+    out.crewneckSize = v.crewneckSize;
   }
 
   return Object.keys(out).length > 0 ? out : undefined;
@@ -197,6 +211,12 @@ type BallSelectionForStripe = {
   color: BallColor;
 };
 
+type CrewneckSelectionForStripe = {
+  priceRowId: string;
+  qty: number;
+  size: CrewneckSize;
+};
+
 function formatGripFulfillment(grips: GripSelectionForStripe[]): string {
   if (grips.length === 0) return "No grip add-ons.";
   return grips
@@ -211,6 +231,13 @@ function formatBallFulfillment(balls: BallSelectionForStripe[]): string {
   if (balls.length === 0) return "No ball color selections.";
   return balls
     .map((b) => `${b.slug} (qty ${b.qty}): ${b.color}`)
+    .join(" | ");
+}
+
+function formatCrewneckFulfillment(crewnecks: CrewneckSelectionForStripe[]): string {
+  if (crewnecks.length === 0) return "No crewneck orders.";
+  return crewnecks
+    .map((c) => `Crewneck (qty ${c.qty}): size ${c.size.toUpperCase()}`)
     .join(" | ");
 }
 
@@ -405,7 +432,29 @@ export async function POST(request: Request) {
       });
     }
 
-    // 5) Create Stripe Checkout Session line items
+    // 5) Crewneck size validation
+    const crewneckSelections: CrewneckSelectionForStripe[] = [];
+
+    for (const item of body.items) {
+      const prod = byId.get(item.priceRowId)?.product;
+      if (!prod) continue;
+      if (!isCrewneckSlug(prod.slug)) continue;
+
+      if (!item.meta?.crewneckSize || !isCrewneckSize(item.meta.crewneckSize)) {
+        return NextResponse.json(
+          { error: "Please select a size for the SkyBall crewneck in your cart." },
+          { status: 400 }
+        );
+      }
+
+      crewneckSelections.push({
+        priceRowId: item.priceRowId,
+        qty: item.qty,
+        size: item.meta.crewneckSize,
+      });
+    }
+
+    // 6) Create Stripe Checkout Session line items
     const line_items = body.items.map((item) => {
       const row = byId.get(item.priceRowId);
       return { price: row!.stripe_price_id, quantity: item.qty };
@@ -413,8 +462,9 @@ export async function POST(request: Request) {
 
     const gripFulfillment = formatGripFulfillment(gripSelections);
     const ballFulfillment = formatBallFulfillment(ballSelections);
+    const crewneckFulfillment = formatCrewneckFulfillment(crewneckSelections);
 
-    // 6) Build order summary metadata
+    // 7) Build order summary metadata
     function fmtMoney(cents: number, cur: string): string {
       return "$" + (cents / 100).toFixed(2) + " " + cur.toUpperCase();
     }
@@ -432,6 +482,8 @@ export async function POST(request: Request) {
       if (ballSel) entry.ball_color = ballSel.color;
       const gripSel = gripSelections.find((g) => g.priceRowId === item.priceRowId);
       if (gripSel) entry.grip_colors = gripSel.selectedColors.length > 0 ? gripSel.selectedColors : ["random"];
+      const crewneckSel = crewneckSelections.find((c) => c.priceRowId === item.priceRowId);
+      if (crewneckSel) entry.crewneck_size = crewneckSel.size.toUpperCase();
       return entry;
     });
 
@@ -445,6 +497,7 @@ export async function POST(request: Request) {
       let s = `${it.qty}x ${it.name} (${it.subtotal})`;
       if (it.ball_color) s += ` [ball:${it.ball_color}]`;
       if (it.grip_colors) s += ` [grips:${(it.grip_colors as string[]).join(",")}]`;
+      if (it.crewneck_size) s += ` [size:${it.crewneck_size}]`;
       return s;
     });
     const orderSummaryRaw = summaryParts.join(" | ") + ` | Total: ${orderTotal}`;
@@ -458,6 +511,7 @@ export async function POST(request: Request) {
       grip_selections_json: JSON.stringify(gripSelections),
       ball_fulfillment: ballFulfillment,
       ball_selections_json: JSON.stringify(ballSelections),
+      crewneck_fulfillment: crewneckFulfillment,
       order_summary: orderSummary,
       order_total: orderTotal,
       order_items_json: orderItemsJson,
