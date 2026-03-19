@@ -27,6 +27,7 @@ function sameMeta(a?: CartItemMeta, b?: CartItemMeta): boolean {
   const bc = b?.gripColors ?? [];
   if (ac.length !== bc.length) return false;
   for (let i = 0; i < ac.length; i++) if (ac[i] !== bc[i]) return false;
+  if ((a?.crewneckSize ?? "") !== (b?.crewneckSize ?? "")) return false;
   return true;
 }
 

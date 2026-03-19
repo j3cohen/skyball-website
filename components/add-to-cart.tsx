@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { BallColorPicker } from "@/components/ball-color-picker";
-import type { BallColor } from "@/lib/cart";
+import { CrewneckSizePicker } from "@/components/crewneck-size-picker";
+import type { BallColor, CrewneckSize } from "@/lib/cart";
 
 type Props = {
   priceRowId: string;
@@ -56,6 +57,10 @@ function requiresBallColorSelection(
   return true;
 }
 
+function isCrewneckSlug(slug: string | undefined): boolean {
+  return slug === "skyball-crewneck-1";
+}
+
 
 export default function AddToCart({
   priceRowId,
@@ -72,6 +77,11 @@ export default function AddToCart({
   const needsColorPick = useMemo(
     () => requiresBallColorSelection(productSlug, productKind),
     [productSlug, productKind]
+  );
+
+  const needsSizePick = useMemo(
+    () => isCrewneckSlug(productSlug),
+    [productSlug]
   );
 
   const requiredColorCount = useMemo(
@@ -108,6 +118,12 @@ export default function AddToCart({
     setAdded(true);
   }
 
+  function handleSizeConfirm(size: CrewneckSize) {
+    addItemWithMeta(priceRowId, { crewneckSize: size }, qty);
+    setOpen(false);
+    setAdded(true);
+  }
+
   const buttonContent = (
     <span
       className={[
@@ -126,7 +142,7 @@ export default function AddToCart({
     </span>
   );
 
-  if (!needsColorPick) {
+  if (!needsColorPick && !needsSizePick) {
     return (
       <Button
         className={className}
@@ -167,17 +183,22 @@ export default function AddToCart({
               <CloseIcon />
             </button>
 
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Choose your ball color</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Pick the color of SkyBall™ you&apos;d like.
-              </p>
-            </div>
-
-            <BallColorPicker
-              requiredCount={requiredColorCount}
-              onConfirm={handleColorConfirm}
-            />
+            {needsSizePick ? (
+              <CrewneckSizePicker onConfirm={handleSizeConfirm} />
+            ) : (
+              <>
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Choose your ball color</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Pick the color of SkyBall™ you&apos;d like.
+                  </p>
+                </div>
+                <BallColorPicker
+                  requiredCount={requiredColorCount}
+                  onConfirm={handleColorConfirm}
+                />
+              </>
+            )}
 
             <Button
               type="button"

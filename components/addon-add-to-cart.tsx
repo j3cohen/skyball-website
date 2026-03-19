@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { GripColorPicker } from "@/components/grip-color-picker";
-import type { GripColor } from "@/lib/cart";
+import { CrewneckSizePicker } from "@/components/crewneck-size-picker";
+import type { GripColor, CrewneckSize } from "@/lib/cart";
 
 function isGripSlug(slug: string): boolean {
   return (
@@ -19,6 +20,10 @@ function packSizeForGripSlug(slug: string): number {
   if (slug === "professional-over-grip-skyball") return 1;
   if (slug === "professional-over-grips-skyball-2-pack") return 2;
   return 4;
+}
+
+function isCrewneckSlug(slug: string): boolean {
+  return slug === "skyball-crewneck-1";
 }
 
 function CheckIcon() {
@@ -79,6 +84,7 @@ export function AddonAddToCart(props: {
   }, [open]);
 
   const isGrip = useMemo(() => isGripSlug(addonSlug), [addonSlug]);
+  const isCrewneck = useMemo(() => isCrewneckSlug(addonSlug), [addonSlug]);
   const packSize = useMemo(
     () => (isGrip ? packSizeForGripSlug(addonSlug) : 0),
     [isGrip, addonSlug]
@@ -86,8 +92,27 @@ export function AddonAddToCart(props: {
 
   const buttonLabel = props.label ?? "Add";
 
-  // Non-grip add-ons: single button
-  if (!isGrip) {
+  const modalContent = isCrewneck ? (
+    <CrewneckSizePicker
+      onConfirm={(size: CrewneckSize) => {
+        addItemWithMeta(priceRowId, { crewneckSize: size }, 1);
+        setOpen(false);
+        setAdded(true);
+      }}
+    />
+  ) : (
+    <GripColorPicker
+      requiredCount={packSize}
+      onConfirm={(colors: GripColor[]) => {
+        addItemWithMeta(priceRowId, { gripColors: colors }, 1);
+        setOpen(false);
+        setAdded(true);
+      }}
+    />
+  );
+
+  // Plain add-ons (not grip, not crewneck): single button, no modal
+  if (!isGrip && !isCrewneck) {
     return (
       <Button
         type="button"
@@ -112,7 +137,7 @@ export function AddonAddToCart(props: {
     );
   }
 
-  // Grip add-ons: both buttons open the modal color picker
+  // Grip add-ons: two buttons (Add + Choose colors). Crewneck: one button (opens size picker).
   return (
     <>
       <div className="flex flex-col gap-2 items-end">
@@ -134,14 +159,16 @@ export function AddonAddToCart(props: {
           </span>
         </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-auto px-4 py-2 h-auto text-sm"
-          onClick={() => setOpen(true)}
-        >
-          Choose colors
-        </Button>
+        {isGrip && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-auto px-4 py-2 h-auto text-sm"
+            onClick={() => setOpen(true)}
+          >
+            Choose colors
+          </Button>
+        )}
       </div>
 
       {/* Modal overlay */}
@@ -162,14 +189,7 @@ export function AddonAddToCart(props: {
               <CloseIcon />
             </button>
 
-            <GripColorPicker
-              requiredCount={packSize}
-              onConfirm={(colors: GripColor[]) => {
-                addItemWithMeta(priceRowId, { gripColors: colors }, 1);
-                setOpen(false);
-                setAdded(true);
-              }}
-            />
+            {modalContent}
 
             <Button
               type="button"

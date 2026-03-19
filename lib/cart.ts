@@ -9,10 +9,12 @@ export type GripColor =
   | "yellow"
   | "pink"
   | "random";
+export type CrewneckSize = "xs" | "s" | "m" | "l" | "xl" | "xxl";
 
 export type CartItemMeta = {
   gripColors?: GripColor[];
   ballColors?: BallColor[];
+  crewneckSize?: CrewneckSize;
 };
 
 export type CartItem = {
@@ -40,6 +42,10 @@ function isBallColor(v: unknown): v is BallColor {
   return v === "blue" || v === "orange";
 }
 
+function isCrewneckSize(v: unknown): v is CrewneckSize {
+  return v === "xs" || v === "s" || v === "m" || v === "l" || v === "xl" || v === "xxl";
+}
+
 function normalizeMeta(v: unknown): CartItemMeta | undefined {
   if (!isRecord(v)) return undefined;
   const out: CartItemMeta = {};
@@ -56,14 +62,19 @@ function normalizeMeta(v: unknown): CartItemMeta | undefined {
     if (colors.length > 0) out.ballColors = colors;
   }
 
+  if ("crewneckSize" in v && isCrewneckSize(v.crewneckSize)) {
+    out.crewneckSize = v.crewneckSize;
+  }
+
   return Object.keys(out).length ? out : undefined;
 }
 
-// Key includes both grip and ball colors so different selections are never merged
+// Key includes grip colors, ball colors, and crewneck size so different selections are never merged
 function metaKey(meta?: CartItemMeta): string {
   const grips = meta?.gripColors ?? [];
   const balls = meta?.ballColors ?? [];
-  return `grips:${grips.join(",")};balls:${balls.join(",")}`;
+  const size = meta?.crewneckSize ?? "";
+  return `grips:${grips.join(",")};balls:${balls.join(",")};size:${size}`;
 }
 
 export function normalizeCart(raw: unknown[]): CartItem[] {
