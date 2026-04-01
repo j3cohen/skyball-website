@@ -464,6 +464,38 @@ export async function POST(request: Request) {
     const ballFulfillment = formatBallFulfillment(ballSelections);
     const crewneckFulfillment = formatCrewneckFulfillment(crewneckSelections);
 
+    // Compact per-item payload written to Stripe metadata and later picked up
+    // by the webhook to populate the `order_data` column in Supabase.
+    // Shape is intentionally open-ended: new product customizations go into
+    // the same per-item object without any schema change.
+    const orderDataJsonRaw = JSON.stringify(
+      body.items.map((item) => {
+        const row = byId.get(item.priceRowId)!;
+        const prod = row.product!;
+        const entry: Record<string, unknown> = {
+          id: item.priceRowId,      // Supabase product_prices.id
+          pid: row.stripe_price_id, // Stripe price ID
+          slug: prod.slug,
+          kind: prod.kind,
+          qty: item.qty,
+          cents: row.unit_amount,
+        };
+        const ballSel = ballSelections.find((b) => b.priceRowId === item.priceRowId);
+        if (ballSel) entry.color = ballSel.color;
+        const gripSel = gripSelections.find((g) => g.priceRowId === item.priceRowId);
+        if (gripSel) {
+          entry.colors = gripSel.selectedColors.length > 0 ? gripSel.selectedColors : ["random"];
+          entry.unselected = gripSel.unselectedCount;
+        }
+        const crewneckSel = crewneckSelections.find((c) => c.priceRowId === item.priceRowId);
+        if (crewneckSel) entry.size = crewneckSel.size;
+        return entry;
+      })
+    );
+    const orderDataJson = orderDataJsonRaw.length > 499
+      ? orderDataJsonRaw.slice(0, 496) + "…"
+      : orderDataJsonRaw;
+
     // 7) Build order summary metadata
     function fmtMoney(cents: number, cur: string): string {
       return "$" + (cents / 100).toFixed(2) + " " + cur.toUpperCase();
@@ -506,15 +538,25 @@ export async function POST(request: Request) {
     const orderItemsJsonRaw = JSON.stringify(orderItems);
     const orderItemsJson = orderItemsJsonRaw.length > 499 ? orderItemsJsonRaw.slice(0, 496) + "…" : orderItemsJsonRaw;
 
+    const crewneckSelectionsJsonRaw = JSON.stringify(crewneckSelections);
+    const crewneckSelectionsJson = crewneckSelectionsJsonRaw.length > 499
+      ? crewneckSelectionsJsonRaw.slice(0, 496) + "…"
+      : crewneckSelectionsJsonRaw;
+
     const sessionMeta = {
       grip_fulfillment: gripFulfillment,
       grip_selections_json: JSON.stringify(gripSelections),
       ball_fulfillment: ballFulfillment,
       ball_selections_json: JSON.stringify(ballSelections),
       crewneck_fulfillment: crewneckFulfillment,
+      crewneck_selections_json: crewneckSelectionsJson,
       order_summary: orderSummary,
       order_total: orderTotal,
       order_items_json: orderItemsJson,
+      // Adaptable per-item payload: consumed by the Stripe webhook to build
+      // the `order_data` JSONB column in Supabase. New customization types
+      // (future products) add keys here without any DB schema change.
+      order_data_json: orderDataJson,
     };
 
     const session = await stripe.checkout.sessions.create({
@@ -523,7 +565,7 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
       billing_address_collection: "required",
       shipping_address_collection: {
-        allowed_countries: ["US"],
+        allowed_countries: totalCents >= 8999 ? ["US", "CA"] : ["US"],
       },
       phone_number_collection: { enabled: true },
       custom_fields: [
