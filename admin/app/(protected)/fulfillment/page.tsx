@@ -40,8 +40,7 @@ async function fetchOrders(status: StatusFilter) {
   let q = supabaseAdmin
     .from("orders")
     .select(
-      "id, stripe_session_id, customer_name, customer_email, order_summary, " +
-      "order_total_cents, order_currency, fulfillment_status, created_at",
+      "id, stripe_session_id, customer_name, customer_email, order_summary, order_total_cents, order_currency, fulfillment_status, created_at",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })

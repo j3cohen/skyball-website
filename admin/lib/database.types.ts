@@ -389,6 +389,93 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users: {
+        Row: {
+          id: string
+          created_at: string
+          added_by: string | null
+        }
+        Insert: {
+          id: string
+          created_at?: string
+          added_by?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          added_by?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          id: string
+          stripe_session_id: string
+          stripe_payment_intent_id: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          shipping_address: Record<string, unknown> | null
+          order_data: Record<string, unknown>
+          order_total_cents: number | null
+          order_currency: string
+          order_summary: string | null
+          fulfillment_status: string
+          tracking_number: string | null
+          internal_notes: string | null
+          heard_about_us: string | null
+          customer_order_notes: string | null
+          raw_stripe_session: Record<string, unknown> | null
+          created_at: string
+          updated_at: string
+          fulfilled_at: string | null
+        }
+        Insert: {
+          id?: string
+          stripe_session_id: string
+          stripe_payment_intent_id?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          shipping_address?: Record<string, unknown> | null
+          order_data?: Record<string, unknown>
+          order_total_cents?: number | null
+          order_currency?: string
+          order_summary?: string | null
+          fulfillment_status?: string
+          tracking_number?: string | null
+          internal_notes?: string | null
+          heard_about_us?: string | null
+          customer_order_notes?: string | null
+          raw_stripe_session?: Record<string, unknown> | null
+          created_at?: string
+          updated_at?: string
+          fulfilled_at?: string | null
+        }
+        Update: {
+          id?: string
+          stripe_session_id?: string
+          stripe_payment_intent_id?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          shipping_address?: Record<string, unknown> | null
+          order_data?: Record<string, unknown>
+          order_total_cents?: number | null
+          order_currency?: string
+          order_summary?: string | null
+          fulfillment_status?: string
+          tracking_number?: string | null
+          internal_notes?: string | null
+          heard_about_us?: string | null
+          customer_order_notes?: string | null
+          raw_stripe_session?: Record<string, unknown> | null
+          created_at?: string
+          updated_at?: string
+          fulfilled_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       current_rankings: {
