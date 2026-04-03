@@ -1,10 +1,9 @@
-// middleware.ts
+// middleware.ts — session refresh only (admin app is its own deployment)
 import { NextResponse }           from "next/server"
 import type { NextRequest }       from "next/server"
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
 export async function middleware(req: NextRequest) {
-  // ── Standard session refresh ─────────────────────────────────────────────
   const res      = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
   await supabase.auth.getSession()
