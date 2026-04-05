@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 type OrderDataItem = {
   stripe_price_id: string | null | undefined;
   product_name: string | null | undefined;
+  slug: string | null | undefined;
   quantity: number | null;
   unit_amount_cents: number | null | undefined;
   currency: string | null | undefined;
@@ -139,6 +140,7 @@ async function handleSessionCompleted(event: Stripe.Event) {
     return {
       stripe_price_id: price?.id,
       product_name: product?.name ?? price?.nickname ?? raw.slug,
+      slug: raw.slug ?? null,
       quantity: li.quantity,
       unit_amount_cents: price?.unit_amount,
       currency: price?.currency,
