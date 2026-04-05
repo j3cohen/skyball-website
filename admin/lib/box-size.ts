@@ -53,7 +53,25 @@ function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } 
  *  - exactly 1×3-ball-pack, no rackets → small box
  *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
  */
+function hasNet(item: OrderDataItem): boolean {
+  const slug = (item.slug ?? "").toLowerCase();
+  const name = (item.product_name ?? "").toLowerCase();
+  return slug.includes("net") || name.includes("net") ||
+         slug.includes("anywhere") || name.includes("anywhere");
+}
+
+/**
+ * Classify the box size for an order given its line items.
+ *
+ * Rules:
+ *  - any item containing a net → needs-input
+ *  - >8 rackets OR >50 balls → needs-input
+ *  - exactly 1×3-ball-pack, no rackets → small box
+ *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
+ */
 export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
+  if (items.some(hasNet)) return { kind: "needs-input" };
+
   let totalRackets = 0;
   let totalBalls   = 0;
 
