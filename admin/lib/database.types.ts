@@ -429,6 +429,7 @@ export type Database = {
           created_at: string
           updated_at: string
           fulfilled_at: string | null
+          shipping_label_cost: number | null
         }
         Insert: {
           id?: string
@@ -451,6 +452,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           fulfilled_at?: string | null
+          shipping_label_cost?: number | null
         }
         Update: {
           id?: string
@@ -473,6 +475,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           fulfilled_at?: string | null
+          shipping_label_cost?: number | null
         }
         Relationships: []
       }

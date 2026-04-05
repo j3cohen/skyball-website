@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_label_cost NUMERIC(10,2);
