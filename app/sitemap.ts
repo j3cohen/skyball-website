@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/past-tournaments`, priority: 0.5, changeFrequency: "monthly", lastModified: new Date("2025-03-01") },
     { url: `${SITE_URL}/community-guidelines`, priority: 0.4, changeFrequency: "yearly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/shop/terms-conditions`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2025-01-01") },
+    { url: `${SITE_URL}/privacypolicy`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2026-04-06") },
   ]
 
   const tournamentPages: MetadataRoute.Sitemap = [

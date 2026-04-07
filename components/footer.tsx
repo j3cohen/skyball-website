@@ -103,8 +103,11 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-1">
           <p className="text-sm">&copy; {new Date().getFullYear()} SkyBall™. All rights reserved.</p>
+          <p className="text-sm">
+            <Link href="/privacypolicy" className="underline hover:text-white transition-colors">Privacy Policy</Link>
+          </p>
         </div>
       </div>
     </footer>
