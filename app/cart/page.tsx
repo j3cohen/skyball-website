@@ -7,9 +7,11 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
+import { GripColorPicker } from "@/components/grip-color-picker";
+import { BallColorPicker } from "@/components/ball-color-picker";
 import { supabase } from "@/lib/supabaseClient";
 import { cartLineKey } from "@/lib/cart-line-key";
-import type { CartItemMeta } from "@/lib/cart";
+import type { CartItemMeta, GripColor, BallColor } from "@/lib/cart";
 
 
 
@@ -88,13 +90,28 @@ function formatMoney(cents: number, currency: string) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(amount);
 }
 
+function packSizeForGripSlug(slug: string): number {
+  if (slug === "professional-over-grip-skyball") return 1;
+  if (slug === "professional-over-grips-skyball-2-pack") return 2;
+  return 4;
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function CartPage() {
-  const { items, hydrated, setLineQty, removeLine, clearCart } = useCart();
+  const { items, hydrated, setLineQty, removeLine, clearCart, updateItemMeta } = useCart();
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [loadingLines, setLoadingLines] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editLine, setEditLine] = useState<CartLine | null>(null);
 
   const subtotalCents = useMemo(() => {
     return lines.reduce((sum, l) => sum + l.unit_amount * l.qty, 0);
@@ -283,15 +300,20 @@ export default function CartPage() {
                           </div>
                           <div className="text-sm text-gray-600">
                             {formatMoney(line.unit_amount, line.currency)} each
-                            {line.meta?.gripColors?.length ? (
+                          </div>
+                          {line.meta?.gripColors?.length ? (
                             <div className="text-xs text-gray-500 mt-1">
                               Grips: {line.meta.gripColors.join(", ")}
                             </div>
                           ) : null}
-                          </div>
+                          {line.meta?.ballColors?.length ? (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ball color: {line.meta.ballColors.join(", ")}
+                            </div>
+                          ) : null}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap justify-end">
                           <div className="flex items-center border rounded-lg overflow-hidden">
                             <button
                               className="px-3 py-2 hover:bg-gray-100"
@@ -313,6 +335,12 @@ export default function CartPage() {
                           <div className="font-semibold w-28 text-right">
                             {formatMoney(line.unit_amount * line.qty, line.currency)}
                           </div>
+
+                          {(line.meta?.gripColors || line.meta?.ballColors) && (
+                            <Button variant="outline" onClick={() => setEditLine(line)}>
+                              Edit
+                            </Button>
+                          )}
 
                           <Button variant="outline" onClick={() => removeLine(line.priceRowId, line.meta)}>
                             Remove
@@ -349,6 +377,57 @@ export default function CartPage() {
         </div>
       </main>
       <Footer />
+
+      {/* Edit colors modal */}
+      {editLine && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditLine(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 text-gray-500"
+              onClick={() => setEditLine(null)}
+              aria-label="Close"
+            >
+              <CloseIcon />
+            </button>
+
+            {editLine.meta?.gripColors ? (
+              <GripColorPicker
+                requiredCount={packSizeForGripSlug(editLine.slug)}
+                initialColors={editLine.meta.gripColors as GripColor[]}
+                confirmLabel="Save grip colors"
+                onConfirm={(colors) => {
+                  updateItemMeta(editLine.priceRowId, editLine.meta, { ...editLine.meta, gripColors: colors });
+                  setEditLine(null);
+                }}
+              />
+            ) : editLine.meta?.ballColors ? (
+              <>
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Edit ball color</h2>
+                  <p className="text-sm text-gray-500 mt-1">Choose the color of SkyBall™ you&apos;d like.</p>
+                </div>
+                <BallColorPicker
+                  requiredCount={editLine.meta.ballColors.length || 1}
+                  initialColors={editLine.meta.ballColors as BallColor[]}
+                  confirmLabel="Save ball color"
+                  onConfirm={(colors) => {
+                    updateItemMeta(editLine.priceRowId, editLine.meta, { ...editLine.meta, ballColors: colors });
+                    setEditLine(null);
+                  }}
+                />
+              </>
+            ) : null}
+
+            <Button type="button" variant="ghost" className="w-full mt-2" onClick={() => setEditLine(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -19,9 +19,11 @@ export function BallColorPicker(props: {
   requiredCount: number;
   onConfirm: (colors: BallColor[]) => void;
   className?: string;
+  initialColors?: BallColor[];
+  confirmLabel?: string;
 }) {
-  const { requiredCount, onConfirm, className } = props;
-  const [selected, setSelected] = useState<BallColor[]>([]);
+  const { requiredCount, onConfirm, className, confirmLabel } = props;
+  const [selected, setSelected] = useState<BallColor[]>(props.initialColors ?? []);
 
   const remaining = useMemo(() => {
     const r = requiredCount - selected.length;
@@ -110,7 +112,7 @@ export function BallColorPicker(props: {
         onClick={confirm}
         disabled={!canConfirm}
       >
-        Add to cart
+        {confirmLabel ?? "Add to cart"}
       </Button>
     </div>
   );

@@ -9,7 +9,7 @@ interface SoldOutBannerProps {
 }
 
 export default function SoldOutBanner({
-  message = "SkyBall Pro Rackets are currently sold out. Orders will ship beginning in March — feel free to reach out with any questions.",
+  message = "SkyBall Pro Rackets are currently sold out. Orders will ship prior to June 1 — feel free to reach out with any questions.",
   className = "",
 }: SoldOutBannerProps) {
   const [isVisible, setIsVisible] = useState(true)

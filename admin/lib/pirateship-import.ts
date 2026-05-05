@@ -11,12 +11,19 @@ export type PirateShipRow = {
   status: string;
 };
 
+export type TrackingEntry = {
+  number: string;
+  tracking_status: string;
+  added_at: string;
+};
+
 export type CandidateOrder = {
   id: string;
   customer_name: string | null;
   customer_email: string | null;
   created_at: string;
   tracking_number: string | null;
+  tracking_numbers: TrackingEntry[] | null;
   fulfillment_status: string;
   order_summary: string | null;
   order_total_cents: number | null;
@@ -124,12 +131,11 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
     byEmail.get(key)!.push(order);
   }
 
-  // Build set of already-imported tracking numbers
+  // Build set of already-imported tracking numbers (check both legacy field and new array)
   const existingTracking = new Set<string>();
   for (const order of allOrders) {
-    if (order.tracking_number) {
-      existingTracking.add(order.tracking_number.trim());
-    }
+    if (order.tracking_number) existingTracking.add(order.tracking_number.trim());
+    for (const t of order.tracking_numbers ?? []) existingTracking.add(t.number.trim());
   }
 
   const results: RowMatch[] = [];
@@ -156,13 +162,12 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
 
     const rowEmail = row.email.toLowerCase().trim();
 
-    // Try email match
+    // Try email match — any non-cancelled order can receive additional tracking numbers
     const emailCandidates: CandidateOrder[] = (byEmail.get(rowEmail) ?? []).filter((order) => {
       const orderCreatedAt = new Date(order.created_at);
       return (
         orderCreatedAt <= labelDateEndOfDay &&
-        order.tracking_number === null &&
-        (order.fulfillment_status === "pending" || order.fulfillment_status === "processing")
+        order.fulfillment_status !== "cancelled"
       );
     });
 
@@ -190,11 +195,10 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
       continue;
     }
 
-    // Fallback: name match on non-cancelled orders without tracking
+    // Fallback: name match on non-cancelled orders
     const rowRecipient = row.recipient.toLowerCase().trim();
     const nameCandidates: CandidateOrder[] = allOrders.filter((order) => {
       if (order.fulfillment_status === "cancelled") return false;
-      if (order.tracking_number !== null) return false;
       const name = (order.customer_name ?? "").toLowerCase().trim();
       return name === rowRecipient && name.length > 0;
     });

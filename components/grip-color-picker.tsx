@@ -24,10 +24,12 @@ export function GripColorPicker(props: {
   requiredCount: number;
   onConfirm: (colors: GripColor[]) => void;
   className?: string;
+  initialColors?: GripColor[];
+  confirmLabel?: string;
 }) {
-  const { requiredCount, onConfirm, className } = props;
+  const { requiredCount, onConfirm, className, confirmLabel } = props;
 
-  const [selected, setSelected] = useState<GripColor[]>([]);
+  const [selected, setSelected] = useState<GripColor[]>(props.initialColors ?? []);
 
   const remaining = useMemo(() => {
     const r = requiredCount - selected.length;
@@ -94,7 +96,7 @@ export function GripColorPicker(props: {
       </div>
 
       <Button type="button" className="w-full" onClick={confirm}>
-        Add grips to cart
+        {confirmLabel ?? "Add grips to cart"}
       </Button>
     </div>
   );

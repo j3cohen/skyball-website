@@ -8,6 +8,7 @@ import InfoRequestForm from "@/components/info-request-form";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ProductList, { ShopListProduct } from "@/components/product-list";
+import SoldOutBanner from "@/components/sold_out_banner";
 
 export default function ShopClient({ products }: { products: ShopListProduct[] }) {
   const [showForm, setShowForm] = useState(false);
@@ -15,6 +16,7 @@ export default function ShopClient({ products }: { products: ShopListProduct[] }
   return (
     <main className="min-h-screen bg-gray-50 py-24">
       <div className="container mx-auto px-4">
+        <SoldOutBanner className="mb-6" />
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">SkyBall™ Shop</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
