@@ -27,7 +27,7 @@ export default async function ProtectedAdminLayout({
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session) redirect("/login");
+  if (!session) redirect("/login?reason=no-session");
 
   // 2. Verify admin role (uses service role to bypass RLS)
   const { data: adminRow } = await supabaseAdmin
@@ -36,7 +36,7 @@ export default async function ProtectedAdminLayout({
     .eq("id", session.user.id)
     .single();
 
-  if (!adminRow) redirect("/login");
+  if (!adminRow) redirect("/login?reason=not-admin");
 
   const pendingCount = await getPendingCount();
 

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export default function AdminLoginPage() {
-  const router   = useRouter();
   const supabase = createClientComponentClient();
+  const params   = useSearchParams();
+  const reason   = params.get("reason");
 
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -26,8 +27,9 @@ export default function AdminLoginPage() {
       return;
     }
 
-    router.push("/fulfillment");
-    router.refresh();
+    // Hard navigation ensures the auth cookie is sent on the next server request.
+    // router.push() can race against cookie propagation in auth-helpers-nextjs.
+    window.location.href = "/fulfillment";
   }
 
   return (
@@ -75,6 +77,16 @@ export default function AdminLoginPage() {
             />
           </div>
 
+          {reason === "not-admin" && (
+            <p className="rounded-lg bg-orange-900/40 border border-orange-700 text-orange-300 text-sm px-3 py-2">
+              Authenticated but not authorized — your user ID is not in the admin_users table.
+            </p>
+          )}
+          {reason === "no-session" && (
+            <p className="rounded-lg bg-yellow-900/40 border border-yellow-700 text-yellow-300 text-sm px-3 py-2">
+              Session expired or not found. Please sign in again.
+            </p>
+          )}
           {error && (
             <p className="rounded-lg bg-red-900/40 border border-red-700 text-red-300 text-sm px-3 py-2">
               {error}

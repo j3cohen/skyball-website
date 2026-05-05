@@ -30,7 +30,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_name, customer_email, created_at, tracking_number, " +
+      "id, customer_name, customer_email, created_at, tracking_number, tracking_numbers, " +
         "fulfillment_status, order_summary, order_total_cents, order_currency"
     )
     .neq("fulfillment_status", "cancelled")

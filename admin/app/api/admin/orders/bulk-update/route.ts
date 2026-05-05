@@ -17,11 +17,14 @@ function isStatus(v: unknown): v is FulfillmentStatus {
   return ALLOWED_STATUSES.includes(v as FulfillmentStatus);
 }
 
+type TrackingEntry = { number: string; tracking_status: string; added_at: string };
+
 type UpdateItem = {
   id: string;
   fulfillment_status?: string;
   tracking_number?: string | null;
   shipping_label_cost?: number | null;
+  tracking_entry?: TrackingEntry;
 };
 
 export async function PATCH(req: Request) {
@@ -109,7 +112,35 @@ export async function PATCH(req: Request) {
       }
     }
 
+    if ("tracking_entry" in u) {
+      const te = u.tracking_entry as Record<string, unknown>;
+      if (typeof te?.number === "string" && te.number.trim()) {
+        validated.tracking_entry = {
+          number:          te.number.trim(),
+          tracking_status: typeof te.tracking_status === "string" ? te.tracking_status : "",
+          added_at:        new Date().toISOString(),
+        };
+      }
+    }
+
     validatedUpdates.push(validated);
+  }
+
+  // Pre-fetch current tracking_numbers for orders that will append a tracking_entry
+  const needsTrackingFetch = validatedUpdates.filter((u) => u.tracking_entry);
+  const currentTrackingMap = new Map<string, TrackingEntry[]>();
+  if (needsTrackingFetch.length > 0) {
+    const ids = needsTrackingFetch.map((u) => u.id);
+    const { data: rows } = await supabaseAdmin
+      .from("orders")
+      .select("id, tracking_numbers")
+      .in("id", ids);
+    for (const row of (rows ?? []) as unknown as { id: string; tracking_numbers: unknown }[]) {
+      currentTrackingMap.set(
+        row.id,
+        Array.isArray(row.tracking_numbers) ? (row.tracking_numbers as TrackingEntry[]) : []
+      );
+    }
   }
 
   // Apply updates in a loop
@@ -127,6 +158,11 @@ export async function PATCH(req: Request) {
 
     if (item.tracking_number !== undefined) {
       patch.tracking_number = item.tracking_number;
+    }
+
+    if (item.tracking_entry !== undefined) {
+      const existing = currentTrackingMap.get(item.id) ?? [];
+      patch.tracking_numbers = [...existing, item.tracking_entry];
     }
 
     if (item.shipping_label_cost !== undefined) {

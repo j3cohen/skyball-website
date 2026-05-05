@@ -88,6 +88,17 @@ export async function PATCH(req: Request, { params }: Params) {
     update.internal_notes = typeof notes === "string" ? notes.trim() || null : null;
   }
 
+  if ("tracking_numbers" in patch) {
+    const arr = patch.tracking_numbers;
+    if (!Array.isArray(arr)) {
+      return NextResponse.json({ error: "tracking_numbers must be an array." }, { status: 400 });
+    }
+    update.tracking_numbers = arr.filter(
+      (e): e is { number: string; tracking_status: string; added_at: string } =>
+        typeof e === "object" && e !== null && typeof e.number === "string"
+    );
+  }
+
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "No valid fields to update." }, { status: 400 });
   }

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState }             from "react";
-import Link                     from "next/link";
-import type { ExportableOrder } from "@/lib/order-types";
-import ShippingExportModal      from "./shipping-export-modal";
-import BulkStatusModal          from "./bulk-status-modal";
-import TrackingImportModal      from "./tracking-import-modal";
+import { useEffect, useRef, useState } from "react";
+import Link                            from "next/link";
+import type { ExportableOrder }        from "@/lib/order-types";
+import ShippingExportModal             from "./shipping-export-modal";
+import BulkStatusModal                 from "./bulk-status-modal";
+import TrackingImportModal             from "./tracking-import-modal";
+
+const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
+type FulfillmentStatus = (typeof STATUS_OPTS)[number];
 
 type Props = {
   orders: ExportableOrder[];
@@ -39,6 +42,40 @@ export default function FulfillmentTable({ orders }: Props) {
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
   const [searchQuery,            setSearchQuery]            = useState("");
   const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
+
+  // Inline status editing
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
+  const [openStatusId,    setOpenStatusId]    = useState<string | null>(null);
+  const [statusSaving,    setStatusSaving]    = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenStatusId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function handleInlineStatusChange(orderId: string, newStatus: FulfillmentStatus) {
+    setStatusSaving(orderId);
+    setOpenStatusId(null);
+    try {
+      const res = await fetch("/api/admin/orders/bulk-update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: [{ id: orderId, fulfillment_status: newStatus }] }),
+      });
+      if (res.ok) {
+        setStatusOverrides((prev) => ({ ...prev, [orderId]: newStatus }));
+      }
+    } finally {
+      setStatusSaving(null);
+    }
+  }
 
   // Derived: filtered orders
   const filteredOrders = searchQuery.trim()
@@ -218,11 +255,39 @@ export default function FulfillmentTable({ orders }: Props) {
                 <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
                   {fmtMoney(order.order_total_cents, order.order_currency)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium
-                    ${STATUS_BADGE[order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}>
-                    {order.fulfillment_status}
-                  </span>
+                <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <div className="relative inline-block" ref={openStatusId === order.id ? dropdownRef : null}>
+                    <button
+                      type="button"
+                      disabled={statusSaving === order.id}
+                      onClick={() => setOpenStatusId((prev) => prev === order.id ? null : order.id)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+                        transition-opacity ${statusSaving === order.id ? "opacity-50" : "hover:opacity-80 cursor-pointer"}
+                        ${STATUS_BADGE[statusOverrides[order.id] ?? order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}
+                    >
+                      {statusOverrides[order.id] ?? order.fulfillment_status}
+                      <svg className="w-2.5 h-2.5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {openStatusId === order.id && (
+                      <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
+                        {STATUS_OPTS.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => void handleInlineStatusChange(order.id, s)}
+                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2
+                              ${(statusOverrides[order.id] ?? order.fulfillment_status) === s ? "font-semibold" : ""}`}
+                          >
+                            <span className={`inline-block w-2 h-2 rounded-full ${STATUS_BADGE[s]?.split(" ")[0] ?? ""}`} />
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                   <Link

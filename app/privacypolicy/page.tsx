@@ -56,6 +56,16 @@ export default function PrivacyPolicyPage() {
                   </ul>
                 </div>
                 <div>
+                  <h3 className="text-lg font-medium mb-1">Mobile Application — Additional Data</h3>
+                  <p className="mb-2">When you use the SkyBall mobile application, we also collect:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li><strong>Location:</strong> precise or approximate location when you grant permission, to surface nearby players and facilities. Location permission can be revoked at any time in your device Settings.</li>
+                    <li><strong>Sports activity data:</strong> match scores, results, and history you log within the app.</li>
+                    <li><strong>Messages:</strong> messages you send to other players through the in-app chat.</li>
+                    <li><strong>Profile details:</strong> username and skill level you provide.</li>
+                  </ul>
+                </div>
+                <div>
                   <h3 className="text-lg font-medium mb-1">Information from third parties</h3>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li><strong>Stripe:</strong> we receive confirmation of payment success or failure. We do not receive or store full payment card numbers.</li>

@@ -4,7 +4,7 @@
 import { notFound }      from "next/navigation";
 import Link              from "next/link";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
-import FulfillForm       from "@/components/fulfill-form";
+import FulfillForm, { type TrackingEntry } from "@/components/fulfill-form";
 
 type Customizations = {
   ball_color?: string;
@@ -56,6 +56,7 @@ type Order = {
   order_summary: string | null;
   fulfillment_status: "pending" | "processing" | "fulfilled" | "cancelled";
   tracking_number: string | null;
+  tracking_numbers?: TrackingEntry[] | null;
   internal_notes: string | null;
   heard_about_us: string | null;
   customer_order_notes: string | null;
@@ -122,7 +123,7 @@ export default async function OrderDetailPage({
     .single();
 
   if (error || !data) notFound();
-  const order = data as Order;
+  const order = data as unknown as Order;
 
   const addr    = order.shipping_address;
   const items   = order.order_data?.items ?? [];
@@ -268,6 +269,7 @@ export default async function OrderDetailPage({
               currentStatus={order.fulfillment_status}
               currentTracking={order.tracking_number}
               currentNotes={order.internal_notes}
+              currentTrackingNumbers={order.tracking_numbers ?? []}
             />
           </section>
         </div>

@@ -36,6 +36,8 @@ function candidateLabel(order: CandidateOrder): string {
 }
 
 export default function TrackingImportModal({ onClose, onSuccess }: Props) {
+  type FilterTab = "all" | "auto" | "review" | "unmatched" | "already-imported";
+
   const [phase, setPhase] = useState<Phase>("upload");
   const [allOrders, setAllOrders] = useState<CandidateOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -44,6 +46,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
   const [applyError, setApplyError] = useState<string | null>(null);
   const [doneCount, setDoneCount] = useState(0);
   const [manualIds, setManualIds] = useState<Record<number, string>>({});
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch matchable orders on mount
@@ -107,9 +110,12 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
     try {
       const updates = toApply.map((m) => ({
         id: m.selectedOrderId!,
-        tracking_number: m.row.trackingNumber,
         shipping_label_cost: m.row.cost,
-        fulfillment_status: "processing",
+        fulfillment_status: m.row.status === "Delivered" ? "fulfilled" : "processing",
+        tracking_entry: {
+          number: m.row.trackingNumber,
+          tracking_status: m.row.status,
+        },
       }));
 
       const res = await fetch("/api/admin/orders/bulk-update", {
@@ -137,14 +143,26 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
   }
 
   // Derived counts
-  const autoCount = matches.filter((m) => m.confidence === "auto").length;
-  const reviewCount = matches.filter((m) => m.confidence === "review").length;
-  const unmatchedCount = matches.filter((m) => m.confidence === "unmatched").length;
+  const autoCount          = matches.filter((m) => m.confidence === "auto").length;
+  const reviewCount        = matches.filter((m) => m.confidence === "review").length;
+  const unmatchedCount     = matches.filter((m) => m.confidence === "unmatched").length;
   const alreadyImportedCount = matches.filter((m) => m.confidence === "already-imported").length;
-  const readyCount = matches.filter((m) => !m.skipped && m.selectedOrderId).length;
-  const blockedCount = matches.filter(
+  const readyCount         = matches.filter((m) => !m.skipped && m.selectedOrderId).length;
+  const blockedCount       = matches.filter(
     (m) => m.confidence === "review" && !m.skipped && !m.selectedOrderId
   ).length;
+
+  const filteredMatches = activeFilter === "all"
+    ? matches
+    : matches.filter((m) => m.confidence === activeFilter);
+
+  const filterTabs: { key: FilterTab; label: string; count: number; color: string }[] = [
+    { key: "all",              label: "All",             count: matches.length,       color: "gray" },
+    { key: "auto",             label: "Auto-matched",    count: autoCount,            color: "green" },
+    { key: "review",           label: "Needs Review",    count: reviewCount,          color: "amber" },
+    { key: "unmatched",        label: "Unmatched",       count: unmatchedCount,       color: "gray" },
+    { key: "already-imported", label: "Already imported",count: alreadyImportedCount, color: "gray" },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -205,20 +223,26 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
           {/* Reviewing phase */}
           {phase === "reviewing" && (
             <div className="space-y-4">
-              {/* Summary bar */}
-              <div className="flex flex-wrap gap-3 text-xs font-medium">
-                <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">
-                  {autoCount} auto-matched
-                </span>
-                <span className="bg-amber-100 text-amber-800 rounded-full px-3 py-1">
-                  {reviewCount} need review
-                </span>
-                <span className="bg-gray-100 text-gray-600 rounded-full px-3 py-1">
-                  {unmatchedCount} unmatched
-                </span>
-                <span className="bg-gray-100 text-gray-500 rounded-full px-3 py-1">
-                  {alreadyImportedCount} already imported
-                </span>
+              {/* Filter tabs */}
+              <div className="flex flex-wrap gap-1.5 text-xs font-medium border-b border-gray-200 pb-3">
+                {filterTabs.map((tab) => {
+                  const isActive = activeFilter === tab.key;
+                  const colorMap: Record<string, string> = {
+                    green: isActive ? "bg-green-600 text-white" : "bg-green-100 text-green-800 hover:bg-green-200",
+                    amber: isActive ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-800 hover:bg-amber-200",
+                    gray:  isActive ? "bg-gray-700 text-white"  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                  };
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveFilter(tab.key)}
+                      className={`rounded-full px-3 py-1 transition-colors ${colorMap[tab.color]}`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
+                  );
+                })}
               </div>
 
               {applyError && (
@@ -231,7 +255,10 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
 
               {/* Row list */}
               <div className="space-y-2">
-                {matches.map((m) => {
+                {filteredMatches.length === 0 && matches.length > 0 && (
+                  <p className="text-sm text-gray-400 text-center py-4">No rows in this category.</p>
+                )}
+                {filteredMatches.map((m) => {
                   if (m.confidence === "already-imported") {
                     return (
                       <div
