@@ -1,7 +1,7 @@
 "use client";
 
 import { useState }                         from "react";
-import { X, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { X, ChevronUp, Pencil } from "lucide-react";
 import { classifyBoxSize }                  from "@/lib/box-size";
 import type { BoxDimensions, BoxResult }    from "@/lib/box-size";
 import { buildCsvString, triggerCsvDownload } from "@/lib/csv-export";
