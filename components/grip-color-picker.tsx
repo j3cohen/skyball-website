@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 const COLORS: { key: GripColor; label: string }[] = [
   { key: "random", label: "Random" }, // ✅ add
   { key: "white", label: "White" },
-  //sold out { key: "blue", label: "Blue" },
-  // sold out { key: "orange", label: "Orange" },
+  { key: "blue", label: "Blue" },
+  { key: "orange", label: "Orange" },
   { key: "yellow", label: "Yellow" },
   { key: "pink", label: "Pink" },
 ];
