@@ -332,6 +332,8 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                             <span className="font-mono">{m.row.trackingNumber}</span>
                             <span className="ml-3 text-gray-400">Cost: </span>
                             ${m.row.cost.toFixed(2)}
+                            <span className="ml-3 text-gray-400">Label date: </span>
+                            {m.row.createdDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
