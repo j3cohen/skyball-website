@@ -14,7 +14,7 @@ import { AddonAddToCart } from "@/components/addon-add-to-cart";
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
 
 import { ProductDetailsText } from "@/components/product-details-text";
-import SoldOutBanner from "@/components/sold_out_banner";
+//import SoldOutBanner from "@/components/sold_out_banner";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -268,7 +268,7 @@ export default async function ProductPage({
 }: {
   params: { slug: string };
 }) {
-  const isProSlug = params.slug.toLowerCase().includes("pro");
+  //const isProSlug = params.slug.toLowerCase().includes("pro");
   const product = await fetchProductBySlug(params.slug);
   if (!product) notFound();
 
@@ -377,12 +377,12 @@ export default async function ProductPage({
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-24">
         <div className="container mx-auto px-4">
-          {isProSlug && (
+          {/* {isProSlug && (
             <SoldOutBanner
               className="mb-6"
               message="SkyBall Pro Rackets are currently sold out. Orders will ship prior to June 1 — feel free to reach out with any questions."
             />
-          )}
+          )} */}
           <div className="bg-white rounded-xl shadow-lg">
             <div className="md:flex">
               {/* Left column: Gallery + Product Details (on wide screens) */}
