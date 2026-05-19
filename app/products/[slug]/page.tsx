@@ -268,7 +268,7 @@ export default async function ProductPage({
 }: {
   params: { slug: string };
 }) {
-  const isProSlug = params.slug.toLowerCase().includes("pro");
+  //const isProSlug = params.slug.toLowerCase().includes("pro");
   const product = await fetchProductBySlug(params.slug);
   if (!product) notFound();
 
