@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
-import RaceTo300Announcement from "@/components/race-to-300-banner"
 import { submitRegistration } from "@/app/actions/registration"
 
 type TabValue = "open-play" | "tournaments"
@@ -414,8 +413,6 @@ export function PlayEvents({ events }: PlayEventProps) {
       {/* Tournaments Tab */}
       {activeTab === "tournaments" && (
         <section>
-          <RaceTo300Announcement className="mb-6" />
-
           {/* Tournaments section */}
           <div className="flex flex-col md:flex-row gap-6 mb-6">
             {/* Left column: Events list - Keep original order for tournaments */}
@@ -435,16 +432,14 @@ export function PlayEvents({ events }: PlayEventProps) {
 
               {tournamentEvents.length > 0 ? (
                 <div className="space-y-4 mb-6">
-                  {tournamentEvents.map((event) => (
-                    <Link
-                      href={`/play/${event.id}`}
-                      key={event.id}
-                      className={`block p-4 border rounded-lg ${
-                        event.isPast
-                          ? "bg-gray-50 border-gray-200"
-                          : "bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm"
-                      } transition-all`}
-                    >
+                  {tournamentEvents.map((event) => {
+                    const isExternalOnly = event.id === "dinkers-finksburg-tournament"
+                    const cardClassName = `p-4 border rounded-lg ${
+                      event.isPast
+                        ? "bg-gray-50 border-gray-200"
+                        : "bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm"
+                    } transition-all`
+                    const cardInner = (
                       <div className="flex flex-col md:flex-row md:items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-start gap-2 flex-wrap">
@@ -546,19 +541,40 @@ export function PlayEvents({ events }: PlayEventProps) {
                           )}
                         </div>
 
-                        <div className="flex justify-end items-start pt-1">
-                          <div className="inline-flex items-center text-sky-600 font-medium">
-                            {event.isPast && event.hasResults
-                              ? "View Results"
-                              : event.isPast
-                                ? "View Recap"
-                                : "View Details"}
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </div>
+                        <div className="flex flex-col items-end space-y-2 mt-4">
+                          {isExternalOnly && event.paymentLink ? (
+                            <a
+                              href={event.paymentLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm"
+                            >
+                              Register
+                            </a>
+                          ) : (
+                            <div className="inline-flex items-center text-sky-600 font-medium">
+                              {event.isPast && event.hasResults
+                                ? "View Results"
+                                : event.isPast
+                                  ? "View Recap"
+                                  : "View Details"}
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </Link>
-                  ))}
+                    )
+
+                    return isExternalOnly ? (
+                      <div key={event.id} className={cardClassName}>
+                        {cardInner}
+                      </div>
+                    ) : (
+                      <Link href={`/play/${event.id}`} key={event.id} className={`block ${cardClassName}`}>
+                        {cardInner}
+                      </Link>
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6 bg-gray-50 rounded-lg mb-6">
