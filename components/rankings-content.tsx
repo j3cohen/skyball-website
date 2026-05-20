@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, CheckCircle, Star, Calendar, Users, HelpCircle } from "lucide-react"
 import RankingsTable from "@/components/rankings-table"
-import RaceTo300Announcement from "@/components/race-to-300-banner"
 
 const rankingSections = [
   {
@@ -76,8 +75,8 @@ const rankingSections = [
     icon: Star,
     content: (
       <ul className="list-disc list-inside mb-4">
-        <li>A player&apos;s ranking is based on their top 10 tournament performances over a rolling 12-month period.</li>
-        <li>After 12 months: Points expire completely</li>
+        <li>A player&apos;s ranking is based on their top 10 tournament performances over a rolling 18-month period.</li>
+        <li>After 18 months: Points expire completely</li>
         <li>
           Protected Ranking: If a player is injured for 6+ months, their ranking is &quot;frozen&quot; for up to 1 year to allow
           fair return.
@@ -109,7 +108,7 @@ const rankingSections = [
           <li>Head-to-head record</li>
           <li>Most tournament wins</li>
           <li>Highest single-tournament point total</li>
-          <li>Total matches won in the last 12 months</li>
+          <li>Total matches won in the last 18 months</li>
         </ol>
       </>
     ),
@@ -121,9 +120,6 @@ export default function RankingsContent() {
     <section className="py-24 bg-gray-50">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold text-center mb-12">SkyBall™ Rankings</h1>
-        <RaceTo300Announcement className="mb-12" />
-        
-
         <div className="max-w-4xl mx-auto space-y-8">
           <RankingsTable />
           <Card>
