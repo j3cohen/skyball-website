@@ -12,15 +12,6 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
   return ((order.order_data as OrderData | null)?.items) ?? [];
 }
 
-function formatCustom(customizations?: Record<string, unknown>): string {
-  if (!customizations) return "";
-  const parts: string[] = [];
-  const grips = customizations.gripColors as string[] | undefined;
-  const balls = customizations.ballColors as string[] | undefined;
-  if (grips?.length) parts.push(`Grip: ${grips.join(", ")}`);
-  if (balls?.length) parts.push(`Balls: ${balls.join(", ")}`);
-  return parts.join(" · ");
-}
 
 function CustomBadges({ customizations }: { customizations?: Record<string, unknown> }) {
   if (!customizations) return null;

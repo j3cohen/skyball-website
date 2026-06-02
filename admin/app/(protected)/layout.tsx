@@ -4,7 +4,6 @@
 import { redirect } from "next/navigation";
 import { cookies }  from "next/headers";
 import Link         from "next/link";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import AdminSignOut from "@/components/admin-sign-out";
 
@@ -21,13 +20,26 @@ export default async function ProtectedAdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Verify authenticated session
-  // getUser() validates the JWT server-side — works reliably in dev + prod.
-  // getSession() only reads from cookies and has dev-mode caching issues.
-  const supabase = createServerComponentClient({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 1. Verify authenticated session by reading the auth cookie directly.
+  // createServerComponentClient has a dev-mode bug where it can't always read
+  // cookies set by the client. Reading the raw JWT and validating via
+  // supabaseAdmin.auth.getUser() is reliable in both dev and prod.
+  const cookieStore = cookies();
+  const authCookie = cookieStore
+    .getAll()
+    .find((c) => c.name.includes("-auth-token") && !c.name.includes("."));
+
+  let user: Awaited<ReturnType<typeof supabaseAdmin.auth.getUser>>["data"]["user"] = null;
+  if (authCookie) {
+    try {
+      const parsed: unknown = JSON.parse(decodeURIComponent(authCookie.value));
+      const accessToken = Array.isArray(parsed) ? (parsed[0] as string) : null;
+      if (accessToken) {
+        const { data } = await supabaseAdmin.auth.getUser(accessToken);
+        user = data.user;
+      }
+    } catch { /* invalid cookie — fall through to redirect */ }
+  }
 
   if (!user) redirect("/login?reason=no-session");
 
