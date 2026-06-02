@@ -199,7 +199,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   const inv = makeInv();
   for (const order of orders) {
     const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
-    for (const [i, item] of getItems(order).entries()) {
+    for (const item of getItems(order)) {
       const { ball, grips } = itemColors(item, summaryFallbacks);
       addItemToInv(inv, item, ball, grips);
     }
@@ -214,7 +214,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   const unknownColorOrders: string[] = [];
   for (const order of orders) {
     const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
-    for (const [i, item] of getItems(order).entries()) {
+    for (const item of getItems(order)) {
       const name = (item.product_name ?? item.slug ?? "").toLowerCase();
       const needsBall = (name.includes("kit") || name.includes("pack") || name.includes("anywhere"))
                         && !name.includes("grip") && !name.includes("bag") && !name.includes("crewneck");
@@ -274,7 +274,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
         : boxResult.kind === "small" ? "Small"
         : "⚠ Check";
       const badgeClass = boxResult.kind === "needs-input" ? "badge-warn" : "badge";
-      const lines = items.map((item, i) => {
+      const lines = items.map((item) => {
         const qty             = item.quantity ?? 1;
         const name            = item.product_name ?? item.slug ?? "?";
         const { ball, grips } = itemColors(item, summaryFallbacks);
