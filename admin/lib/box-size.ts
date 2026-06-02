@@ -14,6 +14,7 @@ export type BoxDimensions = {
 
 export type BoxResult =
   | { kind: "large"; box: BoxDimensions }
+  | { kind: "xl";    box: BoxDimensions }
   | { kind: "small"; box: BoxDimensions }
   | { kind: "needs-input" };
 
@@ -21,8 +22,8 @@ export type BoxResult =
 export const LARGE_BOX: BoxDimensions = { length: 24, width: 12, height: 6, pounds: 4, ounces: 0 };
 // 10×4×4 — single 3-ball pack only
 export const SMALL_BOX: BoxDimensions = { length: 10, width: 4, height: 4, pounds: 1, ounces: 0 };
-// 43×13×8 — anywhere kit (includes net)
-export const ANYWHERE_BOX: BoxDimensions = { length: 43, width: 13, height: 8, pounds: 13, ounces: 0 };
+// 48×13×8 — anywhere kit (includes net)
+export const ANYWHERE_BOX: BoxDimensions = { length: 48, width: 13, height: 8, pounds: 13, ounces: 0 };
 
 function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } {
   const slug = (item.slug ?? "").toLowerCase();
@@ -81,7 +82,7 @@ export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
   const anywhereItems = items.filter(isAnywhereKit);
   if (anywhereItems.length > 0) {
     const totalAnywhere = anywhereItems.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
-    if (totalAnywhere === 1) return { kind: "large", box: ANYWHERE_BOX };
+    if (totalAnywhere === 1) return { kind: "xl", box: ANYWHERE_BOX };
     return { kind: "needs-input" };
   }
 

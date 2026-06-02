@@ -8,26 +8,36 @@ type Props = {
   onClose: () => void;
 };
 
+type AggregatedItem = {
+  name: string;
+  qty: number;
+  ballColor?: string;
+  gripColors?: string[];
+};
+
 function getItems(order: ExportableOrder): OrderDataItem[] {
   return ((order.order_data as OrderData | null)?.items) ?? [];
 }
 
+function colorSuffix(ballColor?: string, gripColors?: string[]): string {
+  const parts: string[] = [];
+  if (gripColors?.length) parts.push(`grip: ${gripColors.join(", ")}`);
+  if (ballColor)          parts.push(`ball: ${ballColor}`);
+  return parts.length ? ` — ${parts.join(" · ")}` : "";
+}
 
-function CustomBadges({ customizations }: { customizations?: Record<string, unknown> }) {
-  if (!customizations) return null;
-  const grips = customizations.grip_colors as string[] | undefined;
-  const ball  = customizations.ball_color  as string  | undefined;
-  if (!grips?.length && !ball) return null;
+function ColorTags({ ballColor, gripColors }: { ballColor?: string; gripColors?: string[] }) {
+  if (!ballColor && !gripColors?.length) return null;
   return (
     <span className="ml-1.5 inline-flex flex-wrap gap-1">
-      {grips?.map((c, i) => (
-        <span key={i} className="rounded bg-purple-100 text-purple-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+      {gripColors?.map((c, i) => (
+        <span key={i} className="rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
           grip: {c}
         </span>
       ))}
-      {ball && (
-        <span className="rounded bg-sky-100 text-sky-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
-          ball: {ball}
+      {ballColor && (
+        <span className="rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+          ball: {ballColor}
         </span>
       )}
     </span>
@@ -35,24 +45,34 @@ function CustomBadges({ customizations }: { customizations?: Record<string, unkn
 }
 
 export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
-  // Aggregate item totals
-  const itemTotals = new Map<string, number>();
+  // Aggregate items keyed by product name + color selections
+  const itemMap = new Map<string, AggregatedItem>();
   for (const order of orders) {
     for (const item of getItems(order)) {
-      const name = item.product_name ?? item.slug ?? "Unknown";
-      const qty = item.quantity ?? 1;
-      itemTotals.set(name, (itemTotals.get(name) ?? 0) + qty);
+      const name      = item.product_name ?? item.slug ?? "Unknown";
+      const qty       = item.quantity ?? 1;
+      const ball      = item.customizations?.ball_color  as string   | undefined;
+      const grips     = item.customizations?.grip_colors as string[] | undefined;
+      const colorKey  = [ball ?? "", (grips ?? []).join(",")].join("|");
+      const key       = `${name}||${colorKey}`;
+      const existing  = itemMap.get(key);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        itemMap.set(key, { name, qty, ballColor: ball, gripColors: grips });
+      }
     }
   }
-  const sortedItems = Array.from(itemTotals.entries()).sort((a, b) => b[1] - a[1]);
+  const sortedItems = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
 
   // Box counts
-  let largeCt = 0, smallCt = 0, inputCt = 0;
+  let largeCt = 0, xlCt = 0, smallCt = 0, inputCt = 0;
   for (const order of orders) {
     const r = classifyBoxSize(getItems(order));
-    if (r.kind === "large") largeCt++;
+    if      (r.kind === "large") largeCt++;
+    else if (r.kind === "xl")    xlCt++;
     else if (r.kind === "small") smallCt++;
-    else inputCt++;
+    else                         inputCt++;
   }
 
   function handlePrint() {
@@ -61,33 +81,35 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
     });
 
     const itemRows = sortedItems
-      .map(([name, qty]) => `<tr><td class="qty">${qty}×</td><td>${escHtml(name)}</td></tr>`)
+      .map(({ name, qty, ballColor, gripColors }) => {
+        const suffix = colorSuffix(ballColor, gripColors);
+        return `<tr><td class="qty">${qty}×</td><td>${escHtml(name)}${suffix ? `<span class="color-note">${escHtml(suffix)}</span>` : ""}</td></tr>`;
+      })
       .join("");
 
     const boxRows = [
       largeCt > 0 ? `<tr><td class="qty">${largeCt}×</td><td>Large box (24×12×6")</td></tr>` : "",
+      xlCt    > 0 ? `<tr><td class="qty">${xlCt}×</td><td>XL box (48×13×8") — Anywhere Kit</td></tr>` : "",
       smallCt > 0 ? `<tr><td class="qty">${smallCt}×</td><td>Small box (10×4×4")</td></tr>` : "",
       inputCt > 0 ? `<tr class="warn"><td class="qty">${inputCt}×</td><td>⚠ Manual size needed</td></tr>` : "",
     ].join("");
 
     const orderList = orders.map(order => {
-      const items = getItems(order);
+      const items     = getItems(order);
       const boxResult = classifyBoxSize(items);
-      const boxLabel =
-        boxResult.kind === "large" ? "Large"
+      const boxLabel  =
+        boxResult.kind === "xl"    ? "XL"
+        : boxResult.kind === "large" ? "Large"
         : boxResult.kind === "small" ? "Small"
         : "⚠ Check";
       const badgeClass = boxResult.kind === "needs-input" ? "badge-warn" : "badge";
       const lines = items.map(item => {
-        const qty = item.quantity ?? 1;
-        const name = item.product_name ?? item.slug ?? "?";
-        const grips = item.customizations?.grip_colors as string[] | undefined;
-        const ball  = item.customizations?.ball_color  as string  | undefined;
-        const colorBadges = [
-          ...(grips ?? []).map(c => `<span class="cbadge grip">grip: ${escHtml(c)}</span>`),
-          ...(ball ? [`<span class="cbadge ball">ball: ${escHtml(ball)}</span>`] : []),
-        ].join("");
-        return `<li>${qty}× ${escHtml(name)}${colorBadges ? ` ${colorBadges}` : ""}</li>`;
+        const qty    = item.quantity ?? 1;
+        const name   = item.product_name ?? item.slug ?? "?";
+        const ball   = item.customizations?.ball_color  as string   | undefined;
+        const grips  = item.customizations?.grip_colors as string[] | undefined;
+        const suffix = colorSuffix(ball, grips);
+        return `<li>${qty}× ${escHtml(name)}${suffix ? `<span class="color-note">${escHtml(suffix)}</span>` : ""}</li>`;
       }).join("");
       return `
         <div class="order">
@@ -111,20 +133,18 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   .meta{color:#6b7280;font-size:12px;margin-bottom:22px}
   h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
   section{margin-bottom:22px}
-  table{border-collapse:collapse}
-  td{padding:2px 6px 2px 0;vertical-align:top}
-  td.qty{font-weight:700;min-width:32px;text-align:right;padding-right:10px}
+  table{border-collapse:collapse;width:100%}
+  td{padding:3px 6px 3px 0;vertical-align:top}
+  td.qty{font-weight:700;min-width:36px;text-align:right;padding-right:10px}
   tr.warn td{color:#d97706}
+  .color-note{color:#6b7280;font-size:11px;margin-left:4px}
   .order{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e5e7eb}
   .order-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
   .cname{font-weight:600;font-size:14px}
   .badge{font-size:11px;color:#6b7280;background:#f3f4f6;border-radius:4px;padding:1px 7px}
   .badge-warn{font-size:11px;color:#b45309;background:#fef3c7;border-radius:4px;padding:1px 7px}
   ul{padding-left:18px}
-  li{margin-bottom:4px;display:flex;align-items:baseline;flex-wrap:wrap;gap:3px}
-  .cbadge{font-size:10px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap}
-  .cbadge.grip{background:#ede9fe;color:#6d28d9}
-  .cbadge.ball{background:#e0f2fe;color:#0369a1}
+  li{margin-bottom:3px}
   .print-btn{position:fixed;top:16px;right:16px;padding:8px 18px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
   @media print{.print-btn{display:none}}
 </style>
@@ -180,10 +200,13 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             </h3>
             <table className="w-full">
               <tbody>
-                {sortedItems.map(([name, qty]) => (
-                  <tr key={name}>
-                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{qty}×</td>
-                    <td className="text-gray-700 py-0.5">{name}</td>
+                {sortedItems.map(({ name, qty, ballColor, gripColors }, i) => (
+                  <tr key={i}>
+                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5 align-top">{qty}×</td>
+                    <td className="text-gray-700 py-0.5">
+                      {name}
+                      <ColorTags ballColor={ballColor} gripColors={gripColors} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -201,6 +224,12 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                   <tr>
                     <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{largeCt}×</td>
                     <td className="text-gray-700 py-0.5">Large box (24×12×6&quot;)</td>
+                  </tr>
+                )}
+                {xlCt > 0 && (
+                  <tr>
+                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{xlCt}×</td>
+                    <td className="text-gray-700 py-0.5">XL box (48×13×8&quot;) — Anywhere Kit</td>
                   </tr>
                 )}
                 {smallCt > 0 && (
@@ -226,10 +255,11 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             </h3>
             <div className="space-y-3">
               {orders.map(order => {
-                const items = getItems(order);
+                const items     = getItems(order);
                 const boxResult = classifyBoxSize(items);
-                const boxLabel =
-                  boxResult.kind === "large" ? "Large"
+                const boxLabel  =
+                  boxResult.kind === "xl"    ? "XL"
+                  : boxResult.kind === "large" ? "Large"
                   : boxResult.kind === "small" ? "Small"
                   : "⚠ Check";
                 const badgeColor =
@@ -244,12 +274,14 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                     </div>
                     <ul className="list-disc list-inside space-y-0.5 text-xs text-gray-600">
                       {items.map((item, i) => {
-                        const qty = item.quantity ?? 1;
-                        const name = item.product_name ?? item.slug ?? "?";
+                        const qty   = item.quantity ?? 1;
+                        const name  = item.product_name ?? item.slug ?? "?";
+                        const ball  = item.customizations?.ball_color  as string   | undefined;
+                        const grips = item.customizations?.grip_colors as string[] | undefined;
                         return (
-                          <li key={i} className="flex items-start flex-wrap gap-y-0.5">
-                            <span>{qty}× {name}</span>
-                            <CustomBadges customizations={item.customizations} />
+                          <li key={i}>
+                            {qty}× {name}
+                            <ColorTags ballColor={ball} gripColors={grips} />
                           </li>
                         );
                       })}
