@@ -111,7 +111,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
       const updates = toApply.map((m) => ({
         id: m.selectedOrderId!,
         shipping_label_cost: m.row.cost,
-        fulfillment_status: m.row.status === "Delivered" ? "fulfilled" : "processing",
+        fulfillment_status: m.row.status.toLowerCase() === "delivered" ? "fulfilled" : "processing",
         tracking_entry: {
           number: m.row.trackingNumber,
           tracking_status: m.row.status,

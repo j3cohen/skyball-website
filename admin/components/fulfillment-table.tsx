@@ -6,6 +6,7 @@ import type { ExportableOrder }        from "@/lib/order-types";
 import ShippingExportModal             from "./shipping-export-modal";
 import BulkStatusModal                 from "./bulk-status-modal";
 import TrackingImportModal             from "./tracking-import-modal";
+import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
 
 const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
 type FulfillmentStatus = (typeof STATUS_OPTS)[number];
@@ -40,6 +41,7 @@ export default function FulfillmentTable({ orders }: Props) {
   const [showModal,              setShowModal]              = useState(false);
   const [showBulkStatusModal,    setShowBulkStatusModal]    = useState(false);
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
+  const [showCheatSheetModal,    setShowCheatSheetModal]    = useState(false);
   const [searchQuery,            setSearchQuery]            = useState("");
   const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
 
@@ -183,6 +185,13 @@ export default function FulfillmentTable({ orders }: Props) {
                        rounded-lg hover:bg-gray-50 transition-colors"
           >
             Import Tracking
+          </button>
+          <button
+            onClick={() => setShowCheatSheetModal(true)}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cheat Sheet {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
           </button>
           <button
             disabled={selectedIds.size === 0}
@@ -339,6 +348,14 @@ export default function FulfillmentTable({ orders }: Props) {
             setShowTrackingImportModal(false);
             showSuccess(`${count} order${count !== 1 ? "s" : ""} updated with tracking numbers.`);
           }}
+        />
+      )}
+
+      {/* Fulfillment cheat sheet modal */}
+      {showCheatSheetModal && (
+        <FulfillmentCheatSheetModal
+          orders={selectedIds.size > 0 ? selectedOrders : filteredOrders}
+          onClose={() => setShowCheatSheetModal(false)}
         />
       )}
     </>

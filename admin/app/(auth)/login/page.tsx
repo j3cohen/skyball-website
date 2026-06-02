@@ -1,36 +1,73 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-function LoginForm() {
+function friendlyAuthError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid email or password"))
+    return "Incorrect email or password.";
+  if (m.includes("email not confirmed"))
+    return "Email not confirmed. Check your inbox for a confirmation link.";
+  if (m.includes("too many requests") || m.includes("rate limit"))
+    return "Too many sign-in attempts. Please wait a moment and try again.";
+  if (m.includes("network") || m.includes("fetch"))
+    return "Network error — check your connection and try again.";
+  return msg;
+}
+
+const REASON_MESSAGES: Record<string, { text: string; style: string }> = {
+  "not-admin": {
+    text: "This account is not authorized as an admin.",
+    style: "bg-orange-900/40 border-orange-700 text-orange-300",
+  },
+  "no-session": {
+    text: "Session expired — please sign in again.",
+    style: "bg-yellow-900/40 border-yellow-700 text-yellow-300",
+  },
+};
+
+export default function AdminLoginPage() {
   const supabase = createClientComponentClient();
-  const params   = useSearchParams();
-  const reason   = params.get("reason");
 
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
+  const [reason,   setReason]   = useState<string | null>(null);
+
+  // Read ?reason= from the URL on the client so it's always available,
+  // even when the Suspense boundary hasn't resolved yet.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    setReason(p.get("reason"));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setReason(null);
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (authError) {
-      setError(authError.message);
+      if (authError) {
+        setError(friendlyAuthError(authError.message));
+        setLoading(false);
+        return;
+      }
+
+      // Hard navigation ensures the auth cookie is sent on the next server request.
+      // router.push() can race against cookie propagation in auth-helpers-nextjs.
+      window.location.href = "/fulfillment";
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
       setLoading(false);
-      return;
     }
-
-    // Hard navigation ensures the auth cookie is sent on the next server request.
-    // router.push() can race against cookie propagation in auth-helpers-nextjs.
-    window.location.href = "/fulfillment";
   }
+
+  const reasonMsg = reason ? REASON_MESSAGES[reason] : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
@@ -77,16 +114,12 @@ function LoginForm() {
             />
           </div>
 
-          {reason === "not-admin" && (
-            <p className="rounded-lg bg-orange-900/40 border border-orange-700 text-orange-300 text-sm px-3 py-2">
-              Authenticated but not authorized — your user ID is not in the admin_users table.
+          {reasonMsg && (
+            <p className={`rounded-lg border text-sm px-3 py-2 ${reasonMsg.style}`}>
+              {reasonMsg.text}
             </p>
           )}
-          {reason === "no-session" && (
-            <p className="rounded-lg bg-yellow-900/40 border border-yellow-700 text-yellow-300 text-sm px-3 py-2">
-              Session expired or not found. Please sign in again.
-            </p>
-          )}
+
           {error && (
             <p className="rounded-lg bg-red-900/40 border border-red-700 text-red-300 text-sm px-3 py-2">
               {error}
@@ -104,13 +137,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function AdminLoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }
