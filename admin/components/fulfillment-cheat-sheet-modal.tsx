@@ -153,18 +153,7 @@ function addItemToInv(inv: Inv, item: OrderDataItem, ball: string | undefined, g
     return;
   }
 
-  // ── Ball packs (largest first to avoid partial matches) ──────────────────
-  if (name.includes("50-pack") || name.includes("50 pack")) {
-    addPack(inv, 50, ball, qty); return;
-  }
-  if (name.includes("12-pack") || name.includes("12 pack")) {
-    addPack(inv, 12, ball, qty); return;
-  }
-  if (name.includes("3-pack")  || name.includes("3 pack") || name.includes("ball")) {
-    addPack(inv, 3, ball, qty); return;
-  }
-
-  // ── Grips ────────────────────────────────────────────────────────────────
+  // ── Grips (before ball packs — "SkyBall" in grip names contains "ball") ──
   if (name.includes("grip")) {
     const colors = grips ?? [];
     if (colors.length > 0) {
@@ -173,6 +162,17 @@ function addItemToInv(inv: Inv, item: OrderDataItem, ball: string | undefined, g
       inv.gripColors.set("?", (inv.gripColors.get("?") ?? 0) + qty);
     }
     return;
+  }
+
+  // ── Ball packs (largest first to avoid partial matches) ──────────────────
+  if (name.includes("50-pack") || name.includes("50 pack")) {
+    addPack(inv, 50, ball, qty); return;
+  }
+  if (name.includes("12-pack") || name.includes("12 pack")) {
+    addPack(inv, 12, ball, qty); return;
+  }
+  if (name.includes("3-pack") || name.includes("3 pack") || name.includes("ball")) {
+    addPack(inv, 3, ball, qty); return;
   }
 
   // ── Everything else ──────────────────────────────────────────────────────
