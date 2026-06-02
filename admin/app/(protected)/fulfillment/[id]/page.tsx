@@ -241,6 +241,18 @@ export default async function OrderDetailPage({
             )}
           </section>
 
+          {/* Raw order summary (collapsible) */}
+          {order.order_summary && (
+            <details className="text-xs text-gray-400">
+              <summary className="cursor-pointer select-none hover:text-gray-600">
+                Raw order summary
+              </summary>
+              <div className="mt-2 pl-2 font-mono break-all whitespace-pre-wrap text-gray-600 bg-gray-50 rounded p-2">
+                {order.order_summary}
+              </div>
+            </details>
+          )}
+
           {/* Stripe IDs (collapsible) */}
           <details className="text-xs text-gray-400">
             <summary className="cursor-pointer select-none hover:text-gray-600">

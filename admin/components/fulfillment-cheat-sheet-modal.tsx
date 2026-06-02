@@ -197,6 +197,24 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   const sortedGripColors = Array.from(inv.gripColors.entries()).sort((a, b) => b[1] - a[1]);
   const sortedOther      = Array.from(inv.other.entries()).sort((a, b) => b[1] - a[1]);
 
+  // Find orders contributing to unknown colors — items that should have a ball
+  // color (kits, ball packs) but have neither customizations nor summary fallback.
+  const unknownColorOrders: string[] = [];
+  for (const order of orders) {
+    const summaryFallbacks = parseSummaryColors(order.order_summary);
+    for (const [i, item] of getItems(order).entries()) {
+      const name = (item.product_name ?? item.slug ?? "").toLowerCase();
+      const needsBall = (name.includes("kit") || name.includes("pack") || name.includes("anywhere"))
+                        && !name.includes("grip") && !name.includes("bag") && !name.includes("crewneck");
+      if (!needsBall) continue;
+      const { ball } = itemColors(item, summaryFallbacks[i] ?? {});
+      if (!ball) {
+        unknownColorOrders.push(`${order.customer_name ?? order.id} — ${item.product_name ?? "?"}`);
+        break;
+      }
+    }
+  }
+
   // Box counts
   let largeCt = 0, xlCt = 0, smallCt = 0, inputCt = 0;
   for (const order of orders) {
@@ -334,6 +352,16 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
 
         {/* Scrollable preview */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-sm">
+
+          {/* Unknown color warning */}
+          {unknownColorOrders.length > 0 && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              <p className="font-semibold mb-1">⚠ Missing ball color ({unknownColorOrders.length} item{unknownColorOrders.length !== 1 ? "s" : ""}) — counted as unknown:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {unknownColorOrders.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
 
           {/* Items to Pack — fixed inventory order */}
           <section>

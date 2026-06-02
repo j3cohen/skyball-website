@@ -29,6 +29,26 @@ function fmtDate(iso: string) {
   });
 }
 
+function getOrderNote(order: ExportableOrder): string | null {
+  const data = order.order_data as { customer_selections?: { order_notes?: string | null } } | null;
+  return data?.customer_selections?.order_notes ?? null;
+}
+
+function parseSummaryColorsForExport(summary: string | null): Array<{ ballColor?: string; gripColors?: string[] }> {
+  if (!summary) return [];
+  return summary
+    .split(" | ")
+    .filter(p => !p.startsWith("Total:"))
+    .map(p => {
+      const out: { ballColor?: string; gripColors?: string[] } = {};
+      const ball = p.match(/\[ball:([^\]]+)\]/);
+      if (ball)  out.ballColor  = ball[1].trim();
+      const grip = p.match(/\[grips:([^\]]+)\]/);
+      if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
+      return out;
+    });
+}
+
 function fmtMoney(cents: number | null, currency: string) {
   if (cents == null) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -142,6 +162,56 @@ export default function FulfillmentTable({ orders }: Props) {
     setTimeout(() => setSuccessMessage(null), 4000);
   }
 
+  function handleExportCSV() {
+    const exportOrders = selectedIds.size > 0 ? selectedOrders : filteredOrders;
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const headers = [
+      "Customer Name", "Email", "Date", "Status", "Total", "Note",
+      "Item", "Qty", "Ball Color", "Grip Colors",
+    ];
+    const rows: string[] = [headers.join(",")];
+
+    for (const order of exportOrders) {
+      const data  = order.order_data as { items?: Array<{ product_name?: string | null; slug?: string | null; quantity?: number | null; customizations?: Record<string, unknown> }> } | null;
+      const items = data?.items ?? [];
+      const summaryFallbacks = parseSummaryColorsForExport(order.order_summary);
+      const note  = getOrderNote(order) ?? "";
+      const total = ((order.order_total_cents ?? 0) / 100).toFixed(2);
+      const date  = new Date(order.created_at).toLocaleDateString("en-US");
+
+      if (items.length === 0) {
+        rows.push([
+          esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
+          date, order.fulfillment_status, total, esc(note),
+          "", "", "", "",
+        ].join(","));
+      } else {
+        for (const [i, item] of items.entries()) {
+          const fallback = summaryFallbacks[i] ?? {};
+          const ball  = (item.customizations?.ball_color  as string   | undefined) ?? fallback.ballColor ?? "";
+          const grips = (item.customizations?.grip_colors as string[] | undefined) ?? fallback.gripColors ?? [];
+          rows.push([
+            esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
+            date, order.fulfillment_status, total, esc(note),
+            esc(item.product_name ?? item.slug ?? ""),
+            String(item.quantity ?? 1),
+            ball,
+            esc(grips.join(", ")),
+          ].join(","));
+        }
+      }
+    }
+
+    const csv  = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleResyncColors() {
     try {
       const res = await fetch("/api/admin/orders/resync-customizations", { method: "POST" });
@@ -233,6 +303,13 @@ export default function FulfillmentTable({ orders }: Props) {
             Re-sync Colors
           </button>
           <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+          </button>
+          <button
             onClick={() => setShowCheatSheetModal(true)}
             className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
                        rounded-lg hover:bg-gray-50 transition-colors"
@@ -299,7 +376,12 @@ export default function FulfillmentTable({ orders }: Props) {
                   {fmtDate(order.created_at)}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{order.customer_name ?? "—"}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-gray-900">{order.customer_name ?? "—"}</span>
+                    {getOrderNote(order) && (
+                      <span title={getOrderNote(order)!} className="text-amber-500 text-xs leading-none">💬</span>
+                    )}
+                  </div>
                   <div className="text-xs text-gray-400">{order.customer_email ?? "—"}</div>
                 </td>
                 <td className="px-4 py-3 max-w-xs">
