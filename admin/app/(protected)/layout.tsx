@@ -22,18 +22,20 @@ export default async function ProtectedAdminLayout({
   children: React.ReactNode;
 }) {
   // 1. Verify authenticated session
+  // getUser() validates the JWT server-side — works reliably in dev + prod.
+  // getSession() only reads from cookies and has dev-mode caching issues.
   const supabase = createServerComponentClient({ cookies });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login?reason=no-session");
+  if (!user) redirect("/login?reason=no-session");
 
   // 2. Verify admin role (uses service role to bypass RLS)
   const { data: adminRow } = await supabaseAdmin
     .from("admin_users")
     .select("id")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   if (!adminRow) redirect("/login?reason=not-admin");
@@ -58,7 +60,7 @@ export default async function ProtectedAdminLayout({
 
         {/* Footer */}
         <div className="px-4 py-4 border-t border-gray-800 space-y-2">
-          <p className="text-xs text-gray-500 truncate">{session.user.email}</p>
+          <p className="text-xs text-gray-500 truncate">{user.email}</p>
           <AdminSignOut />
         </div>
       </aside>
