@@ -142,6 +142,20 @@ export default function FulfillmentTable({ orders }: Props) {
     setTimeout(() => setSuccessMessage(null), 4000);
   }
 
+  async function handleResyncColors() {
+    try {
+      const res = await fetch("/api/admin/orders/resync-customizations", { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        showSuccess(`Re-sync complete: ${json.patched} order${json.patched !== 1 ? "s" : ""} patched.`);
+      } else {
+        alert(json.error ?? "Re-sync failed.");
+      }
+    } catch {
+      alert("Network error during re-sync.");
+    }
+  }
+
   if (orders.length === 0) {
     return <div className="text-center py-20 text-gray-400">No orders found.</div>;
   }
@@ -210,6 +224,13 @@ export default function FulfillmentTable({ orders }: Props) {
                        rounded-lg hover:bg-gray-50 transition-colors"
           >
             Import Tracking
+          </button>
+          <button
+            onClick={handleResyncColors}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Re-sync Colors
           </button>
           <button
             onClick={() => setShowCheatSheetModal(true)}

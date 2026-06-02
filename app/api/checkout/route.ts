@@ -468,23 +468,25 @@ export async function POST(request: Request) {
     // by the webhook to populate the `order_data` column in Supabase.
     // Shape is intentionally open-ended: new product customizations go into
     // the same per-item object without any schema change.
+    // Compact per-item payload for the webhook.
+    // Only include fields the webhook actually uses: pid (for matching), slug
+    // (product name fallback), and customization fields.
+    // id/kind/qty/cents are omitted — the webhook reads those from the expanded
+    // Stripe session. Keeping the payload small prevents truncation at the
+    // 500-char Stripe metadata limit, which silently drops all customization data.
     const orderDataJsonRaw = JSON.stringify(
       body.items.map((item) => {
         const row = byId.get(item.priceRowId)!;
         const prod = row.product!;
         const entry: Record<string, unknown> = {
-          id: item.priceRowId,      // Supabase product_prices.id
-          pid: row.stripe_price_id, // Stripe price ID
+          pid:  row.stripe_price_id,
           slug: prod.slug,
-          kind: prod.kind,
-          qty: item.qty,
-          cents: row.unit_amount,
         };
         const ballSel = ballSelections.find((b) => b.priceRowId === item.priceRowId);
         if (ballSel) entry.color = ballSel.color;
         const gripSel = gripSelections.find((g) => g.priceRowId === item.priceRowId);
         if (gripSel) {
-          entry.colors = gripSel.selectedColors.length > 0 ? gripSel.selectedColors : ["random"];
+          entry.colors    = gripSel.selectedColors.length > 0 ? gripSel.selectedColors : ["random"];
           entry.unselected = gripSel.unselectedCount;
         }
         const crewneckSel = crewneckSelections.find((c) => c.priceRowId === item.priceRowId);

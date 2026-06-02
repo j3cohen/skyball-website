@@ -19,6 +19,31 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
   return ((order.order_data as OrderData | null)?.items) ?? [];
 }
 
+// Parse per-item color data from order_summary when customizations are empty.
+// Summary format: "1x Name ($price) [ball:orange] | 1x Name ($price) [grips:r,r] | Total:..."
+type SummaryColors = { ballColor?: string; gripColors?: string[] };
+function parseSummaryColors(summary: string | null): SummaryColors[] {
+  if (!summary) return [];
+  return summary
+    .split(" | ")
+    .filter(p => !p.startsWith("Total:"))
+    .map(p => {
+      const out: SummaryColors = {};
+      const ball  = p.match(/\[ball:([^\]]+)\]/);
+      if (ball)  out.ballColor  = ball[1].trim();
+      const grip = p.match(/\[grips:([^\]]+)\]/);
+      if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
+      return out;
+    });
+}
+
+function itemColors(item: OrderDataItem, fallback: SummaryColors): { ball?: string; grips?: string[] } {
+  return {
+    ball:  (item.customizations?.ball_color  as string   | undefined) ?? fallback.ballColor,
+    grips: (item.customizations?.grip_colors as string[] | undefined) ?? fallback.gripColors,
+  };
+}
+
 function colorSuffix(ballColor?: string, gripColors?: string[]): string {
   const parts: string[] = [];
   if (gripColors?.length) parts.push(`grip: ${gripColors.join(", ")}`);
@@ -26,44 +51,57 @@ function colorSuffix(ballColor?: string, gripColors?: string[]): string {
   return parts.length ? ` — ${parts.join(" · ")}` : "";
 }
 
-function ColorTags({ ballColor, gripColors }: { ballColor?: string; gripColors?: string[] }) {
-  if (!ballColor && !gripColors?.length) return null;
+function ColorTags({ ballColor }: { ballColor?: string }) {
+  if (!ballColor) return null;
   return (
     <span className="ml-1.5 inline-flex flex-wrap gap-1">
-      {gripColors?.map((c, i) => (
-        <span key={i} className="rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
-          grip: {c}
-        </span>
-      ))}
-      {ballColor && (
-        <span className="rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
-          ball: {ballColor}
-        </span>
-      )}
+      <span className="rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+        ball: {ballColor}
+      </span>
     </span>
   );
 }
 
 export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
-  // Aggregate items keyed by product name + color selections
-  const itemMap = new Map<string, AggregatedItem>();
+  // Aggregate items. Grips are handled separately: each entry in grip_colors[]
+  // is one individual grip, so we count them by color across all orders/packs.
+  const itemMap       = new Map<string, AggregatedItem>();
+  const gripColorMap  = new Map<string, number>(); // color → individual grip count
+
   for (const order of orders) {
-    for (const item of getItems(order)) {
-      const name      = item.product_name ?? item.slug ?? "Unknown";
-      const qty       = item.quantity ?? 1;
-      const ball      = item.customizations?.ball_color  as string   | undefined;
-      const grips     = item.customizations?.grip_colors as string[] | undefined;
-      const colorKey  = [ball ?? "", (grips ?? []).join(",")].join("|");
-      const key       = `${name}||${colorKey}`;
-      const existing  = itemMap.get(key);
-      if (existing) {
-        existing.qty += qty;
+    const summaryFallbacks = parseSummaryColors(order.order_summary);
+    for (const [i, item] of getItems(order).entries()) {
+      const name            = item.product_name ?? item.slug ?? "Unknown";
+      const qty             = item.quantity ?? 1;
+      const { ball, grips } = itemColors(item, summaryFallbacks[i] ?? {});
+      const isGrip          = grips !== undefined || name.toLowerCase().includes("grip");
+
+      if (isGrip) {
+        // Each entry in grips[] = 1 individual grip (already accounts for qty × packSize)
+        const colors = grips ?? [];
+        if (colors.length > 0) {
+          for (const color of colors) {
+            gripColorMap.set(color, (gripColorMap.get(color) ?? 0) + 1);
+          }
+        } else {
+          gripColorMap.set("?", (gripColorMap.get("?") ?? 0) + qty);
+        }
       } else {
-        itemMap.set(key, { name, qty, ballColor: ball, gripColors: grips });
+        const colorKey = [ball ?? "", ""].join("|");
+        const key      = `${name}||${colorKey}`;
+        const existing = itemMap.get(key);
+        if (existing) {
+          existing.qty += qty;
+        } else {
+          itemMap.set(key, { name, qty, ballColor: ball, gripColors: undefined });
+        }
       }
     }
   }
-  const sortedItems = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
+
+  const sortedItems      = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
+  const gripTotal        = Array.from(gripColorMap.values()).reduce((s, n) => s + n, 0);
+  const sortedGripColors = Array.from(gripColorMap.entries()).sort((a, b) => b[1] - a[1]);
 
   // Box counts
   let largeCt = 0, xlCt = 0, smallCt = 0, inputCt = 0;
@@ -80,12 +118,22 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
       month: "long", day: "numeric", year: "numeric",
     });
 
-    const itemRows = sortedItems
-      .map(({ name, qty, ballColor, gripColors }) => {
-        const suffix = colorSuffix(ballColor, gripColors);
+    const gripRows = gripTotal > 0
+      ? [
+          `<tr><td class="qty">${gripTotal}×</td><td>Professional Over Grips</td></tr>`,
+          ...sortedGripColors.map(([color, count]) =>
+            `<tr class="sub"><td class="qty sub">${count}×</td><td class="indent">${escHtml(color)}</td></tr>`
+          ),
+        ].join("")
+      : "";
+
+    const itemRows = [
+      ...sortedItems.map(({ name, qty, ballColor }) => {
+        const suffix = colorSuffix(ballColor, undefined);
         return `<tr><td class="qty">${qty}×</td><td>${escHtml(name)}${suffix ? `<span class="color-note">${escHtml(suffix)}</span>` : ""}</td></tr>`;
-      })
-      .join("");
+      }),
+      gripRows,
+    ].join("");
 
     const boxRows = [
       largeCt > 0 ? `<tr><td class="qty">${largeCt}×</td><td>Large box (24×12×6")</td></tr>` : "",
@@ -95,20 +143,20 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
     ].join("");
 
     const orderList = orders.map(order => {
-      const items     = getItems(order);
-      const boxResult = classifyBoxSize(items);
+      const items            = getItems(order);
+      const summaryFallbacks = parseSummaryColors(order.order_summary);
+      const boxResult        = classifyBoxSize(items);
       const boxLabel  =
         boxResult.kind === "xl"    ? "XL"
         : boxResult.kind === "large" ? "Large"
         : boxResult.kind === "small" ? "Small"
         : "⚠ Check";
       const badgeClass = boxResult.kind === "needs-input" ? "badge-warn" : "badge";
-      const lines = items.map(item => {
-        const qty    = item.quantity ?? 1;
-        const name   = item.product_name ?? item.slug ?? "?";
-        const ball   = item.customizations?.ball_color  as string   | undefined;
-        const grips  = item.customizations?.grip_colors as string[] | undefined;
-        const suffix = colorSuffix(ball, grips);
+      const lines = items.map((item, i) => {
+        const qty              = item.quantity ?? 1;
+        const name             = item.product_name ?? item.slug ?? "?";
+        const { ball, grips }  = itemColors(item, summaryFallbacks[i] ?? {});
+        const suffix           = colorSuffix(ball, grips);
         return `<li>${qty}× ${escHtml(name)}${suffix ? `<span class="color-note">${escHtml(suffix)}</span>` : ""}</li>`;
       }).join("");
       return `
@@ -136,6 +184,8 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   table{border-collapse:collapse;width:100%}
   td{padding:3px 6px 3px 0;vertical-align:top}
   td.qty{font-weight:700;min-width:36px;text-align:right;padding-right:10px}
+  td.sub{font-weight:400;color:#6b7280;padding-right:10px}
+  td.indent{color:#6b7280;padding-left:16px}
   tr.warn td{color:#d97706}
   .color-note{color:#6b7280;font-size:11px;margin-left:4px}
   .order{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e5e7eb}
@@ -200,15 +250,29 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             </h3>
             <table className="w-full">
               <tbody>
-                {sortedItems.map(({ name, qty, ballColor, gripColors }, i) => (
+                {sortedItems.map(({ name, qty, ballColor }, i) => (
                   <tr key={i}>
                     <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5 align-top">{qty}×</td>
                     <td className="text-gray-700 py-0.5">
                       {name}
-                      <ColorTags ballColor={ballColor} gripColors={gripColors} />
+                      <ColorTags ballColor={ballColor} />
                     </td>
                   </tr>
                 ))}
+                {gripTotal > 0 && (
+                  <>
+                    <tr>
+                      <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{gripTotal}×</td>
+                      <td className="text-gray-700 py-0.5">Professional Over Grips</td>
+                    </tr>
+                    {sortedGripColors.map(([color, count]) => (
+                      <tr key={color}>
+                        <td className="text-gray-500 w-10 text-right pr-3 py-0.5 text-xs pl-4">{count}×</td>
+                        <td className="text-gray-500 py-0.5 text-xs pl-3">{color}</td>
+                      </tr>
+                    ))}
+                  </>
+                )}
               </tbody>
             </table>
           </section>
@@ -255,8 +319,9 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             </h3>
             <div className="space-y-3">
               {orders.map(order => {
-                const items     = getItems(order);
-                const boxResult = classifyBoxSize(items);
+                const items            = getItems(order);
+                const summaryFallbacks = parseSummaryColors(order.order_summary);
+                const boxResult        = classifyBoxSize(items);
                 const boxLabel  =
                   boxResult.kind === "xl"    ? "XL"
                   : boxResult.kind === "large" ? "Large"
@@ -274,14 +339,18 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                     </div>
                     <ul className="list-disc list-inside space-y-0.5 text-xs text-gray-600">
                       {items.map((item, i) => {
-                        const qty   = item.quantity ?? 1;
-                        const name  = item.product_name ?? item.slug ?? "?";
-                        const ball  = item.customizations?.ball_color  as string   | undefined;
-                        const grips = item.customizations?.grip_colors as string[] | undefined;
+                        const qty              = item.quantity ?? 1;
+                        const name             = item.product_name ?? item.slug ?? "?";
+                        const { ball, grips }  = itemColors(item, summaryFallbacks[i] ?? {});
                         return (
                           <li key={i}>
                             {qty}× {name}
-                            <ColorTags ballColor={ball} gripColors={grips} />
+                            <ColorTags ballColor={ball} />
+                            {grips?.map((c, gi) => (
+                              <span key={gi} className="ml-1 rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+                                grip: {c}
+                              </span>
+                            ))}
                           </li>
                         );
                       })}
