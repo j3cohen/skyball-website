@@ -15,28 +15,40 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
 }
 
 // Parse per-item color data from order_summary when customizations are missing.
-// Format: "1x Name ($price) [ball:orange] | 1x Name ($price) [grips:r,r] | Total:..."
+// Format: "Qty x Name ($price) [ball:orange] | Qty x Name ($price) [grips:r,r] | Total:..."
+// Returns a Map keyed by normalized product name → colors.
+// Name-based (not index-based) so it works even when order_data.items and
+// order_summary are in different orders (Stripe line items vs original cart).
 type SummaryColors = { ballColor?: string; gripColors?: string[] };
-function parseSummaryColors(summary: string | null): SummaryColors[] {
-  if (!summary) return [];
-  return summary
-    .split(" | ")
-    .filter(p => !p.startsWith("Total:"))
-    .map(p => {
-      const out: SummaryColors = {};
-      const ball = p.match(/\[ball:([^\]]+)\]/);
-      if (ball)  out.ballColor  = ball[1].trim();
-      const grip = p.match(/\[grips:([^\]]+)\]/);
-      if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
-      return out;
-    });
+function parseSummaryColorsByName(summary: string | null): Map<string, SummaryColors> {
+  const map = new Map<string, SummaryColors>();
+  if (!summary) return map;
+  for (const part of summary.split(" | ")) {
+    if (part.startsWith("Total:")) continue;
+    // Extract name: everything between "Nx " and " ($"
+    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim().toLowerCase();
+    const out: SummaryColors = {};
+    const ball = part.match(/\[ball:([^\]]+)\]/);
+    if (ball)  out.ballColor  = ball[1].trim();
+    const grip = part.match(/\[grips:([^\]]+)\]/);
+    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
+    map.set(name, out);
+  }
+  return map;
 }
 
-function itemColors(item: OrderDataItem, fallback: SummaryColors): { ball?: string; grips?: string[] } {
-  return {
-    ball:  (item.customizations?.ball_color  as string   | undefined) ?? fallback.ballColor,
-    grips: (item.customizations?.grip_colors as string[] | undefined) ?? fallback.gripColors,
+function itemColors(item: OrderDataItem, summaryMap: Map<string, SummaryColors>): { ball?: string; grips?: string[] } {
+  const fromCustom: { ball?: string; grips?: string[] } = {
+    ball:  item.customizations?.ball_color  as string   | undefined,
+    grips: item.customizations?.grip_colors as string[] | undefined,
   };
+  if (fromCustom.ball || fromCustom.grips) return fromCustom;
+  // Fall back to summary lookup by name
+  const name = (item.product_name ?? item.slug ?? "").toLowerCase();
+  const fallback = summaryMap.get(name) ?? {};
+  return { ball: fallback.ballColor, grips: fallback.gripColors };
 }
 
 function colorSuffix(ball?: string, grips?: string[]): string {
@@ -186,9 +198,9 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   // Build inventory bucket
   const inv = makeInv();
   for (const order of orders) {
-    const summaryFallbacks = parseSummaryColors(order.order_summary);
+    const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
     for (const [i, item] of getItems(order).entries()) {
-      const { ball, grips } = itemColors(item, summaryFallbacks[i] ?? {});
+      const { ball, grips } = itemColors(item, summaryFallbacks);
       addItemToInv(inv, item, ball, grips);
     }
   }
@@ -201,13 +213,13 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   // color (kits, ball packs) but have neither customizations nor summary fallback.
   const unknownColorOrders: string[] = [];
   for (const order of orders) {
-    const summaryFallbacks = parseSummaryColors(order.order_summary);
+    const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
     for (const [i, item] of getItems(order).entries()) {
       const name = (item.product_name ?? item.slug ?? "").toLowerCase();
       const needsBall = (name.includes("kit") || name.includes("pack") || name.includes("anywhere"))
                         && !name.includes("grip") && !name.includes("bag") && !name.includes("crewneck");
       if (!needsBall) continue;
-      const { ball } = itemColors(item, summaryFallbacks[i] ?? {});
+      const { ball } = itemColors(item, summaryFallbacks);
       if (!ball) {
         unknownColorOrders.push(`${order.customer_name ?? order.id} — ${item.product_name ?? "?"}`);
         break;
@@ -254,7 +266,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
 
     const orderList = orders.map(order => {
       const items            = getItems(order);
-      const summaryFallbacks = parseSummaryColors(order.order_summary);
+      const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
       const boxResult        = classifyBoxSize(items);
       const boxLabel  =
         boxResult.kind === "xl"      ? "XL"
@@ -265,7 +277,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
       const lines = items.map((item, i) => {
         const qty             = item.quantity ?? 1;
         const name            = item.product_name ?? item.slug ?? "?";
-        const { ball, grips } = itemColors(item, summaryFallbacks[i] ?? {});
+        const { ball, grips } = itemColors(item, summaryFallbacks);
         const suffix          = colorSuffix(ball, grips);
         return `<li>${qty}× ${escHtml(name)}${suffix ? `<span class="color-note">${escHtml(suffix)}</span>` : ""}</li>`;
       }).join("");
@@ -443,7 +455,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             <div className="space-y-3">
               {orders.map(order => {
                 const items            = getItems(order);
-                const summaryFallbacks = parseSummaryColors(order.order_summary);
+                const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
                 const boxResult        = classifyBoxSize(items);
                 const boxLabel  =
                   boxResult.kind === "xl"      ? "XL"
@@ -464,7 +476,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                       {items.map((item, i) => {
                         const qty             = item.quantity ?? 1;
                         const name            = item.product_name ?? item.slug ?? "?";
-                        const { ball, grips } = itemColors(item, summaryFallbacks[i] ?? {});
+                        const { ball, grips } = itemColors(item, summaryFallbacks);
                         return (
                           <li key={i}>
                             {qty}× {name}

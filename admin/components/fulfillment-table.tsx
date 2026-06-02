@@ -34,19 +34,22 @@ function getOrderNote(order: ExportableOrder): string | null {
   return data?.customer_selections?.order_notes ?? null;
 }
 
-function parseSummaryColorsForExport(summary: string | null): Array<{ ballColor?: string; gripColors?: string[] }> {
-  if (!summary) return [];
-  return summary
-    .split(" | ")
-    .filter(p => !p.startsWith("Total:"))
-    .map(p => {
-      const out: { ballColor?: string; gripColors?: string[] } = {};
-      const ball = p.match(/\[ball:([^\]]+)\]/);
-      if (ball)  out.ballColor  = ball[1].trim();
-      const grip = p.match(/\[grips:([^\]]+)\]/);
-      if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
-      return out;
-    });
+function parseSummaryColorsByName(summary: string | null): Map<string, { ballColor?: string; gripColors?: string[] }> {
+  const map = new Map<string, { ballColor?: string; gripColors?: string[] }>();
+  if (!summary) return map;
+  for (const part of summary.split(" | ")) {
+    if (part.startsWith("Total:")) continue;
+    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim().toLowerCase();
+    const out: { ballColor?: string; gripColors?: string[] } = {};
+    const ball = part.match(/\[ball:([^\]]+)\]/);
+    if (ball)  out.ballColor  = ball[1].trim();
+    const grip = part.match(/\[grips:([^\]]+)\]/);
+    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
+    map.set(name, out);
+  }
+  return map;
 }
 
 function fmtMoney(cents: number | null, currency: string) {
@@ -165,41 +168,50 @@ export default function FulfillmentTable({ orders }: Props) {
   function handleExportCSV() {
     const exportOrders = selectedIds.size > 0 ? selectedOrders : filteredOrders;
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const headers = [
-      "Customer Name", "Email", "Date", "Status", "Total", "Note",
-      "Item", "Qty", "Ball Color", "Grip Colors",
-    ];
+
+    // Find the max number of items across all orders to build fixed columns
+    type RawItem = { product_name?: string | null; slug?: string | null; quantity?: number | null; customizations?: Record<string, unknown> };
+    const getOrderItems = (o: ExportableOrder): RawItem[] =>
+      ((o.order_data as { items?: RawItem[] } | null)?.items) ?? [];
+
+    const maxItems = exportOrders.reduce((m, o) => Math.max(m, getOrderItems(o).length), 0);
+
+    const itemHeaders: string[] = [];
+    for (let i = 1; i <= maxItems; i++) {
+      itemHeaders.push(`Item ${i}`, `Qty ${i}`, `Ball ${i}`, `Grips ${i}`);
+    }
+
+    const headers = ["Customer Name", "Email", "Date", "Status", "Total", "Note", ...itemHeaders];
     const rows: string[] = [headers.join(",")];
 
     for (const order of exportOrders) {
-      const data  = order.order_data as { items?: Array<{ product_name?: string | null; slug?: string | null; quantity?: number | null; customizations?: Record<string, unknown> }> } | null;
-      const items = data?.items ?? [];
-      const summaryFallbacks = parseSummaryColorsForExport(order.order_summary);
-      const note  = getOrderNote(order) ?? "";
-      const total = ((order.order_total_cents ?? 0) / 100).toFixed(2);
-      const date  = new Date(order.created_at).toLocaleDateString("en-US");
+      const items      = getOrderItems(order);
+      const summaryMap = parseSummaryColorsByName(order.order_summary);
+      const note       = getOrderNote(order) ?? "";
+      const total      = ((order.order_total_cents ?? 0) / 100).toFixed(2);
+      const date       = new Date(order.created_at).toLocaleDateString("en-US");
 
-      if (items.length === 0) {
-        rows.push([
-          esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
-          date, order.fulfillment_status, total, esc(note),
-          "", "", "", "",
-        ].join(","));
-      } else {
-        for (const [i, item] of items.entries()) {
-          const fallback = summaryFallbacks[i] ?? {};
-          const ball  = (item.customizations?.ball_color  as string   | undefined) ?? fallback.ballColor ?? "";
-          const grips = (item.customizations?.grip_colors as string[] | undefined) ?? fallback.gripColors ?? [];
-          rows.push([
-            esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
-            date, order.fulfillment_status, total, esc(note),
-            esc(item.product_name ?? item.slug ?? ""),
-            String(item.quantity ?? 1),
-            ball,
-            esc(grips.join(", ")),
-          ].join(","));
-        }
+      const itemCells: string[] = [];
+      for (let i = 0; i < maxItems; i++) {
+        const item = items[i];
+        if (!item) { itemCells.push("", "", "", ""); continue; }
+        const name    = (item.product_name ?? item.slug ?? "").toLowerCase();
+        const fb      = summaryMap.get(name) ?? {};
+        const ball    = (item.customizations?.ball_color  as string   | undefined) ?? fb.ballColor ?? "";
+        const grips   = (item.customizations?.grip_colors as string[] | undefined) ?? fb.gripColors ?? [];
+        itemCells.push(
+          esc(item.product_name ?? item.slug ?? ""),
+          String(item.quantity ?? 1),
+          ball,
+          esc(grips.join(", ")),
+        );
       }
+
+      rows.push([
+        esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
+        date, order.fulfillment_status, total, esc(note),
+        ...itemCells,
+      ].join(","));
     }
 
     const csv  = rows.join("\n");
