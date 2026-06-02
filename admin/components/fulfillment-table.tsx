@@ -44,6 +44,7 @@ export default function FulfillmentTable({ orders }: Props) {
   const [showCheatSheetModal,    setShowCheatSheetModal]    = useState(false);
   const [searchQuery,            setSearchQuery]            = useState("");
   const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
+  const [intlFilter,             setIntlFilter]             = useState<"all" | "domestic" | "international">("all");
 
   // Inline status editing
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
@@ -79,16 +80,25 @@ export default function FulfillmentTable({ orders }: Props) {
     }
   }
 
+  function isInternational(o: ExportableOrder): boolean {
+    const addr = o.shipping_address as { country?: string } | null;
+    const country = (addr?.country ?? "").trim().toUpperCase();
+    return country !== "" && country !== "US" && country !== "USA" && country !== "UNITED STATES";
+  }
+
   // Derived: filtered orders
-  const filteredOrders = searchQuery.trim()
-    ? orders.filter((o) => {
-        const q = searchQuery.toLowerCase();
-        const name  = (o.customer_name  ?? "").toLowerCase();
-        const email = (o.customer_email ?? "").toLowerCase();
-        const sessionSuffix = o.stripe_session_id.slice(-8).toLowerCase();
-        return name.includes(q) || email.includes(q) || sessionSuffix.includes(q);
-      })
-    : orders;
+  const filteredOrders = orders.filter((o) => {
+    if (intlFilter === "domestic"      &&  isInternational(o)) return false;
+    if (intlFilter === "international" && !isInternational(o)) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name  = (o.customer_name  ?? "").toLowerCase();
+      const email = (o.customer_email ?? "").toLowerCase();
+      const sessionSuffix = o.stripe_session_id.slice(-8).toLowerCase();
+      if (!name.includes(q) && !email.includes(q) && !sessionSuffix.includes(q)) return false;
+    }
+    return true;
+  });
 
   const allFilteredSelected =
     filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id));
@@ -168,6 +178,21 @@ export default function FulfillmentTable({ orders }: Props) {
             className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-56
                        focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
           />
+          {/* Domestic / International filter */}
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+            {(["all", "domestic", "international"] as const).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setIntlFilter(opt)}
+                className={`px-3 py-1.5 capitalize transition-colors
+                  ${intlFilter === opt
+                    ? "bg-sky-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (

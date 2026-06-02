@@ -15,9 +15,9 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
 
 function CustomBadges({ customizations }: { customizations?: Record<string, unknown> }) {
   if (!customizations) return null;
-  const grips = customizations.gripColors as string[] | undefined;
-  const balls = customizations.ballColors as string[] | undefined;
-  if (!grips?.length && !balls?.length) return null;
+  const grips = customizations.grip_colors as string[] | undefined;
+  const ball  = customizations.ball_color  as string  | undefined;
+  if (!grips?.length && !ball) return null;
   return (
     <span className="ml-1.5 inline-flex flex-wrap gap-1">
       {grips?.map((c, i) => (
@@ -25,11 +25,11 @@ function CustomBadges({ customizations }: { customizations?: Record<string, unkn
           grip: {c}
         </span>
       ))}
-      {balls?.map((c, i) => (
-        <span key={i} className="rounded bg-sky-100 text-sky-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
-          ball: {c}
+      {ball && (
+        <span className="rounded bg-sky-100 text-sky-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+          ball: {ball}
         </span>
-      ))}
+      )}
     </span>
   );
 }
@@ -81,11 +81,11 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
       const lines = items.map(item => {
         const qty = item.quantity ?? 1;
         const name = item.product_name ?? item.slug ?? "?";
-        const grips = item.customizations?.gripColors as string[] | undefined;
-        const balls = item.customizations?.ballColors as string[] | undefined;
+        const grips = item.customizations?.grip_colors as string[] | undefined;
+        const ball  = item.customizations?.ball_color  as string  | undefined;
         const colorBadges = [
           ...(grips ?? []).map(c => `<span class="cbadge grip">grip: ${escHtml(c)}</span>`),
-          ...(balls ?? []).map(c => `<span class="cbadge ball">ball: ${escHtml(c)}</span>`),
+          ...(ball ? [`<span class="cbadge ball">ball: ${escHtml(ball)}</span>`] : []),
         ].join("");
         return `<li>${qty}× ${escHtml(name)}${colorBadges ? ` ${colorBadges}` : ""}</li>`;
       }).join("");
