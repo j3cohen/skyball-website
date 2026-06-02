@@ -181,13 +181,13 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                 {largeCt > 0 && (
                   <tr>
                     <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{largeCt}×</td>
-                    <td className="text-gray-700 py-0.5">Large box (24×12×6")</td>
+                    <td className="text-gray-700 py-0.5">Large box (24×12×6&quot;)</td>
                   </tr>
                 )}
                 {smallCt > 0 && (
                   <tr>
                     <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{smallCt}×</td>
-                    <td className="text-gray-700 py-0.5">Small box (10×4×4")</td>
+                    <td className="text-gray-700 py-0.5">Small box (10×4×4&quot;)</td>
                   </tr>
                 )}
                 {inputCt > 0 && (

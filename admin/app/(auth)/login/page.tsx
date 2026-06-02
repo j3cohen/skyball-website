@@ -58,8 +58,17 @@ export default function AdminLoginPage() {
         return;
       }
 
+      // Auth succeeded — verify admin access before navigating.
+      // This avoids a confusing redirect loop if the account isn't in admin_users.
+      const check = await fetch("/api/admin/me");
+      if (!check.ok) {
+        await supabase.auth.signOut();
+        setError("This account is not authorized to access the admin panel.");
+        setLoading(false);
+        return;
+      }
+
       // Hard navigation ensures the auth cookie is sent on the next server request.
-      // router.push() can race against cookie propagation in auth-helpers-nextjs.
       window.location.href = "/fulfillment";
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
