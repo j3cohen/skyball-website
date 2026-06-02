@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { type SupabaseClient } from "@supabase/supabase-js";
+
+let _client: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!_client) _client = createClientComponentClient();
+  return _client;
+}
 
 function friendlyAuthError(msg: string): string {
   const m = msg.toLowerCase();
@@ -28,8 +35,6 @@ const REASON_MESSAGES: Record<string, { text: string; style: string }> = {
 };
 
 export default function AdminLoginPage() {
-  const supabase = createClientComponentClient();
-
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
@@ -50,7 +55,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
 
       if (authError) {
         setError(friendlyAuthError(authError.message));
@@ -62,7 +67,7 @@ export default function AdminLoginPage() {
       // This avoids a confusing redirect loop if the account isn't in admin_users.
       const check = await fetch("/api/admin/me");
       if (!check.ok) {
-        await supabase.auth.signOut();
+        await getSupabase().auth.signOut();
         setError("This account is not authorized to access the admin panel.");
         setLoading(false);
         return;

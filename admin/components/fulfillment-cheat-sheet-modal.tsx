@@ -17,9 +17,30 @@ function formatCustom(customizations?: Record<string, unknown>): string {
   const parts: string[] = [];
   const grips = customizations.gripColors as string[] | undefined;
   const balls = customizations.ballColors as string[] | undefined;
-  if (grips?.length) parts.push(`grip: ${grips.join(", ")}`);
-  if (balls?.length) parts.push(`balls: ${balls.join(", ")}`);
-  return parts.length ? `(${parts.join(" · ")})` : "";
+  if (grips?.length) parts.push(`Grip: ${grips.join(", ")}`);
+  if (balls?.length) parts.push(`Balls: ${balls.join(", ")}`);
+  return parts.join(" · ");
+}
+
+function CustomBadges({ customizations }: { customizations?: Record<string, unknown> }) {
+  if (!customizations) return null;
+  const grips = customizations.gripColors as string[] | undefined;
+  const balls = customizations.ballColors as string[] | undefined;
+  if (!grips?.length && !balls?.length) return null;
+  return (
+    <span className="ml-1.5 inline-flex flex-wrap gap-1">
+      {grips?.map((c, i) => (
+        <span key={i} className="rounded bg-purple-100 text-purple-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+          grip: {c}
+        </span>
+      ))}
+      {balls?.map((c, i) => (
+        <span key={i} className="rounded bg-sky-100 text-sky-800 px-1.5 py-0.5 text-[10px] font-medium leading-none">
+          ball: {c}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
@@ -69,8 +90,13 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
       const lines = items.map(item => {
         const qty = item.quantity ?? 1;
         const name = item.product_name ?? item.slug ?? "?";
-        const custom = formatCustom(item.customizations);
-        return `<li>${qty}× ${escHtml(name)}${custom ? ` <em class="dim">${escHtml(custom)}</em>` : ""}</li>`;
+        const grips = item.customizations?.gripColors as string[] | undefined;
+        const balls = item.customizations?.ballColors as string[] | undefined;
+        const colorBadges = [
+          ...(grips ?? []).map(c => `<span class="cbadge grip">grip: ${escHtml(c)}</span>`),
+          ...(balls ?? []).map(c => `<span class="cbadge ball">ball: ${escHtml(c)}</span>`),
+        ].join("");
+        return `<li>${qty}× ${escHtml(name)}${colorBadges ? ` ${colorBadges}` : ""}</li>`;
       }).join("");
       return `
         <div class="order">
@@ -104,8 +130,10 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   .badge{font-size:11px;color:#6b7280;background:#f3f4f6;border-radius:4px;padding:1px 7px}
   .badge-warn{font-size:11px;color:#b45309;background:#fef3c7;border-radius:4px;padding:1px 7px}
   ul{padding-left:18px}
-  li{margin-bottom:2px}
-  .dim{color:#9ca3af;font-style:normal;font-size:11px}
+  li{margin-bottom:4px;display:flex;align-items:baseline;flex-wrap:wrap;gap:3px}
+  .cbadge{font-size:10px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap}
+  .cbadge.grip{background:#ede9fe;color:#6d28d9}
+  .cbadge.ball{background:#e0f2fe;color:#0369a1}
   .print-btn{position:fixed;top:16px;right:16px;padding:8px 18px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
   @media print{.print-btn{display:none}}
 </style>
@@ -227,11 +255,10 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                       {items.map((item, i) => {
                         const qty = item.quantity ?? 1;
                         const name = item.product_name ?? item.slug ?? "?";
-                        const custom = formatCustom(item.customizations);
                         return (
-                          <li key={i}>
-                            {qty}× {name}
-                            {custom && <span className="text-gray-400 ml-1">{custom}</span>}
+                          <li key={i} className="flex items-start flex-wrap gap-y-0.5">
+                            <span>{qty}× {name}</span>
+                            <CustomBadges customizations={item.customizations} />
                           </li>
                         );
                       })}
