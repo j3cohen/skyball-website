@@ -144,7 +144,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
             const isNeedsInput = result.kind === "needs-input";
             const isExpanded   = expandedIds.has(order.id);
             const dims         = overrideDims[order.id];
-            const detectedBox  = !isNeedsInput ? (result as { kind: "large" | "small"; box: BoxDimensions }).box : null;
+            const detectedBox  = !isNeedsInput ? (result as { kind: "large" | "xl" | "small"; box: BoxDimensions }).box : null;
             const isEdited     = detectedBox && dims
               ? DIM_FIELDS.some(f => dims[f] !== detectedBox[f])
               : false;

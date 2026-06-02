@@ -6,6 +6,7 @@ import type { ExportableOrder }        from "@/lib/order-types";
 import ShippingExportModal             from "./shipping-export-modal";
 import BulkStatusModal                 from "./bulk-status-modal";
 import TrackingImportModal             from "./tracking-import-modal";
+import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
 
 const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
 type FulfillmentStatus = (typeof STATUS_OPTS)[number];
@@ -28,6 +29,29 @@ function fmtDate(iso: string) {
   });
 }
 
+function getOrderNote(order: ExportableOrder): string | null {
+  const data = order.order_data as { customer_selections?: { order_notes?: string | null } } | null;
+  return data?.customer_selections?.order_notes ?? null;
+}
+
+function parseSummaryColorsByName(summary: string | null): Map<string, { ballColor?: string; gripColors?: string[] }> {
+  const map = new Map<string, { ballColor?: string; gripColors?: string[] }>();
+  if (!summary) return map;
+  for (const part of summary.split(" | ")) {
+    if (part.startsWith("Total:")) continue;
+    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim().toLowerCase();
+    const out: { ballColor?: string; gripColors?: string[] } = {};
+    const ball = part.match(/\[ball:([^\]]+)\]/);
+    if (ball)  out.ballColor  = ball[1].trim();
+    const grip = part.match(/\[grips:([^\]]+)\]/);
+    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
+    map.set(name, out);
+  }
+  return map;
+}
+
 function fmtMoney(cents: number | null, currency: string) {
   if (cents == null) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -40,8 +64,10 @@ export default function FulfillmentTable({ orders }: Props) {
   const [showModal,              setShowModal]              = useState(false);
   const [showBulkStatusModal,    setShowBulkStatusModal]    = useState(false);
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
+  const [showCheatSheetModal,    setShowCheatSheetModal]    = useState(false);
   const [searchQuery,            setSearchQuery]            = useState("");
   const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
+  const [intlFilter,             setIntlFilter]             = useState<"all" | "domestic" | "international">("all");
 
   // Inline status editing
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
@@ -77,16 +103,25 @@ export default function FulfillmentTable({ orders }: Props) {
     }
   }
 
+  function isInternational(o: ExportableOrder): boolean {
+    const addr = o.shipping_address as { country?: string } | null;
+    const country = (addr?.country ?? "").trim().toUpperCase();
+    return country !== "" && country !== "US" && country !== "USA" && country !== "UNITED STATES";
+  }
+
   // Derived: filtered orders
-  const filteredOrders = searchQuery.trim()
-    ? orders.filter((o) => {
-        const q = searchQuery.toLowerCase();
-        const name  = (o.customer_name  ?? "").toLowerCase();
-        const email = (o.customer_email ?? "").toLowerCase();
-        const sessionSuffix = o.stripe_session_id.slice(-8).toLowerCase();
-        return name.includes(q) || email.includes(q) || sessionSuffix.includes(q);
-      })
-    : orders;
+  const filteredOrders = orders.filter((o) => {
+    if (intlFilter === "domestic"      &&  isInternational(o)) return false;
+    if (intlFilter === "international" && !isInternational(o)) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name  = (o.customer_name  ?? "").toLowerCase();
+      const email = (o.customer_email ?? "").toLowerCase();
+      const sessionSuffix = o.stripe_session_id.slice(-8).toLowerCase();
+      if (!name.includes(q) && !email.includes(q) && !sessionSuffix.includes(q)) return false;
+    }
+    return true;
+  });
 
   const allFilteredSelected =
     filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id));
@@ -130,6 +165,79 @@ export default function FulfillmentTable({ orders }: Props) {
     setTimeout(() => setSuccessMessage(null), 4000);
   }
 
+  function handleExportCSV() {
+    const exportOrders = selectedIds.size > 0 ? selectedOrders : filteredOrders;
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+
+    // Find the max number of items across all orders to build fixed columns
+    type RawItem = { product_name?: string | null; slug?: string | null; quantity?: number | null; customizations?: Record<string, unknown> };
+    const getOrderItems = (o: ExportableOrder): RawItem[] =>
+      ((o.order_data as { items?: RawItem[] } | null)?.items) ?? [];
+
+    const maxItems = exportOrders.reduce((m, o) => Math.max(m, getOrderItems(o).length), 0);
+
+    const itemHeaders: string[] = [];
+    for (let i = 1; i <= maxItems; i++) {
+      itemHeaders.push(`Item ${i}`, `Qty ${i}`, `Ball ${i}`, `Grips ${i}`);
+    }
+
+    const headers = ["Customer Name", "Email", "Date", "Status", "Total", "Note", ...itemHeaders];
+    const rows: string[] = [headers.join(",")];
+
+    for (const order of exportOrders) {
+      const items      = getOrderItems(order);
+      const summaryMap = parseSummaryColorsByName(order.order_summary);
+      const note       = getOrderNote(order) ?? "";
+      const total      = ((order.order_total_cents ?? 0) / 100).toFixed(2);
+      const date       = new Date(order.created_at).toLocaleDateString("en-US");
+
+      const itemCells: string[] = [];
+      for (let i = 0; i < maxItems; i++) {
+        const item = items[i];
+        if (!item) { itemCells.push("", "", "", ""); continue; }
+        const name    = (item.product_name ?? item.slug ?? "").toLowerCase();
+        const fb      = summaryMap.get(name) ?? {};
+        const ball    = (item.customizations?.ball_color  as string   | undefined) ?? fb.ballColor ?? "";
+        const grips   = (item.customizations?.grip_colors as string[] | undefined) ?? fb.gripColors ?? [];
+        itemCells.push(
+          esc(item.product_name ?? item.slug ?? ""),
+          String(item.quantity ?? 1),
+          ball,
+          esc(grips.join(", ")),
+        );
+      }
+
+      rows.push([
+        esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
+        date, order.fulfillment_status, total, esc(note),
+        ...itemCells,
+      ].join(","));
+    }
+
+    const csv  = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleResyncColors() {
+    try {
+      const res = await fetch("/api/admin/orders/resync-customizations", { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        showSuccess(`Re-sync complete: ${json.patched} order${json.patched !== 1 ? "s" : ""} patched.`);
+      } else {
+        alert(json.error ?? "Re-sync failed.");
+      }
+    } catch {
+      alert("Network error during re-sync.");
+    }
+  }
+
   if (orders.length === 0) {
     return <div className="text-center py-20 text-gray-400">No orders found.</div>;
   }
@@ -166,6 +274,21 @@ export default function FulfillmentTable({ orders }: Props) {
             className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-56
                        focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
           />
+          {/* Domestic / International filter */}
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+            {(["all", "domestic", "international"] as const).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setIntlFilter(opt)}
+                className={`px-3 py-1.5 capitalize transition-colors
+                  ${intlFilter === opt
+                    ? "bg-sky-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
@@ -183,6 +306,27 @@ export default function FulfillmentTable({ orders }: Props) {
                        rounded-lg hover:bg-gray-50 transition-colors"
           >
             Import Tracking
+          </button>
+          <button
+            onClick={handleResyncColors}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Re-sync Colors
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+          </button>
+          <button
+            onClick={() => setShowCheatSheetModal(true)}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
+                       rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cheat Sheet {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
           </button>
           <button
             disabled={selectedIds.size === 0}
@@ -244,7 +388,12 @@ export default function FulfillmentTable({ orders }: Props) {
                   {fmtDate(order.created_at)}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{order.customer_name ?? "—"}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-gray-900">{order.customer_name ?? "—"}</span>
+                    {getOrderNote(order) && (
+                      <span title={getOrderNote(order)!} className="text-amber-500 text-xs leading-none">💬</span>
+                    )}
+                  </div>
                   <div className="text-xs text-gray-400">{order.customer_email ?? "—"}</div>
                 </td>
                 <td className="px-4 py-3 max-w-xs">
@@ -339,6 +488,14 @@ export default function FulfillmentTable({ orders }: Props) {
             setShowTrackingImportModal(false);
             showSuccess(`${count} order${count !== 1 ? "s" : ""} updated with tracking numbers.`);
           }}
+        />
+      )}
+
+      {/* Fulfillment cheat sheet modal */}
+      {showCheatSheetModal && (
+        <FulfillmentCheatSheetModal
+          orders={selectedIds.size > 0 ? selectedOrders : filteredOrders}
+          onClose={() => setShowCheatSheetModal(false)}
         />
       )}
     </>

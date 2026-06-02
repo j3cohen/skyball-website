@@ -14,6 +14,7 @@ export type BoxDimensions = {
 
 export type BoxResult =
   | { kind: "large"; box: BoxDimensions }
+  | { kind: "xl";    box: BoxDimensions }
   | { kind: "small"; box: BoxDimensions }
   | { kind: "needs-input" };
 
@@ -21,6 +22,8 @@ export type BoxResult =
 export const LARGE_BOX: BoxDimensions = { length: 24, width: 12, height: 6, pounds: 4, ounces: 0 };
 // 10×4×4 — single 3-ball pack only
 export const SMALL_BOX: BoxDimensions = { length: 10, width: 4, height: 4, pounds: 1, ounces: 0 };
+// 48×13×8 — anywhere kit (includes net)
+export const ANYWHERE_BOX: BoxDimensions = { length: 48, width: 13, height: 8, pounds: 13, ounces: 0 };
 
 function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } {
   const slug = (item.slug ?? "").toLowerCase();
@@ -53,24 +56,37 @@ function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } 
  *  - exactly 1×3-ball-pack, no rackets → small box
  *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
  */
-function hasNet(item: OrderDataItem): boolean {
+function isAnywhereKit(item: OrderDataItem): boolean {
   const slug = (item.slug ?? "").toLowerCase();
   const name = (item.product_name ?? "").toLowerCase();
-  return slug.includes("net") || name.includes("net") ||
-         slug.includes("anywhere") || name.includes("anywhere");
+  return slug.includes("anywhere") || name.includes("anywhere");
+}
+
+function hasOtherNet(item: OrderDataItem): boolean {
+  const slug = (item.slug ?? "").toLowerCase();
+  const name = (item.product_name ?? "").toLowerCase();
+  return (slug.includes("net") || name.includes("net")) && !isAnywhereKit(item);
 }
 
 /**
  * Classify the box size for an order given its line items.
  *
  * Rules:
- *  - any item containing a net → needs-input
+ *  - anywhere kit (qty 1) → ANYWHERE_BOX (43×13×8, 13 lb); qty >1 → needs-input
+ *  - any other net item → needs-input
  *  - >8 rackets OR >50 balls → needs-input
  *  - exactly 1×3-ball-pack, no rackets → small box
  *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
  */
 export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
-  if (items.some(hasNet)) return { kind: "needs-input" };
+  const anywhereItems = items.filter(isAnywhereKit);
+  if (anywhereItems.length > 0) {
+    const totalAnywhere = anywhereItems.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
+    if (totalAnywhere === 1) return { kind: "xl", box: ANYWHERE_BOX };
+    return { kind: "needs-input" };
+  }
+
+  if (items.some(hasOtherNet)) return { kind: "needs-input" };
 
   let totalRackets = 0;
   let totalBalls   = 0;
