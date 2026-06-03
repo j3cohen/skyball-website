@@ -225,10 +225,17 @@ export async function PATCH(req: Request) {
       if (explicitCancelled) {
         patch.fulfillment_status = "cancelled";
       } else {
-        const allDelivered =
+        // Fulfilled when every label is Delivered or Refunded, with at least one Delivered
+        const allDoneOrRefunded =
           existing.length > 0 &&
-          existing.every((t) => t.tracking_status.toLowerCase() === "delivered");
-        if (allDelivered) {
+          existing.every((t) => {
+            const s = t.tracking_status.toLowerCase();
+            return s === "delivered" || s === "refunded";
+          });
+        const atLeastOneDelivered = existing.some(
+          (t) => t.tracking_status.toLowerCase() === "delivered"
+        );
+        if (allDoneOrRefunded && atLeastOneDelivered) {
           patch.fulfillment_status = "fulfilled";
           patch.fulfilled_at = new Date().toISOString();
         } else {

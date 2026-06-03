@@ -29,6 +29,7 @@ const STATUS_OPTS: { value: FulfillmentStatus; label: string }[] = [
 const TRACKING_STATUS_OPTS = [
   "Delivered",
   "In Transit",
+  "Refunded",
   "New label, not scanned yet",
   "Other",
 ];
@@ -36,6 +37,7 @@ const TRACKING_STATUS_OPTS = [
 function trackingStatusBadge(ts: string) {
   if (ts === "Delivered") return "bg-green-100 text-green-800";
   if (ts === "In Transit") return "bg-blue-100 text-blue-800";
+  if (ts === "Refunded")   return "bg-purple-100 text-purple-800";
   return "bg-gray-100 text-gray-600";
 }
 

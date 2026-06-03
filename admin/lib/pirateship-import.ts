@@ -109,15 +109,18 @@ export function parsePirateShipRows(rawRows: Record<string, unknown>[]): PirateS
       findColumn(row, "Cost", "label cost", "labelcost", "postage", "amount", "total")
     );
 
-    // PirateShip exports use "Tracking Status" for live carrier status
-    const status = String(
-      findColumn(
-        row,
-        "Tracking Status", "trackingstatus",
-        "Status", "label status", "labelstatus",
-        "shipment status", "shipmentstatus"
-      ) ?? ""
+    // Label status (e.g. "Refunded", "Label Created") takes priority for "Refunded"
+    const labelStatus = String(
+      findColumn(row, "Status", "label status", "labelstatus", "shipment status", "shipmentstatus") ?? ""
     ).trim();
+
+    // Carrier tracking status (e.g. "Delivered", "In Transit")
+    const trackingStatus = String(
+      findColumn(row, "Tracking Status", "trackingstatus") ?? ""
+    ).trim();
+
+    // Use "Refunded" from the label Status column; otherwise use the carrier Tracking Status
+    const status = labelStatus.toLowerCase() === "refunded" ? "Refunded" : trackingStatus;
 
     results.push({ createdDate, recipient, email, trackingNumber, cost, status });
   }
