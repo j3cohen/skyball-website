@@ -16,6 +16,7 @@ export type AnalyticsOrder = {
   fulfilled_at: string | null;
   shipping_address: Record<string, unknown> | null;
   order_data: Record<string, unknown> | null;
+  order_summary: string | null;
   shipping_label_cost: number | null;
 };
 
@@ -120,6 +121,75 @@ export function fillSeries(
 export function getOrderItems(order: AnalyticsOrder): OrderDataItem[] {
   const od = order.order_data as OrderData | null;
   return od?.items ?? [];
+}
+
+export type OrderKind = "product" | "tournament" | "open_play";
+
+/** Detects whether an order is a product sale, tournament entry, or open-play registration. */
+export function detectOrderKind(order: AnalyticsOrder): OrderKind {
+  // 1. Check order_data.kind set by Stripe import
+  const odKind = (order.order_data as Record<string, unknown> | null)?.kind as string | undefined;
+  if (odKind === "tournament") return "tournament";
+  if (odKind === "open_play")  return "open_play";
+
+  // 2. Pattern-match on order_summary
+  const summary = (order.order_summary ?? "").toLowerCase();
+  if (/open.?play/i.test(summary))  return "open_play";
+  if (/entry fee/i.test(summary))   return "tournament";
+
+  // 3. Check item names
+  for (const item of getOrderItems(order)) {
+    const name = (item.product_name ?? "").toLowerCase();
+    if (/open.?play/i.test(name)) return "open_play";
+    if (/entry fee/i.test(name))  return "tournament";
+  }
+
+  return "product";
+}
+
+/**
+ * Maps raw/historical product names to canonical display names so analytics
+ * groups old and new product generations correctly.
+ */
+export function normalizeProductName(raw: string): string {
+  const low = raw.trim().toLowerCase();
+
+  // ── Kits ──────────────────────────────────────────────────────────────────
+  if (/essentials/i.test(low)) {
+    if (/\bpro\b/i.test(low))    return "Essentials Kit – Pro";
+    if (/starter/i.test(low))    return "Essentials Kit – Starter";
+    return "Essentials Kit (Original)";
+  }
+  if (/partners?.?pack/i.test(low) || /partner.?pack/i.test(low)) {
+    if (/\bpro\b/i.test(low))    return "Partners Pack – Pro";
+    if (/starter/i.test(low))    return "Partners Pack – Starter";
+    return "Partners Pack (Original)";
+  }
+  if (/anywhere/i.test(low)) {
+    if (/\bpro\b/i.test(low))    return "Anywhere Kit – Pro";
+    if (/starter/i.test(low))    return "Anywhere Kit – Starter";
+    return "Anywhere Kit (Original)";
+  }
+
+  // ── Individual rackets (not part of a kit/pack) ───────────────────────────
+  if (/skyball racket/i.test(low) && !/kit|pack/i.test(low)) {
+    if (/\bpro\b/i.test(low))    return "SkyBall Racket – Pro";
+    if (/starter/i.test(low))    return "SkyBall Racket – Starter";
+    return "SkyBall Racket (Original)";
+  }
+
+  // ── Ball packs ─────────────────────────────────────────────────────────────
+  if (/3.?pack/i.test(low))  return "SkyBall 3-Pack";
+  if (/8.?pack/i.test(low))  return "SkyBall 8-Pack";
+  if (/12.?pack/i.test(low)) return "SkyBall 12-Pack";
+  if (/30.?pack/i.test(low)) return "SkyBall 30-Pack";
+  if (/50.?pack/i.test(low)) return "SkyBall 50-Pack";
+
+  // ── Accessories ────────────────────────────────────────────────────────────
+  if (/over grip/i.test(low) || /overgrip/i.test(low)) return "Professional Over Grips";
+  if (/racket cover/i.test(low))                        return "Racket Cover";
+
+  return raw.trim(); // keep original for anything unrecognised
 }
 
 export function fmtPct(a: number, b: number): number {

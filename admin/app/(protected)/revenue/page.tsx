@@ -105,6 +105,14 @@ export default function RevenuePage() {
   const orderValueBuckets = data?.orderValueBuckets as { label: string; count: number }[] | undefined;
   const granularity      = (data?.granularity as "day" | "week" | "month") ?? "month";
   const deltas           = stats?.deltas           as Record<string, number | null> | undefined;
+  const shippingCosts    = data?.shippingCosts      as {
+    totalCents: number; avgCents: number; ordersWithLabel: number; pctOfRevenue: number;
+  } | undefined;
+  const eventRevenue     = data?.eventRevenue      as {
+    totalCents: number; tournamentCents: number; openPlayCents: number;
+    tournamentCount: number; openPlayCount: number;
+    breakdown: { name: string; cents: number; count: number; kind: string }[];
+  } | undefined;
 
   const domData = regionBreakdown?.domestic    as { cents: number; count: number } | undefined;
   const intlData = regionBreakdown?.international as { cents: number; count: number } | undefined;
@@ -137,10 +145,9 @@ export default function RevenuePage() {
           delta={deltas?.revenue}
         />
         <StatCard
-          label="Total Orders"
-          value={loading ? "—" : String(stats?.orderCount ?? 0)}
-          sub={loading ? undefined : `${stats?.fulfillmentRatePct ?? 0}% fulfilled`}
-          delta={deltas?.orders}
+          label="Product Revenue"
+          value={loading ? "—" : fmtMoney((stats?.productCents as number) ?? 0)}
+          sub={loading ? undefined : "Excl. event fees"}
         />
         <StatCard
           label="Unique Customers"
@@ -153,6 +160,54 @@ export default function RevenuePage() {
           delta={deltas?.avgOrder}
         />
       </div>
+
+      {/* ── Event revenue card ──────────────────────────────────────────────── */}
+      {!loading && eventRevenue && (eventRevenue.tournamentCount + eventRevenue.openPlayCount) > 0 && (
+        <div className="bg-white rounded-xl border border-indigo-200 shadow-sm px-5 py-4 mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Event Revenue</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+            <div>
+              <p className="text-2xl font-bold text-indigo-700">{fmtMoney(eventRevenue.totalCents)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Total event</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{fmtMoney(eventRevenue.tournamentCents)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{eventRevenue.tournamentCount} tournament entries</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{fmtMoney(eventRevenue.openPlayCents)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{eventRevenue.openPlayCount} open play registrations</p>
+            </div>
+          </div>
+          {eventRevenue.breakdown.length > 0 && (
+            <div className="divide-y divide-gray-50 border-t border-gray-100 mt-2">
+              {eventRevenue.breakdown.map((e) => (
+                <div key={e.name} className="flex items-center justify-between py-1.5 text-xs">
+                  <span className="text-gray-700">{e.name}</span>
+                  <span className="flex items-center gap-3 text-gray-500">
+                    <span className={`rounded-full px-2 py-0.5 font-medium ${
+                      e.kind === "tournament" ? "bg-indigo-100 text-indigo-700" : "bg-teal-100 text-teal-700"
+                    }`}>
+                      {e.kind === "tournament" ? "Tournament" : "Open Play"}
+                    </span>
+                    {e.count}× · {fmtMoney(e.cents)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Shipping costs ──────────────────────────────────────────────────── */}
+      {!loading && shippingCosts && shippingCosts.totalCents > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard label="Total Shipping Cost"  value={fmtMoney(shippingCosts.totalCents)}    sub={`${shippingCosts.ordersWithLabel} labeled orders`} />
+          <StatCard label="Avg Shipping / Order" value={fmtMoney(shippingCosts.avgCents)}       sub="Per labeled order" />
+          <StatCard label="Shipping % of Revenue" value={`${shippingCosts.pctOfRevenue}%`}      sub="Of product revenue" />
+          <StatCard label="Gross Product Revenue" value={fmtMoney(((stats?.productCents as number) ?? 0) - shippingCosts.totalCents)} sub="Product rev − shipping" />
+        </div>
+      )}
 
       {/* ── Domestic / International card ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">

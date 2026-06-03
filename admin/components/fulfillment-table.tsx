@@ -6,6 +6,7 @@ import type { ExportableOrder }        from "@/lib/order-types";
 import ShippingExportModal             from "./shipping-export-modal";
 import BulkStatusModal                 from "./bulk-status-modal";
 import TrackingImportModal             from "./tracking-import-modal";
+import StripeImportModal               from "./stripe-import-modal";
 import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
 
 const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
@@ -64,6 +65,7 @@ export default function FulfillmentTable({ orders }: Props) {
   const [showModal,              setShowModal]              = useState(false);
   const [showBulkStatusModal,    setShowBulkStatusModal]    = useState(false);
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
+  const [showStripeImportModal,  setShowStripeImportModal]  = useState(false);
   const [showCheatSheetModal,    setShowCheatSheetModal]    = useState(false);
   const [searchQuery,            setSearchQuery]            = useState("");
   const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
@@ -308,18 +310,11 @@ export default function FulfillmentTable({ orders }: Props) {
             Import Tracking
           </button>
           <button
-            onClick={handleResyncColors}
-            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
-                       rounded-lg hover:bg-gray-50 transition-colors"
+            onClick={() => setShowStripeImportModal(true)}
+            className="px-4 py-2 text-sm font-medium bg-white border border-violet-300 text-violet-700
+                       rounded-lg hover:bg-violet-50 transition-colors"
           >
-            Re-sync Colors
-          </button>
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
-                       rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+            Import from Stripe
           </button>
           <button
             onClick={() => setShowCheatSheetModal(true)}
@@ -335,6 +330,20 @@ export default function FulfillmentTable({ orders }: Props) {
                        hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Create Shipping Labels
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-600
+                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
+          >
+            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+          </button>
+          <button
+            onClick={handleResyncColors}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-400
+                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
+          >
+            Re-sync Colors
           </button>
         </div>
       </div>
@@ -487,6 +496,17 @@ export default function FulfillmentTable({ orders }: Props) {
           onSuccess={(count) => {
             setShowTrackingImportModal(false);
             showSuccess(`${count} order${count !== 1 ? "s" : ""} updated with tracking numbers.`);
+          }}
+        />
+      )}
+
+      {/* Stripe import modal */}
+      {showStripeImportModal && (
+        <StripeImportModal
+          onClose={() => setShowStripeImportModal(false)}
+          onSuccess={(count) => {
+            setShowStripeImportModal(false);
+            showSuccess(`${count} item${count !== 1 ? "s" : ""} imported from Stripe.`);
           }}
         />
       )}

@@ -8,7 +8,8 @@ import { requireAdminSession } from "@/lib/server/adminAuth";
 import { rateLimit } from "@/lib/server/rateLimiter";
 import {
   parseRegion, matchesRegion, matchesDateRange, parseDateParams,
-  getOrderItems, fmtPct, type AnalyticsOrder,
+  getOrderItems, fmtPct, detectOrderKind, normalizeProductName,
+  type AnalyticsOrder,
 } from "@/lib/analytics-utils";
 
 export const dynamic = "force-dynamic";
@@ -26,17 +27,19 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabaseAdmin
     .from("orders")
-    .select("id, order_total_cents, order_data, created_at, shipping_address, customer_email")
+    .select("id, order_total_cents, order_data, order_summary, created_at, shipping_address, customer_email")
     .neq("fulfillment_status", "cancelled");
 
   if (error) return NextResponse.json({ error: "Failed to fetch orders." }, { status: 500 });
 
-  const orders = (data ?? []) as AnalyticsOrder[];
+  const orders = (data ?? []) as unknown as AnalyticsOrder[];
   const filtered = orders.filter(
     (o) => matchesRegion(o, region) && matchesDateRange(o.created_at, from, to)
   );
 
-  const totalRevenue = filtered.reduce((s, o) => s + (o.order_total_cents ?? 0), 0);
+  // Only count product orders (exclude event registrations from product analytics)
+  const productOrders = filtered.filter((o) => detectOrderKind(o) === "product");
+  const totalRevenue = productOrders.reduce((s, o) => s + (o.order_total_cents ?? 0), 0);
 
   // Build product map
   type ProdEntry = {
@@ -48,9 +51,9 @@ export async function GET(req: Request) {
   };
   const prodMap = new Map<string, ProdEntry>();
 
-  for (const o of filtered) {
+  for (const o of productOrders) {
     for (const item of getOrderItems(o)) {
-      const name = item.product_name ?? "Unknown";
+      const name = normalizeProductName(item.product_name ?? "Unknown");
       if (!prodMap.has(name)) {
         prodMap.set(name, { name, revenue: 0, units: 0, orders: new Set(), buyers: new Set() });
       }

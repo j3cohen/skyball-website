@@ -62,6 +62,8 @@ type Order = {
   customer_order_notes: string | null;
   created_at: string;
   fulfilled_at: string | null;
+  refund_amount_cents?: number;
+  refund_status?: string;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -147,10 +149,19 @@ export default async function OrderDetailPage({
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{fmtDate(order.created_at)}</p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-sm font-medium
-          ${STATUS_BADGE[order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}>
-          {order.fulfillment_status}
-        </span>
+        <div className="flex items-center gap-2">
+          {order.refund_status && order.refund_status !== "none" && (
+            <span className={`rounded-full px-3 py-1 text-sm font-medium ${
+              order.refund_status === "full" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+            }`}>
+              {order.refund_status === "full" ? "Fully refunded" : `Partial refund ${fmtMoney(order.refund_amount_cents ?? 0, order.order_currency)}`}
+            </span>
+          )}
+          <span className={`rounded-full px-3 py-1 text-sm font-medium
+            ${STATUS_BADGE[order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}>
+            {order.fulfillment_status}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -282,6 +293,8 @@ export default async function OrderDetailPage({
               currentTracking={order.tracking_number}
               currentNotes={order.internal_notes}
               currentTrackingNumbers={order.tracking_numbers ?? []}
+              refundAmountCents={order.refund_amount_cents ?? 0}
+              refundStatus={order.refund_status ?? "none"}
             />
           </section>
         </div>

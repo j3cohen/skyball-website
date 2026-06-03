@@ -17,6 +17,8 @@ type Props = {
   currentTracking: string | null;
   currentNotes: string | null;
   currentTrackingNumbers?: TrackingEntry[];
+  refundAmountCents?: number;
+  refundStatus?: string;
 };
 
 const STATUS_OPTS: { value: FulfillmentStatus; label: string }[] = [
@@ -51,6 +53,8 @@ export default function FulfillForm({
   currentTracking,
   currentNotes,
   currentTrackingNumbers = [],
+  refundAmountCents = 0,
+  refundStatus = "none",
 }: Props) {
   // ── Status + notes (saved together) ───────────────────────────────────────
   const [savedStatus,   setSavedStatus]   = useState<FulfillmentStatus>(currentStatus);
@@ -390,6 +394,25 @@ export default function FulfillForm({
           >
             {showOriginal ? "Back to edits" : "View original"}
           </button>
+        </div>
+      )}
+
+      {/* Refund info (set via Stripe import) */}
+      {refundStatus !== "none" && (
+        <div className={`rounded-lg border px-3 py-2.5 text-sm ${
+          refundStatus === "full"
+            ? "bg-red-50 border-red-200 text-red-700"
+            : "bg-amber-50 border-amber-200 text-amber-700"
+        }`}>
+          <span className="font-medium">
+            {refundStatus === "full" ? "Fully refunded" : "Partially refunded"}
+          </span>
+          {refundAmountCents > 0 && (
+            <span className="ml-1.5">
+              — ${(refundAmountCents / 100).toFixed(2)} refunded
+            </span>
+          )}
+          <p className="text-xs opacity-70 mt-0.5">Synced from Stripe. Edit via Stripe dashboard.</p>
         </div>
       )}
 
