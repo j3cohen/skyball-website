@@ -108,15 +108,26 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
     setApplyError(null);
 
     try {
-      const updates = toApply.map((m) => ({
-        id: m.selectedOrderId!,
-        shipping_label_cost: m.row.cost,
-        fulfillment_status: m.row.status.toLowerCase() === "delivered" ? "fulfilled" : "processing",
-        tracking_entry: {
-          number: m.row.trackingNumber,
-          tracking_status: m.row.status,
-        },
-      }));
+      const updates = toApply.map((m) => {
+        // Already-imported rows: only update the tracking status, don't add a new entry
+        if (m.isStatusUpdate) {
+          return {
+            id: m.selectedOrderId!,
+            tracking_status_update: {
+              number: m.row.trackingNumber,
+              tracking_status: m.row.status,
+            },
+          };
+        }
+        return {
+          id: m.selectedOrderId!,
+          shipping_label_cost: m.row.cost,
+          tracking_entry: {
+            number: m.row.trackingNumber,
+            tracking_status: m.row.status,
+          },
+        };
+      });
 
       const res = await fetch("/api/admin/orders/bulk-update", {
         method: "PATCH",
@@ -161,7 +172,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
     { key: "auto",             label: "Auto-matched",    count: autoCount,            color: "green" },
     { key: "review",           label: "Needs Review",    count: reviewCount,          color: "amber" },
     { key: "unmatched",        label: "Unmatched",       count: unmatchedCount,       color: "gray" },
-    { key: "already-imported", label: "Already imported",count: alreadyImportedCount, color: "gray" },
+    { key: "already-imported", label: "Status updates", count: alreadyImportedCount, color: "sky" },
   ];
 
   return (
@@ -231,6 +242,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                     green: isActive ? "bg-green-600 text-white" : "bg-green-100 text-green-800 hover:bg-green-200",
                     amber: isActive ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-800 hover:bg-amber-200",
                     gray:  isActive ? "bg-gray-700 text-white"  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                    sky:   isActive ? "bg-sky-600 text-white"   : "bg-sky-100 text-sky-700 hover:bg-sky-200",
                   };
                   return (
                     <button
@@ -263,11 +275,18 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                     return (
                       <div
                         key={m.rowIndex}
-                        className="text-xs text-gray-400 bg-gray-50 rounded-lg px-4 py-2 flex items-center gap-2"
+                        className="text-xs bg-sky-50 border border-sky-200 rounded-lg px-4 py-2 flex items-center gap-2"
                       >
-                        <span className="text-gray-300">✓</span>
-                        Already imported: {m.row.trackingNumber}
-                        {m.row.recipient && <span className="ml-1">({m.row.recipient})</span>}
+                        <span className="text-sky-400 shrink-0">↻</span>
+                        <span className="text-gray-600">
+                          <span className="font-mono text-gray-700">{m.row.trackingNumber}</span>
+                          {m.row.recipient && <span className="text-gray-400 ml-1">({m.row.recipient})</span>}
+                        </span>
+                        {m.row.status && (
+                          <span className="ml-auto text-sky-700 font-medium shrink-0">
+                            → {m.row.status}
+                          </span>
+                        )}
                       </div>
                     );
                   }

@@ -39,11 +39,11 @@ export type RowMatch = {
   candidates: CandidateOrder[];
   selectedOrderId: string | null;
   skipped: boolean;
+  /** True when this row maps to an already-imported tracking number and only updates its status. */
+  isStatusUpdate?: boolean;
 };
 
 // ─── Column name normalizer ───────────────────────────────────────────────────
-// PirateShip columns may vary in casing/spacing. We normalize by lower-casing
-// and stripping non-alphanumeric characters, then map known patterns.
 
 function normalizeKey(k: string): string {
   return k.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -109,8 +109,14 @@ export function parsePirateShipRows(rawRows: Record<string, unknown>[]): PirateS
       findColumn(row, "Cost", "label cost", "labelcost", "postage", "amount", "total")
     );
 
+    // PirateShip exports use "Tracking Status" for live carrier status
     const status = String(
-      findColumn(row, "Status", "label status", "labelstatus", "shipment status", "shipmentstatus") ?? ""
+      findColumn(
+        row,
+        "Tracking Status", "trackingstatus",
+        "Status", "label status", "labelstatus",
+        "shipment status", "shipmentstatus"
+      ) ?? ""
     ).trim();
 
     results.push({ createdDate, recipient, email, trackingNumber, cost, status });
@@ -131,11 +137,11 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
     byEmail.get(key)!.push(order);
   }
 
-  // Build set of already-imported tracking numbers (check both legacy field and new array)
-  const existingTracking = new Set<string>();
+  // Build map of existing tracking number → order ID (covers both legacy field and array)
+  const trackingToOrderId = new Map<string, string>();
   for (const order of allOrders) {
-    if (order.tracking_number) existingTracking.add(order.tracking_number.trim());
-    for (const t of order.tracking_numbers ?? []) existingTracking.add(t.number.trim());
+    if (order.tracking_number) trackingToOrderId.set(order.tracking_number.trim(), order.id);
+    for (const t of order.tracking_numbers ?? []) trackingToOrderId.set(t.number.trim(), order.id);
   }
 
   const results: RowMatch[] = [];
@@ -143,15 +149,17 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex];
 
-    // Check if tracking number already exists in DB
-    if (existingTracking.has(row.trackingNumber.trim())) {
+    // Tracking number already imported — mark as status-update-only (not skipped)
+    const existingOrderId = trackingToOrderId.get(row.trackingNumber.trim());
+    if (existingOrderId !== undefined) {
       results.push({
         row,
         rowIndex,
         confidence: "already-imported",
         candidates: [],
-        selectedOrderId: null,
-        skipped: true,
+        selectedOrderId: existingOrderId,
+        skipped: false,
+        isStatusUpdate: true,
       });
       continue;
     }
