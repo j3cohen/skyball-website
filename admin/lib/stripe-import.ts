@@ -79,22 +79,26 @@ function parseDollars(raw: unknown): number {
   return 0;
 }
 
-// Stripe exports dates as "M/D/YY H:MM" (e.g. "6/3/26 17:32") in UTC.
-// JavaScript misparses the 2-digit year, so we fix it manually.
+// xlsx reads Stripe CSV date cells as Excel serial numbers (float days since 1900-01-00).
+// 25569 = days between Excel epoch and Unix epoch (1970-01-01).
+const EXCEL_EPOCH_OFFSET_DAYS = 25569;
+const MS_PER_DAY = 86400000;
+
 function parseStripeDate(raw: unknown): Date {
-  if (raw instanceof Date) return raw;
+  // Excel serial number — the primary format xlsx returns for Stripe CSV dates
   if (typeof raw === "number") {
-    const d = new Date(raw);
-    if (!isNaN(d.getTime())) return d;
+    return new Date((raw - EXCEL_EPOCH_OFFSET_DAYS) * MS_PER_DAY);
   }
+  // Date object (returned by xlsx for explicitly-typed date cells in .xlsx files)
+  if (raw instanceof Date && !isNaN(raw.getTime())) return raw;
+  // Fallback: string parsing for M/D/YY H:MM or ISO formats
   if (typeof raw === "string") {
     const s = raw.trim();
-    // Match M/D/YY HH:MM or M/D/YYYY HH:MM
-    const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})$/);
-    if (match) {
-      const [, month, day, rawYear, hour, minute] = match;
-      const year = rawYear.length === 2 ? 2000 + Number(rawYear) : Number(rawYear);
-      return new Date(Date.UTC(year, Number(month) - 1, Number(day), Number(hour), Number(minute)));
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/);
+    if (m) {
+      let year = Number(m[3]);
+      if (year < 100) year += 2000;
+      return new Date(Date.UTC(year, Number(m[1]) - 1, Number(m[2]), Number(m[4]), Number(m[5])));
     }
     const d = new Date(s);
     if (!isNaN(d.getTime())) return d;
@@ -140,10 +144,11 @@ export function parseStripeRows(rawRows: Record<string, unknown>[]): StripeRow[]
     const amountRefundedCents = parseDollars(col(row, "Amount Refunded", "amount refunded"));
     const currency = String(col(row, "Currency", "currency") ?? "usd").trim().toLowerCase();
 
-    // Customer name: Shipping Name is most reliable in this export
+    // Prefer Customer Description (account-level, tied to the buyer's email) over
+    // Shipping Name (which may be a gift recipient, not the actual buyer).
     const customerName = String(
-      col(row, "Shipping Name", "shipping name", "Customer Description", "customer description",
-          "Card Name", "card name", "customer name", "name") ?? ""
+      col(row, "Customer Description", "customer description", "customer name",
+          "Card Name", "card name", "Shipping Name", "shipping name", "name") ?? ""
     ).trim();
 
     const customerEmail = String(

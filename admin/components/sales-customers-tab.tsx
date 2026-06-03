@@ -151,7 +151,7 @@ export default function SalesCustomersTab({ filters }: { filters: AnalyticsFilte
           <table className="min-w-full text-sm divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                {["#", "Customer", "Orders", "Total Spent", "First Order", "Last Order"].map((h) => (
+                {["#", "Email / Name", "Orders", "Total Spent", "First Order", "Last Order"].map((h) => (
                   <th key={h} className={`px-4 py-3 font-medium text-gray-500 text-${["#", "Orders", "Total Spent"].includes(h) ? "right" : "left"}`}>
                     {h}
                   </th>
@@ -163,8 +163,10 @@ export default function SalesCustomersTab({ filters }: { filters: AnalyticsFilte
                 <tr key={row.email} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}>
                   <td className="px-4 py-2.5 text-right text-xs text-gray-400">{i + 1}</td>
                   <td className="px-4 py-2.5">
-                    <p className="font-medium text-gray-900">{row.name ?? "—"}</p>
-                    <p className="text-xs text-gray-400">{row.email}</p>
+                    <p className="font-medium text-gray-900">{row.email}</p>
+                    {row.name && (
+                      <p className="text-xs text-gray-400">{row.name}</p>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
