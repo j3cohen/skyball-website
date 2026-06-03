@@ -199,11 +199,14 @@ export async function PATCH(req: Request) {
       // Build final tracking_numbers array
       const existing = [...(currentTrackingMap.get(orderId) ?? [])];
 
-      // Apply status updates to existing entries
+      // Apply status updates to existing entries; if the number only exists in the
+      // legacy tracking_number TEXT column (not yet in the JSONB array), migrate it in.
       for (const su of statusUpdates) {
         const idx = existing.findIndex((t) => t.number === su.number);
         if (idx >= 0) {
           existing[idx] = { ...existing[idx], tracking_status: su.tracking_status };
+        } else {
+          existing.push({ number: su.number, tracking_status: su.tracking_status, added_at: new Date().toISOString() });
         }
       }
 
