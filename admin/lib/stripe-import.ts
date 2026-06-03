@@ -9,11 +9,12 @@ export type StripeRow = {
   createdAt:                Date;
   amountCents:              number;
   amountRefundedCents:      number;
+  feeCents:                 number;  // Stripe processing fee (2.9% + $0.30 etc.)
   currency:                 string;
   status:                   string;  // Paid | Refunded | Partially refunded
   declineReason:            string;  // non-empty = failed charge
   customerEmail:            string;
-  customerName:             string;  // from Shipping Name
+  customerName:             string;
   description:              string;
   checkoutLineItemSummary:  string;  // e.g. "SkyBall 3-Pack (1); Partners Pack – Pro Kit (1)"
   // Metadata (populated for orders placed through our website checkout)
@@ -35,6 +36,7 @@ export type StripeCandidateOrder = {
   stripe_session_id:        string;
   refund_amount_cents:      number;
   refund_status:            string;
+  stripe_fee_cents:         number | null;
 };
 
 export type StripeMatchConfidence =
@@ -140,8 +142,9 @@ export function parseStripeRows(rawRows: Record<string, unknown>[]): StripeRow[]
       col(row, "Created date (UTC)", "Created (UTC)", "created date", "created", "date")
     );
 
-    const amountCents        = parseDollars(col(row, "Amount", "amount"));
+    const amountCents         = parseDollars(col(row, "Amount", "amount"));
     const amountRefundedCents = parseDollars(col(row, "Amount Refunded", "amount refunded"));
+    const feeCents            = parseDollars(col(row, "Fee", "fee", "stripe fee", "processing fee"));
     const currency = String(col(row, "Currency", "currency") ?? "usd").trim().toLowerCase();
 
     // Prefer Customer Description (account-level, tied to the buyer's email) over
@@ -170,7 +173,7 @@ export function parseStripeRows(rawRows: Record<string, unknown>[]): StripeRow[]
 
     results.push({
       chargeId, checkoutSessionId, paymentIntentId, createdAt,
-      amountCents, amountRefundedCents, currency,
+      amountCents, amountRefundedCents, feeCents, currency,
       status, declineReason,
       customerEmail, customerName, description,
       checkoutLineItemSummary,
@@ -252,8 +255,9 @@ export function matchStripeRows(
       const newRefundCents  = row.amountRefundedCents;
       const newRefundStatus = refundStatusFor(newRefundCents, row.amountCents);
       const needsUpdate =
-        matched.refund_amount_cents !== newRefundCents ||
-        matched.refund_status       !== newRefundStatus;
+        matched.refund_amount_cents !== newRefundCents   ||
+        matched.refund_status       !== newRefundStatus  ||
+        (row.feeCents > 0 && matched.stripe_fee_cents !== row.feeCents);
 
       results.push({
         row, rowIndex,
@@ -287,8 +291,9 @@ export function matchStripeRows(
         const m = candidates[0];
         const newRefundStatus = refundStatusFor(row.amountRefundedCents, row.amountCents);
         const needsUpdate =
-          m.refund_amount_cents !== row.amountRefundedCents ||
-          m.refund_status       !== newRefundStatus;
+          m.refund_amount_cents !== row.amountRefundedCents    ||
+          m.refund_status       !== newRefundStatus            ||
+          (row.feeCents > 0 && m.stripe_fee_cents !== row.feeCents);
         results.push({
           row, rowIndex,
           confidence:      needsUpdate ? "update-refund" : "no-action",

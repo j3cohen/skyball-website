@@ -14,6 +14,7 @@ type RefundUpdate = {
   orderId: string;
   refundAmountCents: number;
   refundStatus: "none" | "partial" | "full";
+  feeCents?: number;
 };
 
 type NewOrder = {
@@ -24,6 +25,7 @@ type NewOrder = {
   createdAt: string;
   amountCents: number;
   amountRefundedCents: number;
+  feeCents: number;
   currency: string;
   customerEmail: string;
   customerName: string;
@@ -66,9 +68,10 @@ export async function PATCH(req: Request) {
       if (!["none", "partial", "full"].includes(status)) continue;
       validated.push({
         type: "update-refund",
-        orderId: item.orderId,
+        orderId:           item.orderId,
         refundAmountCents: refundCents,
-        refundStatus: status as "none" | "partial" | "full",
+        refundStatus:      status as "none" | "partial" | "full",
+        feeCents:          Number(item.feeCents ?? 0) || undefined,
       });
     } else if (item.type === "new-order") {
       if (typeof item.chargeId !== "string" || !item.chargeId) continue;
@@ -80,6 +83,7 @@ export async function PATCH(req: Request) {
         createdAt:           String(item.createdAt ?? new Date().toISOString()),
         amountCents:         Number(item.amountCents ?? 0),
         amountRefundedCents: Number(item.amountRefundedCents ?? 0),
+        feeCents:            Number(item.feeCents ?? 0),
         currency:            String(item.currency ?? "usd"),
         customerEmail:       String(item.customerEmail ?? ""),
         customerName:        String(item.customerName ?? ""),
@@ -105,6 +109,7 @@ export async function PATCH(req: Request) {
       const patch: Record<string, unknown> = {
         refund_amount_cents: item.refundAmountCents,
         refund_status:       item.refundStatus,
+        ...(item.feeCents ? { stripe_fee_cents: item.feeCents } : {}),
       };
 
       // If fully refunded, fetch current fulfillment status and cancel if not yet shipped
@@ -170,6 +175,7 @@ export async function PATCH(req: Request) {
         order_data:               orderData,
         refund_amount_cents:      item.amountRefundedCents,
         refund_status:            refundStatus,
+        stripe_fee_cents:         item.feeCents > 0 ? item.feeCents : null,
         created_at:               item.createdAt,
         internal_notes:           "Created via Stripe import",
       });

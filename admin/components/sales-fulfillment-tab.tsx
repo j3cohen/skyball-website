@@ -22,6 +22,9 @@ type Stats = {
   avgShippingCents: number;
   shippingPctOfRev: number | null;
   labeledOrders: number;
+  totalFeeCents: number;
+  avgFeeCents: number;
+  ordersWithFee: number;
 };
 type AgeBucket     = { label: string; count: number };
 type StatusCounts  = { pending: number; processing: number; fulfilled: number };
@@ -74,8 +77,12 @@ export default function SalesFulfillmentTab({ filters }: { filters: AnalyticsFil
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Avg Days to Fulfill" value={stats.avgDaysToFulfill != null ? `${stats.avgDaysToFulfill}d` : "—"} sub="Fulfilled orders only" />
         <KpiCard label="Unfulfilled Orders"  value={String(stats.unfulfilledCount)} sub={`${stats.totalOrders} total`} alert={stats.unfulfilledCount > 0} />
-        <KpiCard label="Total Shipping Cost" value={fmtMoney(stats.totalShippingCents)} sub={`${stats.labeledOrders} labeled orders`} />
-        <KpiCard label="Avg Shipping / Order" value={fmtMoney(stats.avgShippingCents)} sub={stats.shippingPctOfRev != null ? `${stats.shippingPctOfRev}% of revenue` : undefined} />
+        <KpiCard label="Total Shipping Cost" value={fmtMoney(stats.totalShippingCents)} sub={`${stats.labeledOrders} labeled orders · avg ${fmtMoney(stats.avgShippingCents)}`} />
+        {stats.totalFeeCents > 0 ? (
+          <KpiCard label="Total Stripe Fees" value={fmtMoney(stats.totalFeeCents)} sub={`${stats.ordersWithFee} orders · avg ${fmtMoney(stats.avgFeeCents)}`} />
+        ) : (
+          <KpiCard label="Avg Shipping / Order" value={fmtMoney(stats.avgShippingCents)} sub={stats.shippingPctOfRev != null ? `${stats.shippingPctOfRev}% of revenue` : undefined} />
+        )}
       </div>
 
       {/* Unfulfilled + status */}

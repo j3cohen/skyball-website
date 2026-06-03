@@ -64,6 +64,8 @@ type Order = {
   fulfilled_at: string | null;
   refund_amount_cents?: number;
   refund_status?: string;
+  stripe_fee_cents?: number | null;
+  shipping_label_cost?: number | null;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -252,6 +254,36 @@ export default async function OrderDetailPage({
             )}
           </section>
 
+          {/* Financial summary */}
+          {(order.stripe_fee_cents != null || order.shipping_label_cost != null) && (
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <h2 className="font-semibold text-gray-900 mb-3">Financials</h2>
+              <dl className="space-y-1.5 text-sm">
+                <FinRow label="Order total"     value={fmtMoney(order.order_total_cents, order.order_currency)} />
+                {order.stripe_fee_cents != null && (
+                  <FinRow label="Stripe fee"    value={`−${fmtMoney(order.stripe_fee_cents, order.order_currency)}`} subtle />
+                )}
+                {order.shipping_label_cost != null && (
+                  <FinRow label="Shipping label" value={`−$${order.shipping_label_cost.toFixed(2)}`} subtle />
+                )}
+                {order.stripe_fee_cents != null && order.shipping_label_cost != null && (
+                  <>
+                    <div className="border-t border-gray-100 pt-1.5">
+                      <FinRow
+                        label="Net revenue"
+                        value={fmtMoney(
+                          (order.order_total_cents ?? 0) - order.stripe_fee_cents - Math.round(order.shipping_label_cost * 100),
+                          order.order_currency
+                        )}
+                        bold
+                      />
+                    </div>
+                  </>
+                )}
+              </dl>
+            </section>
+          )}
+
           {/* Raw order summary (collapsible) */}
           {order.order_summary && (
             <details className="text-xs text-gray-400">
@@ -308,6 +340,15 @@ function Row({ label, value }: { label: string; value: string | null | undefined
     <div className="flex gap-2">
       <dt className="w-12 shrink-0 font-medium text-gray-500">{label}</dt>
       <dd className="text-gray-900">{value ?? "—"}</dd>
+    </div>
+  );
+}
+
+function FinRow({ label, value, subtle, bold }: { label: string; value: string; subtle?: boolean; bold?: boolean }) {
+  return (
+    <div className="flex justify-between items-baseline">
+      <dt className={subtle ? "text-gray-400" : bold ? "font-semibold text-gray-800" : "text-gray-600"}>{label}</dt>
+      <dd className={subtle ? "text-gray-400" : bold ? "font-semibold text-gray-900" : "text-gray-800"}>{value}</dd>
     </div>
   );
 }

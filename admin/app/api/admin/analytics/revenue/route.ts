@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     .select(
       "id, customer_email, order_total_cents, order_currency, fulfillment_status, " +
       "created_at, fulfilled_at, shipping_address, order_data, order_summary, " +
-      "shipping_label_cost, customer_name"
+      "shipping_label_cost, stripe_fee_cents, customer_name"
     )
     .order("created_at", { ascending: true });
 
@@ -164,6 +164,14 @@ export async function GET(req: Request) {
     .map(([status, count]) => ({ status, count, pct: fmtPct(count, mainAll.length) }))
     .sort((a, b) => b.count - a.count);
 
+  // ── Stripe fees ────────────────────────────────────────────────────────────
+  const ordersWithFee = main.filter((o) => (o.stripe_fee_cents ?? 0) > 0);
+  const totalFeeCents = ordersWithFee.reduce((s, o) => s + (o.stripe_fee_cents ?? 0), 0);
+  const avgFeeCents   = ordersWithFee.length > 0 ? Math.round(totalFeeCents / ordersWithFee.length) : 0;
+  const feeAsPctOfRevenue = productCents > 0
+    ? Math.round((totalFeeCents / productCents) * 1000) / 10
+    : 0;
+
   // ── Shipping costs ─────────────────────────────────────────────────────────
   // shipping_label_cost is stored in dollars (NUMERIC); multiply by 100 for cents
   const ordersWithCost = main.filter((o) => o.shipping_label_cost != null && o.shipping_label_cost > 0);
@@ -232,11 +240,23 @@ export async function GET(req: Request) {
       openPlayCount:   openPlayOrders.length,
       breakdown:       eventBreakdown,
     },
+    stripeFees: {
+      totalCents:       totalFeeCents,
+      avgCents:         avgFeeCents,
+      ordersWithFee:    ordersWithFee.length,
+      pctOfRevenue:     feeAsPctOfRevenue,
+    },
     shippingCosts: {
       totalCents:       totalShippingCents,
       avgCents:         avgShippingCents,
       ordersWithLabel:  ordersWithCost.length,
       pctOfRevenue:     shippingAsPctOfRevenue,
+    },
+    netRevenue: {
+      // Product revenue after deducting known Stripe fees + shipping labels
+      productCents,
+      totalFeesCents:   totalFeeCents + totalShippingCents,
+      netCents:         productCents - totalFeeCents - totalShippingCents,
     },
     countryBreakdown,
     timeSeries,

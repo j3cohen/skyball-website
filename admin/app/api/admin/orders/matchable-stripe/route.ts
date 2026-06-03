@@ -20,7 +20,7 @@ export async function GET() {
     .select(
       "id, customer_name, customer_email, created_at, order_total_cents, order_currency, " +
       "order_summary, fulfillment_status, stripe_payment_intent_id, stripe_session_id, " +
-      "refund_amount_cents, refund_status"
+      "refund_amount_cents, refund_status, stripe_fee_cents"
     )
     .neq("fulfillment_status", "cancelled")
     .order("created_at", { ascending: false });

@@ -108,6 +108,12 @@ export default function RevenuePage() {
   const shippingCosts    = data?.shippingCosts      as {
     totalCents: number; avgCents: number; ordersWithLabel: number; pctOfRevenue: number;
   } | undefined;
+  const stripeFees       = data?.stripeFees         as {
+    totalCents: number; avgCents: number; ordersWithFee: number; pctOfRevenue: number;
+  } | undefined;
+  const netRevenue       = data?.netRevenue         as {
+    productCents: number; totalFeesCents: number; netCents: number;
+  } | undefined;
   const eventRevenue     = data?.eventRevenue      as {
     totalCents: number; tournamentCents: number; openPlayCents: number;
     tournamentCount: number; openPlayCount: number;
@@ -199,13 +205,38 @@ export default function RevenuePage() {
         </div>
       )}
 
-      {/* ── Shipping costs ──────────────────────────────────────────────────── */}
-      {!loading && shippingCosts && shippingCosts.totalCents > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Shipping Cost"  value={fmtMoney(shippingCosts.totalCents)}    sub={`${shippingCosts.ordersWithLabel} labeled orders`} />
-          <StatCard label="Avg Shipping / Order" value={fmtMoney(shippingCosts.avgCents)}       sub="Per labeled order" />
-          <StatCard label="Shipping % of Revenue" value={`${shippingCosts.pctOfRevenue}%`}      sub="Of product revenue" />
-          <StatCard label="Gross Product Revenue" value={fmtMoney(((stats?.productCents as number) ?? 0) - shippingCosts.totalCents)} sub="Product rev − shipping" />
+      {/* ── Expenses + Net Revenue ──────────────────────────────────────────── */}
+      {!loading && (stripeFees || shippingCosts || netRevenue) && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Expenses &amp; Net Revenue</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {stripeFees && stripeFees.totalCents > 0 && (
+              <StatCard label="Stripe Fees"        value={fmtMoney(stripeFees.totalCents)}      sub={`${stripeFees.pctOfRevenue}% of revenue · avg ${fmtMoney(stripeFees.avgCents)}`} />
+            )}
+            {shippingCosts && shippingCosts.totalCents > 0 && (
+              <StatCard label="Shipping Labels"    value={fmtMoney(shippingCosts.totalCents)}   sub={`${shippingCosts.pctOfRevenue}% of revenue · avg ${fmtMoney(shippingCosts.avgCents)}`} />
+            )}
+            {netRevenue && netRevenue.netCents > 0 && (
+              <>
+                <StatCard label="Total Deductions" value={fmtMoney(netRevenue.totalFeesCents)}  sub="Fees + shipping" />
+                <StatCard label="Net Revenue"       value={fmtMoney(netRevenue.netCents)}        sub="After fees &amp; shipping" />
+              </>
+            )}
+          </div>
+          {netRevenue && netRevenue.productCents > 0 && (
+            <div className="bg-gray-50 rounded-lg px-4 py-2 text-xs text-gray-500 flex items-center gap-2">
+              <span className="font-medium text-gray-700">{fmtMoney(netRevenue.productCents)}</span>
+              <span>product revenue</span>
+              {netRevenue.totalFeesCents > 0 && <>
+                <span>−</span>
+                <span className="font-medium text-red-600">{fmtMoney(netRevenue.totalFeesCents)}</span>
+                <span>expenses</span>
+                <span>=</span>
+                <span className="font-medium text-green-700">{fmtMoney(netRevenue.netCents)}</span>
+                <span>net</span>
+              </>}
+            </div>
+          )}
         </div>
       )}
 

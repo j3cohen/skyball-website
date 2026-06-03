@@ -18,6 +18,7 @@ type TrackingEntry = { number: string; tracking_status: string; added_at: string
 
 type FullOrder = AnalyticsOrder & {
   tracking_numbers?: TrackingEntry[] | null;
+  stripe_fee_cents?: number | null;
 };
 
 function inferCarrier(trackingNumbers: TrackingEntry[] | null | undefined): string {
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
     .from("orders")
     .select(
       "id, fulfillment_status, created_at, fulfilled_at, order_total_cents, " +
-      "shipping_address, shipping_label_cost, order_summary, order_data, " +
+      "shipping_address, shipping_label_cost, stripe_fee_cents, order_summary, order_data, " +
       "tracking_numbers, customer_name, customer_email"
     )
     .neq("fulfillment_status", "cancelled");
@@ -98,7 +99,10 @@ export async function GET(req: Request) {
   }
 
   // ── Shipping cost helpers ────────────────────────────────────────────────────
-  const labeled = filtered.filter((o) => o.shipping_label_cost != null && o.shipping_label_cost > 0);
+  const labeled    = filtered.filter((o) => o.shipping_label_cost != null && o.shipping_label_cost > 0);
+  const withFees   = filtered.filter((o) => (o.stripe_fee_cents ?? 0) > 0);
+  const totalFeeCents = withFees.reduce((s, o) => s + (o.stripe_fee_cents ?? 0), 0);
+  const avgFeeCents   = withFees.length > 0 ? Math.round(totalFeeCents / withFees.length) : 0;
   const totalShippingCents = sumCents(labeled);
   const avgShippingCents   = labeled.length > 0 ? Math.round(totalShippingCents / labeled.length) : 0;
   const totalRevCents      = filtered.reduce((s, o) => s + (o.order_total_cents ?? 0), 0);
@@ -176,6 +180,9 @@ export async function GET(req: Request) {
       avgShippingCents,
       shippingPctOfRev,
       labeledOrders:    labeled.length,
+      totalFeeCents,
+      avgFeeCents,
+      ordersWithFee:    withFees.length,
     },
     unfulfilledByAge,
     statusCounts,

@@ -106,6 +106,7 @@ export default function StripeImportModal({ onClose, onSuccess }: Props) {
             orderDataJson:       m.row.orderDataJson,
             orderKind:           detectStripeOrderKind(m.row),
             clsItems:            parseCLSItems(m.row.checkoutLineItemSummary || m.row.orderSummary),
+            feeCents:            m.row.feeCents,
             refundStatus,
           };
         }
@@ -118,6 +119,7 @@ export default function StripeImportModal({ onClose, onSuccess }: Props) {
           orderId:           m.selectedOrderId!,
           refundAmountCents: m.row.amountRefundedCents,
           refundStatus,
+          feeCents:          m.row.feeCents,
         };
       });
 

@@ -18,6 +18,7 @@ export type AnalyticsOrder = {
   order_data: Record<string, unknown> | null;
   order_summary: string | null;
   shipping_label_cost: number | null;
+  stripe_fee_cents: number | null;
 };
 
 export function parseRegion(param: string | null): Region {
