@@ -369,12 +369,11 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                             {m.row.createdDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="space-y-2">
                           <select
                             value={m.selectedOrderId ?? ""}
                             onChange={(e) => {
                               const chosen = e.target.value || null;
-                              // Remove chosen order from additionalOrderIds if it was there
                               const remaining = (m.additionalOrderIds ?? []).filter(id => id !== chosen);
                               updateMatch(m.rowIndex, {
                                 selectedOrderId: chosen,
@@ -382,7 +381,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                                 additionalOrderIds: remaining,
                               });
                             }}
-                            className="flex-1 text-xs border border-amber-300 rounded-md px-2 py-1.5
+                            className="w-full text-xs border border-amber-300 rounded-md px-2 py-1.5
                                        bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                           >
                             <option value="">— Select an order —</option>
@@ -392,16 +391,18 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                               </option>
                             ))}
                           </select>
-                          <button
-                            onClick={() => updateMatch(m.rowIndex, { skipped: !m.skipped })}
-                            className={`shrink-0 text-xs px-2 py-1.5 rounded-md border transition-colors ${
-                              m.skipped
-                                ? "bg-gray-100 text-gray-500 border-gray-200"
-                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-                            }`}
-                          >
-                            {m.skipped ? "Skipped" : "Skip"}
-                          </button>
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => updateMatch(m.rowIndex, { skipped: !m.skipped })}
+                              className={`text-xs px-2 py-1.5 rounded-md border transition-colors ${
+                                m.skipped
+                                  ? "bg-gray-100 text-gray-500 border-gray-200"
+                                  : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {m.skipped ? "Skipped" : "Skip"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );

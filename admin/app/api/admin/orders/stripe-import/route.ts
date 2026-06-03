@@ -53,8 +53,8 @@ export async function PATCH(req: Request) {
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "items must be a non-empty array." }, { status: 400 });
   }
-  if (items.length > 500) {
-    return NextResponse.json({ error: "Too many items (max 500)." }, { status: 400 });
+  if (items.length > 750) {
+    return NextResponse.json({ error: "Too many items (max 750)." }, { status: 400 });
   }
 
   // Validate items

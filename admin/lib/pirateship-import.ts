@@ -191,7 +191,7 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
         confidence:         alreadyOnPrimary ? "already-imported" : "auto",
         candidates:         emailCandidates,
         selectedOrderId:    primary.id,
-        skipped:            alreadyOnPrimary,
+        skipped:            false,  // status updates must not be skipped
         isStatusUpdate:     alreadyOnPrimary,
         additionalOrderIds: additionalFor(primary.id),
       });
@@ -226,7 +226,7 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
         confidence:         alreadyOnPrimary ? "already-imported" : "review",
         candidates:         nameCandidates,
         selectedOrderId:    primary.id,
-        skipped:            alreadyOnPrimary,
+        skipped:            false,  // status updates must not be skipped
         isStatusUpdate:     alreadyOnPrimary,
         additionalOrderIds: additionalFor(primary.id),
       });
