@@ -32,14 +32,12 @@ function candidateLabel(order: CandidateOrder): string {
 // Lets users link one label to additional orders beyond the primary match.
 
 function ExtraOrderSelector({
-  rowIndex,
   extraOrderIds,
   excludeIds,
   allOrders,
   onAdd,
   onRemove,
 }: {
-  rowIndex: number;
   extraOrderIds: string[];
   excludeIds: string[];
   allOrders: CandidateOrder[];
@@ -405,7 +403,6 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                           </button>
                         </div>
                         <ExtraOrderSelector
-                          rowIndex={m.rowIndex}
                           extraOrderIds={m.extraOrderIds ?? []}
                           excludeIds={[m.selectedOrderId ?? "", ...(m.additionalOrderIds ?? [])]}
                           allOrders={allOrders}
@@ -466,8 +463,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                         </div>
                         {m.selectedOrderId && (
                           <ExtraOrderSelector
-                            rowIndex={m.rowIndex}
-                            extraOrderIds={m.extraOrderIds ?? []}
+                              extraOrderIds={m.extraOrderIds ?? []}
                             excludeIds={[m.selectedOrderId, ...(m.additionalOrderIds ?? [])]}
                             allOrders={allOrders}
                             onAdd={(id) => addExtra(m.rowIndex, id)}
