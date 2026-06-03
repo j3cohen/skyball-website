@@ -24,9 +24,8 @@ export async function GET() {
     );
   }
 
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-
+  // No date filter — labels can be for orders placed at any time.
+  // The 90-day cutoff was preventing old orders from ever being matched.
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select(
@@ -34,9 +33,7 @@ export async function GET() {
         "fulfillment_status, order_summary, order_total_cents, order_currency"
     )
     .neq("fulfillment_status", "cancelled")
-    .gte("created_at", since.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(500);
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Admin matchable orders fetch error:", error);

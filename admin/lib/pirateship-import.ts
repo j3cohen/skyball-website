@@ -42,10 +42,14 @@ export type RowMatch = {
   /** True when this row maps to an already-imported tracking number and only updates its status. */
   isStatusUpdate?: boolean;
   /**
-   * Other order IDs that already carry this tracking number (one label shared across multiple orders).
-   * Status updates are sent to ALL of these orders in addition to selectedOrderId.
+   * Order IDs that already carry this tracking number — receive status updates only.
    */
   additionalOrderIds?: string[];
+  /**
+   * Extra order IDs manually added by the user — receive the full tracking_entry (new label).
+   * Used when one box covers multiple orders placed before shipping.
+   */
+  extraOrderIds?: string[];
 };
 
 // ─── Column name normalizer ───────────────────────────────────────────────────
@@ -179,74 +183,31 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
       return orderCreatedAt <= labelDateEndOfDay && order.fulfillment_status !== "cancelled";
     });
 
-    // Helper: build additionalOrderIds = orders that have this label but aren't the primary match
     const additionalFor = (primaryId: string) =>
       existingOrderIds.filter((id) => id !== primaryId);
 
-    if (emailCandidates.length === 1) {
-      const primary = emailCandidates[0];
-      const alreadyOnPrimary = existingOrderIds.includes(primary.id);
+    // ── Priority 1: label already recorded on one of the email candidates ───
+    // Check this BEFORE looking at emailCandidates.length so that re-uploading
+    // a previously-matched label never sends it back to "needs review".
+    const existingInEmailCandidates = emailCandidates.find((c) =>
+      existingOrderIds.includes(c.id)
+    );
+    if (existingInEmailCandidates) {
       results.push({
         row, rowIndex,
-        confidence:         alreadyOnPrimary ? "already-imported" : "auto",
+        confidence:         "already-imported",
         candidates:         emailCandidates,
-        selectedOrderId:    primary.id,
-        skipped:            false,  // status updates must not be skipped
-        isStatusUpdate:     alreadyOnPrimary,
-        additionalOrderIds: additionalFor(primary.id),
-      });
-      continue;
-    }
-
-    if (emailCandidates.length > 1) {
-      results.push({
-        row, rowIndex,
-        confidence:         "review",
-        candidates:         emailCandidates,
-        selectedOrderId:    null,
+        selectedOrderId:    existingInEmailCandidates.id,
         skipped:            false,
-        additionalOrderIds: existingOrderIds, // will be refined when user selects an order
+        isStatusUpdate:     true,
+        additionalOrderIds: additionalFor(existingInEmailCandidates.id),
       });
       continue;
     }
 
-    // No email match — try name fallback
-    const rowRecipient = row.recipient.toLowerCase().trim();
-    const nameCandidates: CandidateOrder[] = allOrders.filter((order) => {
-      if (order.fulfillment_status === "cancelled") return false;
-      const name = (order.customer_name ?? "").toLowerCase().trim();
-      return name === rowRecipient && name.length > 0;
-    });
-
-    if (nameCandidates.length === 1) {
-      const primary = nameCandidates[0];
-      const alreadyOnPrimary = existingOrderIds.includes(primary.id);
-      results.push({
-        row, rowIndex,
-        confidence:         alreadyOnPrimary ? "already-imported" : "review",
-        candidates:         nameCandidates,
-        selectedOrderId:    primary.id,
-        skipped:            false,  // status updates must not be skipped
-        isStatusUpdate:     alreadyOnPrimary,
-        additionalOrderIds: additionalFor(primary.id),
-      });
-      continue;
-    }
-
-    if (nameCandidates.length > 1) {
-      results.push({
-        row, rowIndex,
-        confidence:         "review",
-        candidates:         nameCandidates,
-        selectedOrderId:    null,
-        skipped:            false,
-        additionalOrderIds: existingOrderIds,
-      });
-      continue;
-    }
-
-    // Label exists in system but no email/name match — still send status updates to known orders
-    if (existingOrderIds.length > 0) {
+    // ── Priority 2: label already recorded but no email match found ─────────
+    // (e.g. order has no email, or email in DB differs — still update status)
+    if (existingOrderIds.length > 0 && emailCandidates.length === 0) {
       results.push({
         row, rowIndex,
         confidence:         "already-imported",
@@ -259,7 +220,66 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
       continue;
     }
 
-    // Truly unmatched
+    // ── Priority 3: fresh label — match by email candidate count ────────────
+    if (emailCandidates.length === 1) {
+      results.push({
+        row, rowIndex,
+        confidence:         "auto",
+        candidates:         emailCandidates,
+        selectedOrderId:    emailCandidates[0].id,
+        skipped:            false,
+        isStatusUpdate:     false,
+        additionalOrderIds: [],
+      });
+      continue;
+    }
+
+    if (emailCandidates.length > 1) {
+      results.push({
+        row, rowIndex,
+        confidence:         "review",
+        candidates:         emailCandidates,
+        selectedOrderId:    null,
+        skipped:            false,
+        additionalOrderIds: [],
+      });
+      continue;
+    }
+
+    // ── Priority 4: no email match — name fallback ───────────────────────────
+    const rowRecipient = row.recipient.toLowerCase().trim();
+    const nameCandidates: CandidateOrder[] = allOrders.filter((order) => {
+      if (order.fulfillment_status === "cancelled") return false;
+      const name = (order.customer_name ?? "").toLowerCase().trim();
+      return name === rowRecipient && name.length > 0;
+    });
+
+    if (nameCandidates.length === 1) {
+      results.push({
+        row, rowIndex,
+        confidence:         "review",  // name match always needs human confirmation
+        candidates:         nameCandidates,
+        selectedOrderId:    nameCandidates[0].id,
+        skipped:            false,
+        isStatusUpdate:     false,
+        additionalOrderIds: [],
+      });
+      continue;
+    }
+
+    if (nameCandidates.length > 1) {
+      results.push({
+        row, rowIndex,
+        confidence:         "review",
+        candidates:         nameCandidates,
+        selectedOrderId:    null,
+        skipped:            false,
+        additionalOrderIds: [],
+      });
+      continue;
+    }
+
+    // ── Truly unmatched ──────────────────────────────────────────────────────
     results.push({
       row, rowIndex,
       confidence:      "unmatched",
