@@ -60,9 +60,13 @@ export default function StripeImportModal({ onClose, onSuccess }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const buffer = await file.arrayBuffer();
       const XLSX = await import("xlsx");
-      const workbook = XLSX.read(buffer);
+      // CSV files must be read as text (browser File.text() guarantees UTF-8),
+      // otherwise xlsx defaults to a Windows codepage and mangles en dashes etc.
+      const isCsv = file.name.toLowerCase().endsWith(".csv");
+      const workbook = isCsv
+        ? XLSX.read(await file.text(), { type: "string" })
+        : XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array" });
       const ws = workbook.Sheets[workbook.SheetNames[0]];
       const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
       const parsed  = parseStripeRows(rawRows);

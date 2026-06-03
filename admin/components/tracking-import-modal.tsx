@@ -80,9 +80,11 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
     if (!file) return;
 
     try {
-      const buffer = await file.arrayBuffer();
       const XLSX = await import("xlsx");
-      const workbook = XLSX.read(buffer);
+      const isCsv = file.name.toLowerCase().endsWith(".csv");
+      const workbook = isCsv
+        ? XLSX.read(await file.text(), { type: "string" })
+        : XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const ws = workbook.Sheets[sheetName];
       const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
