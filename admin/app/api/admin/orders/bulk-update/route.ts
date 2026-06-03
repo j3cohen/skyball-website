@@ -64,8 +64,8 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "No updates provided." }, { status: 400 });
   }
 
-  if (updates.length > 200) {
-    return NextResponse.json({ error: "Too many updates (max 200)." }, { status: 400 });
+  if (updates.length > 500) {
+    return NextResponse.json({ error: "Too many updates (max 500)." }, { status: 400 });
   }
 
   // Validate each update item

@@ -108,25 +108,33 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
     setApplyError(null);
 
     try {
-      const updates = toApply.map((m) => {
-        // Already-imported rows: only update the tracking status, don't add a new entry
+      // flatMap so one label shared across multiple orders generates one update per order
+      const updates = toApply.flatMap((m) => {
+        const statusUpdate = {
+          number: m.row.trackingNumber,
+          tracking_status: m.row.status,
+        };
+
+        // For already-imported rows, only send status updates (no new entry)
         if (m.isStatusUpdate) {
-          return {
-            id: m.selectedOrderId!,
-            tracking_status_update: {
-              number: m.row.trackingNumber,
-              tracking_status: m.row.status,
-            },
-          };
+          const allIds = [m.selectedOrderId!, ...(m.additionalOrderIds ?? [])];
+          return allIds.map((id) => ({ id, tracking_status_update: statusUpdate }));
         }
-        return {
+
+        // New entry for the primary matched order
+        const primary = {
           id: m.selectedOrderId!,
           shipping_label_cost: m.row.cost,
-          tracking_entry: {
-            number: m.row.trackingNumber,
-            tracking_status: m.row.status,
-          },
+          tracking_entry: { number: m.row.trackingNumber, tracking_status: m.row.status },
         };
+
+        // Any other orders already carrying this label also get a status update
+        const additional = (m.additionalOrderIds ?? []).map((id) => ({
+          id,
+          tracking_status_update: statusUpdate,
+        }));
+
+        return [primary, ...additional];
       });
 
       const res = await fetch("/api/admin/orders/bulk-update", {
@@ -272,6 +280,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                 )}
                 {filteredMatches.map((m) => {
                   if (m.confidence === "already-imported") {
+                    const totalOrders = 1 + (m.additionalOrderIds?.length ?? 0);
                     return (
                       <div
                         key={m.rowIndex}
@@ -281,6 +290,9 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                         <span className="text-gray-600">
                           <span className="font-mono text-gray-700">{m.row.trackingNumber}</span>
                           {m.row.recipient && <span className="text-gray-400 ml-1">({m.row.recipient})</span>}
+                          {totalOrders > 1 && (
+                            <span className="ml-2 text-sky-600 font-medium">· {totalOrders} orders</span>
+                          )}
                         </span>
                         {m.row.status && (
                           <span className="ml-auto text-sky-700 font-medium shrink-0">
@@ -358,12 +370,16 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                         <div className="flex items-center gap-2">
                           <select
                             value={m.selectedOrderId ?? ""}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const chosen = e.target.value || null;
+                              // Remove chosen order from additionalOrderIds if it was there
+                              const remaining = (m.additionalOrderIds ?? []).filter(id => id !== chosen);
                               updateMatch(m.rowIndex, {
-                                selectedOrderId: e.target.value || null,
+                                selectedOrderId: chosen,
                                 skipped: false,
-                              })
-                            }
+                                additionalOrderIds: remaining,
+                              });
+                            }}
                             className="flex-1 text-xs border border-amber-300 rounded-md px-2 py-1.5
                                        bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                           >
