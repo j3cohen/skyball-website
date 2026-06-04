@@ -68,6 +68,7 @@ export default async function ProtectedAdminLayout({
         <nav className="flex-1 px-3 py-4 space-y-1">
           <NavLink href="/fulfillment" label="Fulfillment" badge={pendingCount} />
           <NavLink href="/revenue" label="Revenue" />
+          <NavLink href="/sales" label="Sales Data" />
         </nav>
 
         {/* Footer */}

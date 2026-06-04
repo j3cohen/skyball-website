@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link                            from "next/link";
+import { useRouter }                   from "next/navigation";
 import type { ExportableOrder }        from "@/lib/order-types";
 import ShippingExportModal             from "./shipping-export-modal";
 import BulkStatusModal                 from "./bulk-status-modal";
 import TrackingImportModal             from "./tracking-import-modal";
+import StripeImportModal               from "./stripe-import-modal";
 import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
 
 const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
@@ -13,6 +15,12 @@ type FulfillmentStatus = (typeof STATUS_OPTS)[number];
 
 type Props = {
   orders: ExportableOrder[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  currentSearch: string;
+  currentStatus: string;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -59,15 +67,45 @@ function fmtMoney(cents: number | null, currency: string) {
   }).format(cents / 100);
 }
 
-export default function FulfillmentTable({ orders }: Props) {
-  const [selectedIds,            setSelectedIds]            = useState<Set<string>>(new Set());
-  const [showModal,              setShowModal]              = useState(false);
-  const [showBulkStatusModal,    setShowBulkStatusModal]    = useState(false);
+export default function FulfillmentTable({
+  orders,
+  total,
+  currentPage,
+  totalPages,
+  currentSearch,
+  currentStatus,
+}: Props) {
+  const router = useRouter();
+
+  const [selectedIds,             setSelectedIds]            = useState<Set<string>>(new Set());
+  const [showModal,               setShowModal]              = useState(false);
+  const [showBulkStatusModal,     setShowBulkStatusModal]    = useState(false);
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
-  const [showCheatSheetModal,    setShowCheatSheetModal]    = useState(false);
-  const [searchQuery,            setSearchQuery]            = useState("");
-  const [successMessage,         setSuccessMessage]         = useState<string | null>(null);
-  const [intlFilter,             setIntlFilter]             = useState<"all" | "domestic" | "international">("all");
+  const [showStripeImportModal,   setShowStripeImportModal]  = useState(false);
+  const [showCheatSheetModal,     setShowCheatSheetModal]    = useState(false);
+  const [searchDraft,             setSearchDraft]            = useState(currentSearch);
+  const [successMessage,          setSuccessMessage]         = useState<string | null>(null);
+  const [intlFilter,              setIntlFilter]             = useState<"all" | "domestic" | "international">("all");
+
+  // Keep draft in sync when URL-driven search changes (e.g. tab switch clears it)
+  useEffect(() => { setSearchDraft(currentSearch); }, [currentSearch]);
+
+  function buildHref(overrides: { q?: string; page?: number; status?: string }) {
+    const params = new URLSearchParams();
+    const status = overrides.status ?? currentStatus;
+    const q      = overrides.q      ?? currentSearch;
+    const page   = overrides.page   ?? 0;
+    if (status && status !== "all") params.set("status", status);
+    if (q.trim()) params.set("q", q.trim());
+    if (page > 0) params.set("page", String(page));
+    const qs = params.toString();
+    return `/fulfillment${qs ? `?${qs}` : ""}`;
+  }
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    router.push(buildHref({ q: searchDraft, page: 0 }));
+  }
 
   // Inline status editing
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
@@ -109,17 +147,10 @@ export default function FulfillmentTable({ orders }: Props) {
     return country !== "" && country !== "US" && country !== "USA" && country !== "UNITED STATES";
   }
 
-  // Derived: filtered orders
+  // Client-side: only the domestic/international visual filter (search is server-side)
   const filteredOrders = orders.filter((o) => {
     if (intlFilter === "domestic"      &&  isInternational(o)) return false;
     if (intlFilter === "international" && !isInternational(o)) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const name  = (o.customer_name  ?? "").toLowerCase();
-      const email = (o.customer_email ?? "").toLowerCase();
-      const sessionSuffix = o.stripe_session_id.slice(-8).toLowerCase();
-      if (!name.includes(q) && !email.includes(q) && !sessionSuffix.includes(q)) return false;
-    }
     return true;
   });
 
@@ -261,19 +292,36 @@ export default function FulfillmentTable({ orders }: Props) {
             Select all pending
           </button>
           {selectedIds.size > 0 && (
-            <span className="text-sm text-gray-500">
-              {selectedIds.size} selected
-            </span>
+            <span className="text-sm text-gray-500">{selectedIds.size} selected</span>
           )}
-          {/* Search input */}
-          <input
-            type="search"
-            placeholder="Search name, email, session…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-56
-                       focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-          />
+          {/* Server-side search */}
+          <form onSubmit={handleSearch} className="flex gap-1">
+            <input
+              type="search"
+              placeholder="Search name, email, summary…"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-56
+                         focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 text-sm bg-white border border-gray-300 text-gray-600
+                         rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Go
+            </button>
+            {currentSearch && (
+              <button
+                type="button"
+                onClick={() => { setSearchDraft(""); router.push(buildHref({ q: "", page: 0 })); }}
+                className="px-2 py-1.5 text-sm text-gray-400 hover:text-gray-600"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </form>
           {/* Domestic / International filter */}
           <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
             {(["all", "domestic", "international"] as const).map((opt) => (
@@ -308,18 +356,11 @@ export default function FulfillmentTable({ orders }: Props) {
             Import Tracking
           </button>
           <button
-            onClick={handleResyncColors}
-            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
-                       rounded-lg hover:bg-gray-50 transition-colors"
+            onClick={() => setShowStripeImportModal(true)}
+            className="px-4 py-2 text-sm font-medium bg-white border border-violet-300 text-violet-700
+                       rounded-lg hover:bg-violet-50 transition-colors"
           >
-            Re-sync Colors
-          </button>
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700
-                       rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+            Import from Stripe
           </button>
           <button
             onClick={() => setShowCheatSheetModal(true)}
@@ -336,15 +377,40 @@ export default function FulfillmentTable({ orders }: Props) {
           >
             Create Shipping Labels
           </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-600
+                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
+          >
+            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+          </button>
+          <button
+            onClick={handleResyncColors}
+            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-400
+                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
+          >
+            Re-sync Colors
+          </button>
         </div>
       </div>
 
-      {/* Search result count */}
-      {searchQuery.trim() && (
-        <p className="text-xs text-gray-400 mb-2">
-          {filteredOrders.length} result{filteredOrders.length !== 1 ? "s" : ""} for &ldquo;{searchQuery}&rdquo;
+      {/* Result info */}
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-gray-400">
+          {currentSearch
+            ? <>
+                {total} result{total !== 1 ? "s" : ""} for &ldquo;{currentSearch}&rdquo;
+                {total > filteredOrders.length && intlFilter !== "all" && ` · ${filteredOrders.length} shown after region filter`}
+              </>
+            : <>{total.toLocaleString()} order{total !== 1 ? "s" : ""} total</>
+          }
         </p>
-      )}
+        {totalPages > 1 && (
+          <p className="text-xs text-gray-400">
+            Page {currentPage + 1} of {totalPages}
+          </p>
+        )}
+      </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
@@ -459,6 +525,69 @@ export default function FulfillmentTable({ orders }: Props) {
         </table>
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">
+            Showing {currentPage * 50 + 1}–{Math.min((currentPage + 1) * 50, total)} of {total.toLocaleString()} orders
+          </p>
+          <div className="flex items-center gap-1">
+            <Link
+              href={buildHref({ page: 0 })}
+              className={`px-2 py-1 text-xs rounded border transition-colors ${
+                currentPage === 0 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              «
+            </Link>
+            <Link
+              href={buildHref({ page: currentPage - 1 })}
+              className={`px-3 py-1 text-xs rounded border transition-colors ${
+                currentPage === 0 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              ← Prev
+            </Link>
+
+            {/* Page number pills */}
+            {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+              const startPage = Math.max(0, Math.min(currentPage - 3, totalPages - 7));
+              const p = startPage + i;
+              return (
+                <Link
+                  key={p}
+                  href={buildHref({ page: p })}
+                  className={`px-3 py-1 text-xs rounded border transition-colors ${
+                    p === currentPage
+                      ? "bg-sky-600 text-white border-sky-600"
+                      : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {p + 1}
+                </Link>
+              );
+            })}
+
+            <Link
+              href={buildHref({ page: currentPage + 1 })}
+              className={`px-3 py-1 text-xs rounded border transition-colors ${
+                currentPage >= totalPages - 1 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Next →
+            </Link>
+            <Link
+              href={buildHref({ page: totalPages - 1 })}
+              className={`px-2 py-1 text-xs rounded border transition-colors ${
+                currentPage >= totalPages - 1 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              »
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Shipping export modal */}
       {showModal && (
         <ShippingExportModal
@@ -487,6 +616,17 @@ export default function FulfillmentTable({ orders }: Props) {
           onSuccess={(count) => {
             setShowTrackingImportModal(false);
             showSuccess(`${count} order${count !== 1 ? "s" : ""} updated with tracking numbers.`);
+          }}
+        />
+      )}
+
+      {/* Stripe import modal */}
+      {showStripeImportModal && (
+        <StripeImportModal
+          onClose={() => setShowStripeImportModal(false)}
+          onSuccess={(count) => {
+            setShowStripeImportModal(false);
+            showSuccess(`${count} item${count !== 1 ? "s" : ""} imported from Stripe.`);
           }}
         />
       )}

@@ -41,6 +41,15 @@ export type RowMatch = {
   skipped: boolean;
   /** True when this row maps to an already-imported tracking number and only updates its status. */
   isStatusUpdate?: boolean;
+  /**
+   * Order IDs that already carry this tracking number — receive status updates only.
+   */
+  additionalOrderIds?: string[];
+  /**
+   * Extra order IDs manually added by the user — receive the full tracking_entry (new label).
+   * Used when one box covers multiple orders placed before shipping.
+   */
+  extraOrderIds?: string[];
 };
 
 // ─── Column name normalizer ───────────────────────────────────────────────────
@@ -128,6 +137,11 @@ export function parsePirateShipRows(rawRows: Record<string, unknown>[]): PirateS
   return results;
 }
 
+function isEventOrder(order: CandidateOrder): boolean {
+  const s = (order.order_summary ?? "").toLowerCase();
+  return /entry fee|open.?play/i.test(s);
+}
+
 // ─── matchRows ────────────────────────────────────────────────────────────────
 
 export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): RowMatch[] {
@@ -140,11 +154,18 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
     byEmail.get(key)!.push(order);
   }
 
-  // Build map of existing tracking number → order ID (covers both legacy field and array)
-  const trackingToOrderId = new Map<string, string>();
+  // Build map: tracking number → ALL order IDs that carry it (multiple allowed intentionally)
+  const trackingToOrderIds = new Map<string, string[]>();
   for (const order of allOrders) {
-    if (order.tracking_number) trackingToOrderId.set(order.tracking_number.trim(), order.id);
-    for (const t of order.tracking_numbers ?? []) trackingToOrderId.set(t.number.trim(), order.id);
+    const addTN = (tn: string) => {
+      const key = tn.trim();
+      if (!key) return;
+      const ids = trackingToOrderIds.get(key) ?? [];
+      if (!ids.includes(order.id)) ids.push(order.id);
+      trackingToOrderIds.set(key, ids);
+    };
+    if (order.tracking_number) addTN(order.tracking_number);
+    for (const t of order.tracking_numbers ?? []) addTN(t.number);
   }
 
   const results: RowMatch[] = [];
@@ -152,20 +173,8 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex];
 
-    // Tracking number already imported — mark as status-update-only (not skipped)
-    const existingOrderId = trackingToOrderId.get(row.trackingNumber.trim());
-    if (existingOrderId !== undefined) {
-      results.push({
-        row,
-        rowIndex,
-        confidence: "already-imported",
-        candidates: [],
-        selectedOrderId: existingOrderId,
-        skipped: false,
-        isStatusUpdate: true,
-      });
-      continue;
-    }
+    // All order IDs that already carry this tracking number
+    const existingOrderIds = trackingToOrderIds.get(row.trackingNumber.trim()) ?? [];
 
     // End of label created date (end of day UTC)
     const labelDateEndOfDay = new Date(row.createdDate);
@@ -173,75 +182,121 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
 
     const rowEmail = row.email.toLowerCase().trim();
 
-    // Try email match — any non-cancelled order can receive additional tracking numbers
+    // Email match — exclude cancelled and event orders (tournament/open play don't ship)
     const emailCandidates: CandidateOrder[] = (byEmail.get(rowEmail) ?? []).filter((order) => {
       const orderCreatedAt = new Date(order.created_at);
       return (
         orderCreatedAt <= labelDateEndOfDay &&
-        order.fulfillment_status !== "cancelled"
+        order.fulfillment_status !== "cancelled" &&
+        !isEventOrder(order)
       );
     });
 
+    const additionalFor = (primaryId: string) =>
+      existingOrderIds.filter((id) => id !== primaryId);
+
+    // ── Priority 1: label already recorded on one of the email candidates ───
+    // Check this BEFORE looking at emailCandidates.length so that re-uploading
+    // a previously-matched label never sends it back to "needs review".
+    const existingInEmailCandidates = emailCandidates.find((c) =>
+      existingOrderIds.includes(c.id)
+    );
+    if (existingInEmailCandidates) {
+      results.push({
+        row, rowIndex,
+        confidence:         "already-imported",
+        candidates:         emailCandidates,
+        selectedOrderId:    existingInEmailCandidates.id,
+        skipped:            false,
+        isStatusUpdate:     true,
+        additionalOrderIds: additionalFor(existingInEmailCandidates.id),
+      });
+      continue;
+    }
+
+    // ── Priority 2: label already recorded but no email match found ─────────
+    // (e.g. order has no email, or email in DB differs — still update status)
+    if (existingOrderIds.length > 0 && emailCandidates.length === 0) {
+      results.push({
+        row, rowIndex,
+        confidence:         "already-imported",
+        candidates:         [],
+        selectedOrderId:    existingOrderIds[0],
+        skipped:            false,
+        isStatusUpdate:     true,
+        additionalOrderIds: existingOrderIds.slice(1),
+      });
+      continue;
+    }
+
+    // ── Priority 3: fresh label — match by email candidate count ────────────
     if (emailCandidates.length === 1) {
       results.push({
-        row,
-        rowIndex,
-        confidence: "auto",
-        candidates: emailCandidates,
-        selectedOrderId: emailCandidates[0].id,
-        skipped: false,
+        row, rowIndex,
+        confidence:         "auto",
+        candidates:         emailCandidates,
+        selectedOrderId:    emailCandidates[0].id,
+        skipped:            false,
+        isStatusUpdate:     false,
+        additionalOrderIds: [],
       });
       continue;
     }
 
     if (emailCandidates.length > 1) {
       results.push({
-        row,
-        rowIndex,
-        confidence: "review",
-        candidates: emailCandidates,
-        selectedOrderId: null,
-        skipped: false,
+        row, rowIndex,
+        confidence:         "review",
+        candidates:         emailCandidates,
+        selectedOrderId:    null,
+        skipped:            false,
+        additionalOrderIds: [],
       });
       continue;
     }
 
-    // Fallback: name match on non-cancelled orders
+    // ── Priority 4: no email match — name fallback ───────────────────────────
     const rowRecipient = row.recipient.toLowerCase().trim();
     const nameCandidates: CandidateOrder[] = allOrders.filter((order) => {
       if (order.fulfillment_status === "cancelled") return false;
+      if (isEventOrder(order)) return false;
       const name = (order.customer_name ?? "").toLowerCase().trim();
       return name === rowRecipient && name.length > 0;
     });
 
-    if (nameCandidates.length === 0) {
+    if (nameCandidates.length === 1) {
       results.push({
-        row,
-        rowIndex,
-        confidence: "unmatched",
-        candidates: [],
-        selectedOrderId: null,
-        skipped: true,
+        row, rowIndex,
+        confidence:         "review",  // name match always needs human confirmation
+        candidates:         nameCandidates,
+        selectedOrderId:    nameCandidates[0].id,
+        skipped:            false,
+        isStatusUpdate:     false,
+        additionalOrderIds: [],
       });
-    } else if (nameCandidates.length === 1) {
-      results.push({
-        row,
-        rowIndex,
-        confidence: "review",
-        candidates: nameCandidates,
-        selectedOrderId: nameCandidates[0].id,
-        skipped: false,
-      });
-    } else {
-      results.push({
-        row,
-        rowIndex,
-        confidence: "review",
-        candidates: nameCandidates,
-        selectedOrderId: null,
-        skipped: false,
-      });
+      continue;
     }
+
+    if (nameCandidates.length > 1) {
+      results.push({
+        row, rowIndex,
+        confidence:         "review",
+        candidates:         nameCandidates,
+        selectedOrderId:    null,
+        skipped:            false,
+        additionalOrderIds: [],
+      });
+      continue;
+    }
+
+    // ── Truly unmatched ──────────────────────────────────────────────────────
+    results.push({
+      row, rowIndex,
+      confidence:      "unmatched",
+      candidates:      [],
+      selectedOrderId: null,
+      skipped:         true,
+    });
   }
 
   return results;
