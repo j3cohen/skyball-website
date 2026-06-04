@@ -137,6 +137,11 @@ export function parsePirateShipRows(rawRows: Record<string, unknown>[]): PirateS
   return results;
 }
 
+function isEventOrder(order: CandidateOrder): boolean {
+  const s = (order.order_summary ?? "").toLowerCase();
+  return /entry fee|open.?play/i.test(s);
+}
+
 // ─── matchRows ────────────────────────────────────────────────────────────────
 
 export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): RowMatch[] {
@@ -177,10 +182,14 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
 
     const rowEmail = row.email.toLowerCase().trim();
 
-    // Email match — any non-cancelled order can receive additional tracking numbers
+    // Email match — exclude cancelled and event orders (tournament/open play don't ship)
     const emailCandidates: CandidateOrder[] = (byEmail.get(rowEmail) ?? []).filter((order) => {
       const orderCreatedAt = new Date(order.created_at);
-      return orderCreatedAt <= labelDateEndOfDay && order.fulfillment_status !== "cancelled";
+      return (
+        orderCreatedAt <= labelDateEndOfDay &&
+        order.fulfillment_status !== "cancelled" &&
+        !isEventOrder(order)
+      );
     });
 
     const additionalFor = (primaryId: string) =>
@@ -250,6 +259,7 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
     const rowRecipient = row.recipient.toLowerCase().trim();
     const nameCandidates: CandidateOrder[] = allOrders.filter((order) => {
       if (order.fulfillment_status === "cancelled") return false;
+      if (isEventOrder(order)) return false;
       const name = (order.customer_name ?? "").toLowerCase().trim();
       return name === rowRecipient && name.length > 0;
     });

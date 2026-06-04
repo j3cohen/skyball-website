@@ -34,12 +34,14 @@ function candidateLabel(order: CandidateOrder): string {
 function ExtraOrderSelector({
   extraOrderIds,
   excludeIds,
+  rowEmail,
   allOrders,
   onAdd,
   onRemove,
 }: {
   extraOrderIds: string[];
   excludeIds: string[];
+  rowEmail: string;
   allOrders: CandidateOrder[];
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
@@ -48,7 +50,17 @@ function ExtraOrderSelector({
   const [selectVal, setSelectVal] = useState("");
 
   const excluded = new Set([...excludeIds, ...extraOrderIds]);
-  const available = allOrders.filter((o) => !excluded.has(o.id));
+  const normalizedEmail = rowEmail.toLowerCase().trim();
+
+  // Same email → top; everything alphabetical within each group
+  const available = allOrders
+    .filter((o) => !excluded.has(o.id))
+    .sort((a, b) => {
+      const aMatch = (a.customer_email ?? "").toLowerCase() === normalizedEmail;
+      const bMatch = (b.customer_email ?? "").toLowerCase() === normalizedEmail;
+      if (aMatch !== bMatch) return aMatch ? -1 : 1;
+      return (a.customer_name ?? "").localeCompare(b.customer_name ?? "");
+    });
 
   function handleAdd() {
     if (!selectVal) return;
@@ -96,9 +108,32 @@ function ExtraOrderSelector({
                        bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
           >
             <option value="">— Select another order —</option>
-            {available.map((o) => (
-              <option key={o.id} value={o.id}>{candidateLabel(o)}</option>
-            ))}
+            {(() => {
+              const sameEmail = available.filter(
+                (o) => (o.customer_email ?? "").toLowerCase() === normalizedEmail
+              );
+              const others = available.filter(
+                (o) => (o.customer_email ?? "").toLowerCase() !== normalizedEmail
+              );
+              return (
+                <>
+                  {sameEmail.length > 0 && (
+                    <optgroup label="Same customer">
+                      {sameEmail.map((o) => (
+                        <option key={o.id} value={o.id}>{candidateLabel(o)}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {others.length > 0 && (
+                    <optgroup label="Other orders (A–Z)">
+                      {others.map((o) => (
+                        <option key={o.id} value={o.id}>{candidateLabel(o)}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </>
+              );
+            })()}
           </select>
           <button
             type="button"
@@ -405,6 +440,7 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                         <ExtraOrderSelector
                           extraOrderIds={m.extraOrderIds ?? []}
                           excludeIds={[m.selectedOrderId ?? "", ...(m.additionalOrderIds ?? [])]}
+                          rowEmail={m.row.email}
                           allOrders={allOrders}
                           onAdd={(id) => addExtra(m.rowIndex, id)}
                           onRemove={(id) => removeExtra(m.rowIndex, id)}
@@ -463,8 +499,9 @@ export default function TrackingImportModal({ onClose, onSuccess }: Props) {
                         </div>
                         {m.selectedOrderId && (
                           <ExtraOrderSelector
-                              extraOrderIds={m.extraOrderIds ?? []}
+                            extraOrderIds={m.extraOrderIds ?? []}
                             excludeIds={[m.selectedOrderId, ...(m.additionalOrderIds ?? [])]}
+                            rowEmail={m.row.email}
                             allOrders={allOrders}
                             onAdd={(id) => addExtra(m.rowIndex, id)}
                             onRemove={(id) => removeExtra(m.rowIndex, id)}
