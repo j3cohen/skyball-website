@@ -81,7 +81,7 @@ export default async function FulfillmentPage({
     fetchCounts(),
   ]);
 
-  const orders    = (data ?? []) as ExportableOrder[];
+  const orders    = (data ?? []) as unknown as ExportableOrder[];
   const total     = count ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
