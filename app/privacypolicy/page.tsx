@@ -1,17 +1,13 @@
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy — SkyBall™",
   description: "SkyBall™ Privacy Policy: how we collect, use, and protect your personal information on our website and mobile app.",
-  alternates: { canonical: "https://skyball.us/privacypolicy" },
-  openGraph: {
-    title: "Privacy Policy — SkyBall™",
-    description: "SkyBall™ Privacy Policy: how we collect, use, and protect your personal information on our website and mobile app.",
-    url: "https://skyball.us/privacypolicy",
-  },
-}
+  path: "/privacypolicy",
+})
 
 export default function PrivacyPolicyPage() {
   return (

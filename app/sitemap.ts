@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next"
 import { upcomingTournaments, pastTournaments } from "@/data/tournaments"
 import { getSupabasePublic } from "@/lib/server/supabasePublic"
-
-const SITE_URL = "https://skyball.us"
+import { SITE_URL } from "@/lib/seo"
 
 // Use stable dates — do NOT use new Date() here, as that tells Google every page
 // changed today on every crawl, wasting crawl budget and eroding lastModified trust.
@@ -21,9 +20,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/partners`, priority: 0.6, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/become-a-host`, priority: 0.6, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/skyball-for-schools`, priority: 0.6, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
+    { url: `${SITE_URL}/conversion`, priority: 0.6, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/past-tournaments`, priority: 0.5, changeFrequency: "monthly", lastModified: new Date("2025-03-01") },
     { url: `${SITE_URL}/community-guidelines`, priority: 0.4, changeFrequency: "yearly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/shop/terms-conditions`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2025-01-01") },
+    { url: `${SITE_URL}/giveaway-terms`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/privacypolicy`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2026-04-06") },
   ]
 

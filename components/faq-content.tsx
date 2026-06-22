@@ -12,7 +12,7 @@ export default function FAQContent() {
     {
       question: "What equipment do I need to play SkyBall?",
       answer:
-        "To start playing SkyBall, you need SkyBalls (our unique high density foam balls designed for optimal flight and control), a SkyBall racket (21 inch stringed racket), and a SkyBall net (a pickleball net can also be used).",
+        "To start playing SkyBall, you need SkyBalls (our unique high density foam balls designed for optimal flight and control), a Strung SkyBall Racket, and a SkyBall net (a pickleball net can also be used).",
     },
     {
       question: "Where can I play SkyBall?",

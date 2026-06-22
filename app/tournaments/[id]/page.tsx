@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { CalendarIcon, MapPinIcon, Clock, Trophy, Users, DollarSign, Star, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { pageMetadata, SITE_URL } from "@/lib/seo"
 
 export function generateMetadata({ params }: { params: { id: string } }): Metadata {
   const tournament =
@@ -17,16 +18,11 @@ export function generateMetadata({ params }: { params: { id: string } }): Metada
   const isPast = "winner" in tournament
   const description = `${tournament.name} — ${tournament.date} at ${tournament.location}. ${tournament.description}`
 
-  return {
+  return pageMetadata({
     title: tournament.name,
     description,
-    alternates: { canonical: `https://skyball.us/${isPast ? "past-tournaments" : "tournaments"}/${params.id}` },
-    openGraph: {
-      title: tournament.name,
-      description,
-      url: `https://skyball.us/${isPast ? "past-tournaments" : "tournaments"}/${params.id}`,
-    },
-  }
+    path: `/${isPast ? "past-tournaments" : "tournaments"}/${params.id}`,
+  })
 }
 
 export default function TournamentDetailsPage({ params }: { params: { id: string } }) {
@@ -54,7 +50,7 @@ export default function TournamentDetailsPage({ params }: { params: { id: string
     organizer: {
       "@type": "Organization",
       name: "SkyBall™",
-      url: "https://skyball.us",
+      url: SITE_URL,
     },
     eventStatus: isPastTournament
       ? "https://schema.org/EventScheduled"

@@ -11,10 +11,7 @@ import SupabaseProvider from "@/components/supabase-provider"
 import PageViewTracker from "@/components/page-view-tracker"
 import AnalyticsWrapper from "@/components/analytics-wrapper"
 import { CartProvider } from "@/components/cart-provider"
-
-const SITE_URL = "https://skyball.us" 
-const OG_IMAGE =
-  "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_Home_Logo.jpg"
+import { SITE_URL, OG_IMAGE } from "@/lib/seo"
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -43,13 +40,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "SkyBall™ — Rally Ready",
-    description:
-      "SkyBall™ is a fast, social racket sport that blends the best of tennis and pickleball. Learn the rules, watch highlights, and get started.",
-    images: [OG_IMAGE],
-  },
   robots: {
     index: true,
     follow: true,
@@ -61,7 +51,7 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "SkyBall™",
-  url: "https://skyball.us",
+  url: SITE_URL,
   logo: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/website-content/SkyBall_Home_Logo.jpg",
   contactPoint: {
     "@type": "ContactPoint",

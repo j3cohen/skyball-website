@@ -2,17 +2,14 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import HowToPlay from "@/components/how-to-play"
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "How to Play SkyBall",
   description: "Learn how to play SkyBall™ in minutes. Step-by-step guide covering the court, equipment, scoring, and basic strategy for this tennis-pickleball hybrid racket sport.",
-  alternates: { canonical: "https://skyball.us/how-to" },
-  openGraph: {
-    title: "How to Play SkyBall™ — Beginner's Guide",
-    description: "Learn how to play SkyBall™ in minutes. Step-by-step guide covering the court, equipment, scoring, and basic strategy for this tennis-pickleball hybrid racket sport.",
-    url: "https://skyball.us/how-to",
-  },
-}
+  path: "/how-to",
+  ogTitle: "How to Play SkyBall™ — Beginner's Guide",
+})
 
 // app/how-to/page.tsx (or wherever HowToPlayPage lives)
 

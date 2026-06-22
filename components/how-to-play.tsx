@@ -365,9 +365,10 @@ export default function HowToPlay() {
                 </CardHeader>
                 <CardContent>
                   <ul className="text-sm space-y-2">
+                    <li>• Let the serve and the return each bounce once before volleying (two-bounce rule)</li>
                     <li>• Hit the ball anywhere on the court</li>
                     <li>• No kitchen restrictions during rallies</li>
-                    <li>• Ball can bounce once or be hit in the air</li>
+                    <li>• After the two bounces, the ball can bounce once or be hit in the air</li>
                     <li>• Rally continues until someone misses</li>
                   </ul>
                 </CardContent>

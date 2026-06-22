@@ -15,17 +15,14 @@ import { getAllTournaments } from "@/lib/tournaments"
 //import { AuthSection } from "@/components/auth-section"
 //import { AuthCompact } from "@/components/auth-compact"
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Play SkyBall",
   description: "Find SkyBall™ open play sessions, tournaments, and events near you. Register online and start playing the fastest-growing new racket sport.",
-  alternates: { canonical: "https://skyball.us/play" },
-  openGraph: {
-    title: "Play SkyBall™ — Find Events Near You",
-    description: "Find SkyBall™ open play sessions, tournaments, and events near you. Register online and start playing the fastest-growing new racket sport.",
-    url: "https://skyball.us/play",
-  },
-}
+  path: "/play",
+  ogTitle: "Play SkyBall™ — Find Events Near You",
+})
 
 
 

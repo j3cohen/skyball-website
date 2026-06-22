@@ -1,16 +1,13 @@
 import type { Metadata } from "next"
 import type React from "react"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "SkyBall Facilities",
   description: "Explore SkyBall™ court facilities and venue options. Convert existing tennis or pickleball courts, or build new SkyBall-ready spaces for your community.",
-  alternates: { canonical: "https://skyball.us/facilities" },
-  openGraph: {
-    title: "SkyBall™ Facilities — Courts & Venues",
-    description: "Explore SkyBall™ court facilities and venue options. Convert existing tennis or pickleball courts, or build new SkyBall-ready spaces for your community.",
-    url: "https://skyball.us/facilities",
-  },
-}
+  path: "/facilities",
+  ogTitle: "SkyBall™ Facilities — Courts & Venues",
+})
 
 export default function FacilitiesLayout({
   children,
