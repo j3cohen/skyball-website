@@ -7,7 +7,7 @@ import Image from "next/image"
 const features = [
   {
     icon: "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/tennisRacketImage.png",
-    title: "21-inch Stringed Racket",
+    title: "Strung SkyBall Racket",
     description: "Perfect balance of power and control for all skill levels.",
   },
   {

@@ -119,9 +119,9 @@ export const products: Product[] = [
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_in_bag.png",
       "https://jbcpublicbucket.s3.us-east-1.amazonaws.com/skyball-shop/racket_photo_text.png",
     ],
-    description: "21-inch stringed racket, perfect for SkyBall™",
+    description: "Strung SkyBall Racket, perfect for SkyBall™",
     details:
-      "Our official SkyBall™ racket is designed for optimal performance. With a 21-inch frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
+      "Our official SkyBall™ racket is designed for optimal performance. With a precision-strung frame and high-quality strings, it provides the perfect balance of power and control for players of all levels.",
     features: [
       "Weight: 190 g (strung)",
       "40 lb string tension",

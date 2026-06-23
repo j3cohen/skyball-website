@@ -12,7 +12,7 @@ const rulesSections = [
       "Court Size: 44 feet long and 20 feet wide for singles and doubles",
       // Moved Service Line / Service Box bullets to Serving Rules (see below)
       "Net Height: 34 inches at the center, 36 inches at the sidelines",
-      "Racquets: 21-inch stringed racquets (textured or hexagonal strings are prohibited)",
+      "Racquets: Strung SkyBall Racquets (textured or hexagonal strings are prohibited)",
       "Balls: High-density foam balls approved by SkyBall™",
     ],
   },
@@ -24,7 +24,7 @@ const rulesSections = [
       "Serves must be made underhand into the diagonal service box",
       "Serves that land in the kitchen are considered out (touching the line is in)",
       "No Lets: the serve is live even if it touches the net",
-      "The returner must allow the serve to bounce before hitting it",
+      "The returner must allow the serve to bounce before hitting it, and the server must also allow the return to bounce before hitting it — so both sides must let the ball bounce once before either side may volley",
     ],
   },
   {
@@ -41,8 +41,8 @@ const rulesSections = [
     title: "Gameplay Regulations",
     icon: Users,
     content: [
-      "After the serve, the receiving side must make at least one groundstroke prior to volleying the ball",
-      "After the serve, there is no kitchen rule - players may volley from anywhere on the court",
+      "Two-Bounce Rule: the serve must bounce before the receiver returns it, and that return must also bounce before the serving side hits it — so both the server and receiver must let the ball bounce once before either side may volley",
+      "Once both bounces have occurred, there is no kitchen rule - players may volley from anywhere on the court",
       "If a player releases their racquet to make a shot, it counts if the racquet doesn't land on the opponent's side",
       "If the ball comes into contact with any part of a player's body during a live point, that player loses the point",
       "Players switch sides after every game, and during the final game of a match, they switch sides every 6 points",

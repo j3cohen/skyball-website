@@ -2,17 +2,13 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import FAQContent from "@/components/faq-content"
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "FAQ",
   description: "Frequently Asked Questions about SkyBall — equipment, rules, where to play, tournaments, and more.",
-  alternates: { canonical: "https://skyball.us/faq" },
-  openGraph: {
-    title: "FAQ",
-    description: "Frequently Asked Questions about SkyBall — equipment, rules, where to play, tournaments, and more.",
-    url: "https://skyball.us/faq",
-  },
-}
+  path: "/faq",
+})
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -23,7 +19,7 @@ const faqSchema = {
       name: "What equipment do I need to play SkyBall?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "To start playing SkyBall, you need SkyBalls (high density foam balls designed for optimal flight and control), a SkyBall racket (21 inch stringed racket), and a SkyBall net (a pickleball net can also be used).",
+        text: "To start playing SkyBall, you need SkyBalls (high density foam balls designed for optimal flight and control), a Strung SkyBall Racket, and a SkyBall net (a pickleball net can also be used).",
       },
     },
     {

@@ -53,9 +53,8 @@ export default function TeamSection() {
                 <Image
                   src={member.image || "/placeholder.svg"}
                   alt={member.name}
-                  layout="fill"
-                  objectFit="cover"
-                  className="transition-transform duration-300 hover:scale-105"
+                  fill
+                  className="object-cover transition-transform duration-300 hover:scale-105"
                 />
               </div>
               <div className="p-6">

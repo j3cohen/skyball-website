@@ -16,15 +16,25 @@ import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 import type { Metadata } from "next"
 import BasicResultsSummary from "@/components/basic-results-summary"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { pageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
-  title: "Event Details",
-  description: "Detailed information about the event, including results and registration.",
-  openGraph: {
-    title: "Event Details",
-    description: "Detailed information about the event, including results and registration.",
-    url: "https://skyball.com/play/[id]",
-  },
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const event = await getTournamentById(params.id)
+  if (!event) {
+    return pageMetadata({
+      title: "Event Details",
+      description: "Detailed information about the event, including results and registration.",
+      path: `/play/${params.id}`,
+    })
+  }
+
+  const description = `${event.name} — details, results, and registration for this SkyBall™ event.`
+
+  return pageMetadata({
+    title: event.name,
+    description,
+    path: `/play/${params.id}`,
+  })
 }
 
 export default async function EventPage({ params }: { params: { id: string } }) {

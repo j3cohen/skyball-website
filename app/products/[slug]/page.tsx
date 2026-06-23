@@ -12,6 +12,7 @@ import AddToCart from "@/components/add-to-cart";
 import { AddonAddToCart } from "@/components/addon-add-to-cart";
 
 import { getSupabasePublic } from "@/lib/server/supabasePublic";
+import { pageMetadata, SITE_URL } from "@/lib/seo";
 
 import { ProductDetailsText } from "@/components/product-details-text";
 //import SoldOutBanner from "@/components/sold_out_banner";
@@ -243,16 +244,12 @@ export async function generateMetadata(
   const description =
     product.description ?? "Shop SkyBall™ equipment and kits. Rally Ready.";
 
-  const ogImage = product.images.length ? product.images[0] : undefined;
-
-  return {
+  return pageMetadata({
     title,
     description,
-    alternates: { canonical: `https://skyball.us/products/${props.params.slug}` },
-    openGraph: ogImage
-      ? { title, description, images: [{ url: ogImage }] }
-      : { title, description },
-  };
+    path: `/products/${props.params.slug}`,
+    ...(product.images.length ? { image: product.images[0] } : {}),
+  });
 }
 
 function isGripAddon(slug: string): boolean {
@@ -363,7 +360,7 @@ export default async function ProductPage({
       priceCurrency: activePrice.currency.toUpperCase(),
       price: (activePrice.unit_amount / 100).toFixed(2),
       availability: "https://schema.org/InStock",
-      url: `https://skyball.us/products/${product.slug}`,
+      url: `${SITE_URL}/products/${product.slug}`,
       seller: { "@type": "Organization", name: "SkyBall™" },
     },
   }

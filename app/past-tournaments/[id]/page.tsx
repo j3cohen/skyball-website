@@ -5,6 +5,7 @@ import Image from "next/image"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { CalendarIcon, MapPinIcon, TrophyIcon, Award, DollarSign, Star } from "lucide-react"
+import { pageMetadata } from "@/lib/seo"
 
 export function generateMetadata({ params }: { params: { id: string } }): Metadata {
   const tournament = pastTournaments.find((t) => t.id === params.id)
@@ -12,16 +13,11 @@ export function generateMetadata({ params }: { params: { id: string } }): Metada
 
   const description = `Results from ${tournament.name} — ${tournament.date} at ${tournament.location}. Winner: ${tournament.winner}.`
 
-  return {
+  return pageMetadata({
     title: tournament.name,
     description,
-    alternates: { canonical: `https://skyball.us/past-tournaments/${params.id}` },
-    openGraph: {
-      title: tournament.name,
-      description,
-      url: `https://skyball.us/past-tournaments/${params.id}`,
-    },
-  }
+    path: `/past-tournaments/${params.id}`,
+  })
 }
 
 export default function PastTournamentPage({ params }: { params: { id: string } }) {
