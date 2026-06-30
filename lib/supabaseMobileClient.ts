@@ -1,29 +1,13 @@
 "use client";
 // lib/supabaseMobileClient.ts
-// Browser-side Supabase client for the mobile app database.
-// Used in client components that read tournament/player/rankings data AND that
-// need the logged-in auth session (e.g. registration status). Persistence is
-// enabled so it shares the same stored session as lib/supabaseClient.ts — both
-// point at the mobile project, so they use the same storage key. Without this,
-// getSession() returns null even when the user is signed in.
-import { createClient } from "@supabase/supabase-js";
-
-let _client: ReturnType<typeof createClient> | null = null;
+// Browser-side Supabase client for the mobile project (tournaments, players,
+// rankings, registrations). This is the SAME instance as lib/supabaseClient.ts
+// — the web app's auth client already targets the mobile project, so reusing it
+// guarantees the logged-in session is shared (one GoTrue client, one session).
+// Without this, getSession() returned null and RLS-protected writes went out as
+// anonymous.
+import { supabase } from "@/lib/supabaseClient";
 
 export function getMobileSupabaseClient() {
-  if (_client) return _client;
-
-  const url  = process.env.NEXT_PUBLIC_MOBILE_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_MOBILE_SUPABASE_ANON_KEY!;
-
-  _client = createClient(url, anon, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      // lib/supabaseClient.ts already handles the login-URL session exchange.
-      detectSessionInUrl: false,
-    },
-  });
-
-  return _client;
+  return supabase;
 }

@@ -6,9 +6,15 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
 export async function middleware(req: NextRequest) {
   const res      = NextResponse.next()
-  // createMiddlewareClient reads NEXT_PUBLIC_SUPABASE_URL — which we've
-  // set to the mobile project in .env.local. No override needed here.
-  const supabase = createMiddlewareClient({ req, res })
+  // Refresh the mobile-project session. Pass the mobile URL/key explicitly so
+  // this never depends on the ambiguous NEXT_PUBLIC_SUPABASE_URL.
+  const supabase = createMiddlewareClient(
+    { req, res },
+    {
+      supabaseUrl: process.env.NEXT_PUBLIC_MOBILE_SUPABASE_URL,
+      supabaseKey: process.env.NEXT_PUBLIC_MOBILE_SUPABASE_ANON_KEY,
+    }
+  )
   await supabase.auth.getSession()
   return res
 }
