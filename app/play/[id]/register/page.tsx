@@ -3,11 +3,10 @@
 
 import { useState, useEffect, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import BuyPassSection from "@/components/buy-pass-section"
 import { submitRegistration } from "@/app/actions/registration"
 import { ExternalLink } from "lucide-react"
 
@@ -32,7 +31,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     ;(async () => {
       // First, fetch tournament data to check for payment_link
-      const { data: tournamentData, error: tournamentError } = await supabase
+      const { data: tournamentData, error: tournamentError } = await getMobileSupabaseClient()
         .from("tournaments")
         .select("id, name, payment_link")
         .eq("id", params.id)
@@ -44,12 +43,12 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
         return
       }
 
-      setTournament(tournamentData)
+      setTournament(tournamentData as Tournament)
 
       // Check authentication status
       const {
         data: { session },
-      } = await supabase.auth.getSession()
+      } = await getMobileSupabaseClient().auth.getSession()
       setIsAuthenticated(!!session)
 
       // If not authenticated and no payment link, redirect to login
@@ -66,7 +65,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
 
       // If authenticated, load passes
       if (session) {
-        const { data, error } = await supabase
+        const { data, error } = await getMobileSupabaseClient()
           .from("passes")
           .select("id, quantity_remaining")
           .gt("quantity_remaining", 0)
@@ -74,7 +73,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
         if (error) {
           setError(error.message)
         } else {
-          setPasses(data ?? [])
+          setPasses((data ?? []) as { id: string; quantity_remaining: number }[])
         }
       }
 
@@ -87,7 +86,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.rpc("register_for_tournament", {
+    const { error } = await getMobileSupabaseClient().rpc("register_for_tournament", {
       p_tournament_id: params.id,
       p_pass_id: passId,
     })
@@ -98,8 +97,8 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     } else {
       // send telegram alert too
       const [tournRes, profRes] = await Promise.all([
-        supabase.from("tournaments").select("name").eq("id", params.id).single(),
-        supabase.from("profiles").select("full_name").single(),
+        getMobileSupabaseClient().from("tournaments").select("name").eq("id", params.id).single(),
+        getMobileSupabaseClient().from("profiles").select("full_name").single(),
       ])
 
       const tournamentName = tournRes.data?.name ?? params.id
@@ -222,7 +221,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 passes.length === 0 ? (
                   <div className="space-y-6">
                     <p>No valid passes to use for this tournament.</p>
-                    <BuyPassSection />
+                    <p className="text-sm text-gray-500">Tournament registration is now handled via individual payment links. Check the event page for registration details.</p>
                   </div>
                 ) : (
                   passes.map((p) => (

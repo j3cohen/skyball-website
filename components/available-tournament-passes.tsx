@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 // exactly what Supabase returns for each pass row:
@@ -33,7 +33,7 @@ export default function AvailableTournamentPasses() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const { data, error } = await supabase
+      const { data, error } = await getMobileSupabaseClient()
         .from("passes")
         .select(`
           id,
@@ -50,7 +50,7 @@ export default function AvailableTournamentPasses() {
         setAvailable([])
       } else if (data) {
         // normalize the nested pass_type and filter out zero-remaining
-        const clean = (data as RawPassRow[])
+        const clean = (data as unknown as RawPassRow[])
           .map((item) => ({
             id: item.id,
             quantity_remaining: item.quantity_remaining,

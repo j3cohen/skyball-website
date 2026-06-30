@@ -3,19 +3,11 @@
 
 import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { Database } from "@/lib/database.types"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import MatchScoreDisplay, { type Match as DisplayMatch } from "./match-score-display"
 import ScrollLink from "./scroll-link"
 
-type MatchDetailsArgs =
-  Database["public"]["Functions"]["get_match_details_by_tournament"]["Args"]
-
-// type MatchDetailsReturn =
-//   Database["public"]["Functions"]["get_match_details_by_tournament"]["Returns"]
-
-
-// Raw RPC row including seeds and sets
+// Raw RPC row — sets use p1_score/p2_score from mobile DB (0029 migration)
 interface MatchRow {
   match_id:      string
   round:         string
@@ -26,11 +18,7 @@ interface MatchRow {
   player2_name:  string
   player2_seed:  number
   winner_slug:   string
-  sets: {
-    set_number:   number
-    player1Score: number
-    player2Score: number
-  }[]
+  sets: { p1_score: number; p2_score: number }[]
 }
 
 
@@ -56,7 +44,6 @@ export default function PlayerTournamentHistory({
   player,
   tournaments,
 }: Props) {
-  const supabase = createClientComponentClient<Database>()
   const [expanded, setExpanded] = useState<string | null>(null)
   // Map tournament -> matches or null while loading
   const [matchesByTour, setMatchesByTour] = useState<Record<string, DisplayMatch[] | null>>({})
@@ -70,8 +57,7 @@ export default function PlayerTournamentHistory({
 
     if (matchesByTour[tid] === undefined) {
       setMatchesByTour(prev => ({ ...prev, [tid]: null }))
-      const args = { p_tournament_id: tid } satisfies MatchDetailsArgs
-      const { data, error: rpcError } = await supabase.rpc("get_match_details_by_tournament", args)
+      const { data, error: rpcError } = await getMobileSupabaseClient().rpc("get_match_details_by_tournament", { p_tournament_id: tid })
 
       if (rpcError) {
         console.error("RPC error:", rpcError)
@@ -79,19 +65,8 @@ export default function PlayerTournamentHistory({
         return
       }
 
-      const rows: MatchRow[] = (data ?? []).map((row: unknown) => {
-        const r = row as {
-          match_id: string
-          round: string
-          player1_slug: string
-          player1_name: string
-          player1_seed: number
-          player2_slug: string
-          player2_name: string
-          player2_seed: number
-          winner_slug: string
-          sets: string | { set_number: number; player1Score: number; player2Score: number }[]
-        }
+      const rows: MatchRow[] = ((data ?? []) as unknown[]).map((row: unknown) => {
+        const r = row as MatchRow & { sets: string | MatchRow["sets"] }
         return {
           ...r,
           sets: Array.isArray(r.sets) ? r.sets : JSON.parse(r.sets as string),
@@ -107,8 +82,8 @@ export default function PlayerTournamentHistory({
           player2:  { id: r.player2_slug, name: r.player2_name, seed: r.player2_seed },
           winnerId: r.winner_slug,
           sets:     r.sets.map(s => ({
-            player1Score: s.player1Score,
-            player2Score: s.player2Score,
+            player1Score: s.p1_score,
+            player2Score: s.p2_score,
           })),
         }))
       console.debug("Mapped matches for tournament", tid, matches)

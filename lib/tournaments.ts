@@ -1,124 +1,98 @@
 // lib/tournaments.ts
+// All tournament/event data now comes from the mobile Supabase project.
+import { getMobileSupabase } from "@/lib/server/supabaseMobile"
+import type { Event as StaticEvent } from "@/data/events"
 
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies }                       from "next/headers"
-import { events as staticEvents, type Event as StaticEvent } from "@/data/events"
-
-type TournamentRow = {
-  id                 : string
-  name               : string
-  date               : string
-  time               : string
-  location           : string
-  description        : string
-  max_participants   : number | null
-  prize              : string | null
-  registration_fee   : string
-  points_value       : number
-  current_participants: number      // ← from the view
-  date_actual        : string | null
-  start_at           : string | null
-  open_play         : boolean
-  image             : string | null
-  payment_link     : string | null
+// Row shape from the mobile DB tournaments table
+export type TournamentRow = {
+  id:                  string
+  name:                string
+  description:         string | null
+  start_date:          string
+  end_date:            string
+  location:            string | null
+  time_string:         string | null
+  max_players:         number
+  prize:               string | null
+  entry_fee:           number | null
+  points_value:        number
+  event_type:          string        // 'tournament' | 'open_play'
+  status:              string        // 'registration_open' | 'completed' | 'in_progress' | 'draft'
+  is_ranked:           boolean
+  accepts_passes:      boolean
+  payment_link:        string | null
+  image_url:           string | null
+  image:               string | null
+  current_participants?: number
 }
 
-
-// Merge helper
-function mergeOne(fallback: StaticEvent, row?: TournamentRow): StaticEvent {
-  const base: Partial<StaticEvent> = {
-    ...fallback,
-    ...(row?.id                    && { id: row.id }),
-    ...(row?.name                  && { name: row.name }),
-    ...(row?.date                  && { date: row.date }),
-    ...(row?.time                  && { time: row.time }),
-    ...(row?.location              && { location: row.location }),
-    ...(row?.description           && { description: row.description }),
-    ...(row?.max_participants  != null && { maxParticipants: row.max_participants }),
-    ...(row?.prize                 && { prize: row.prize }),
-    ...(row?.registration_fee      && { registrationFee: row.registration_fee }),
-    ...(row?.points_value      != null && { pointsValue: row.points_value }),
-    ...(row?.current_participants != null && { currentParticipants: row.current_participants }),
-    ...(row?.date_actual           && { date_actual: row.date_actual }),
-    ...(row?.start_at              && { start_at: row.start_at }),
-    ...(row?.image                 && { image: row.image }),
-    ...(row?.payment_link      && { paymentLink: row.payment_link }),
-  }
-
-  // Determine type based on open_play field
-  const type = row ? (row.open_play ? 'open-play' : 'tournament') : fallback.type
-
-  //build merged object
-  const merged = {...base, type  } as StaticEvent & {isPast?: boolean }
-
-  // Set isPast based on date
-  const referenceDate = row?.start_at
-    ?? row?.date_actual
-    ?? row?.date
-    ?? fallback.date
-
-  merged.isPast = new Date(referenceDate).getTime() < Date.now()
-
-  return merged as StaticEvent
-
-  // always override type from open_play
-  // return {
-  //   ...base,
-  //   type
-  //     ? (row.open_play ? 'open-play' : 'tournament')
-  //     : fallback.type,
-  // } as StaticEvent
+// Map a mobile DB row to the StaticEvent shape the rest of the website uses
+function rowToEvent(row: TournamentRow): StaticEvent {
+  const isPast = new Date(row.start_date) < new Date()
+  return {
+    id:                   row.id,
+    type:                 row.event_type === "open_play" ? "open-play" : "tournament",
+    name:                 row.name,
+    date:                 new Date(row.start_date).toLocaleDateString("en-US", {
+                            month: "long", day: "numeric", year: "numeric",
+                          }),
+    time:                 row.time_string ?? "",
+    location:             row.location ?? "",
+    description:          row.description ?? "",
+    image:                row.image_url ?? row.image ?? "/urban-skyball-action.png",
+    maxParticipants:      row.max_players,
+    currentParticipants:  row.current_participants ?? 0,
+    prize:                row.prize ?? undefined,
+    registrationFee:      row.entry_fee ? `$${row.entry_fee}` : "Free",
+    pointsValue:          row.points_value,
+    isPast,
+    hasResults:           isPast,
+    paymentLink:          row.payment_link ?? undefined,
+    date_actual:          row.start_date,
+    start_at:             new Date(row.start_date).toISOString(),
+  } as StaticEvent
 }
 
-
-/** Fetch & merge all tournaments */
+/** Fetch all tournaments + open play events */
 export async function getAllTournaments(): Promise<StaticEvent[]> {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = getMobileSupabase()
 
-  // Query the view instead of the raw table:
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tournament_with_counts")
     .select("*")
+    .neq("status", "draft")
+    .order("start_date", { ascending: false })
 
-  const rows = data ?? []
-  const rowMap = new Map(rows.map((r) => [r.id, r]))
+  if (error) {
+    console.error("getAllTournaments error:", error.message)
+    return []
+  }
 
-  const allIds = Array.from(
-    new Set<string>([
-      ...staticEvents.map((e) => e.id),
-      ...rows.map((r) => r.id),
-    ])
-  )
-
-  return allIds.map((id) => {
-    const fallback = staticEvents.find((e) => e.id === id) ?? ({} as StaticEvent)
-    return mergeOne(fallback, rowMap.get(id))
-  })
+  return (data ?? []).map(rowToEvent)
 }
 
-/** Fetch & merge one tournament by ID */
+/** Fetch a single tournament by ID */
 export async function getTournamentById(id: string): Promise<StaticEvent | null> {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = getMobileSupabase()
 
-  const { data: row, error } = await supabase
+  const { data, error } = await supabase
     .from("tournament_with_counts")
     .select("*")
     .eq("id", id)
     .single()
 
-  const fallback = staticEvents.find((e) => e.id === id) ?? null
-  if (error && !fallback) return null
-
-  return mergeOne(fallback ?? ({} as StaticEvent), row ?? undefined)
+  if (error || !data) return null
+  return rowToEvent(data as TournamentRow)
 }
 
-/** Fetch the basic winner/runner-up/score summary for a given tournament */
+/** Fetch winner/runner-up/score summary for a past tournament */
 export async function getTournamentSummary(id: string): Promise<{
   winner: string
   runner_up: string
   score: string
 } | null> {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = getMobileSupabase()
+
   const { data, error } = await supabase
     .rpc("get_tournament_summary", { p_tournament_id: id })
     .single()
@@ -126,8 +100,8 @@ export async function getTournamentSummary(id: string): Promise<{
   if (error || !data) return null
   const summary = data as { winner: string; runner_up: string; score: string }
   return {
-    winner: summary.winner,
+    winner:    summary.winner,
     runner_up: summary.runner_up,
-    score: summary.score,
+    score:     summary.score,
   }
 }
