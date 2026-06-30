@@ -6,9 +6,6 @@ import { useRouter }       from "next/navigation"
 
 import Profile                       from "@/components/profile"
 import RegisteredTournaments         from "@/components/registered-tournaments"
-import AvailableTournamentPasses     from "@/components/available-tournament-passes"
-import PurchaseTournamentPasses      from "@/components/buy-pass-section"
-import TournamentPassHistory         from "@/components/tournament-pass-history"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import UpcomingTournaments           from "@/components/upcoming-tournaments"
 import { DashboardNotifications }    from "@/components/dashboard-notifications"
@@ -85,9 +82,6 @@ export default function DashboardContent() {
       {/* >>> The rest of your dashboard */}
       <RegisteredTournaments />
       <UpcomingTournaments />
-      <AvailableTournamentPasses />
-      <PurchaseTournamentPasses />
-      <TournamentPassHistory />
 
       {/* >>> Once profile is complete, render it again at the bottom */}
       {!incomplete && (
