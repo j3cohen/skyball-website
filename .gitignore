@@ -53,5 +53,6 @@ CLAUDE.md
 /scripts/link-profiles.js
 /scripts/dedup-tournaments.js
 
-# Local-only DB query scratch
+# Local-only working docs (DB query scratch, test plans)
 /pass-holders-query.md
+/preview-testing-plan.md
