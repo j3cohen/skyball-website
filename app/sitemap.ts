@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 import { upcomingTournaments, pastTournaments } from "@/data/tournaments"
 import { getSupabasePublic } from "@/lib/server/supabasePublic"
+import { getMobileSupabase } from "@/lib/server/supabaseMobile"
 import { SITE_URL } from "@/lib/seo"
 
 // Use stable dates — do NOT use new Date() here, as that tells Google every page
@@ -57,7 +58,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date("2025-03-01"),
   }))
 
-  const { data: players } = await supabase.from("players").select("slug")
+  // Players live in the mobile project, not the website DB.
+  const { data: players } = await getMobileSupabase().from("players").select("slug")
 
   const playerPages: MetadataRoute.Sitemap = (players ?? []).map((p) => ({
     url: `${SITE_URL}/players/${p.slug}`,
