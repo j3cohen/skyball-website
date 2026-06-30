@@ -6,15 +6,16 @@ import { supabaseAdmin }   from "@/lib/server/supabaseAdmin";
 import FulfillmentTable    from "@/components/fulfillment-table";
 import type { ExportableOrder } from "@/lib/order-types";
 
-const STATUSES = ["all", "pending", "processing", "fulfilled", "cancelled"] as const;
+const STATUSES = ["all", "pending", "processing", "fulfilled", "needs-match", "cancelled"] as const;
 type StatusFilter = (typeof STATUSES)[number];
 
 const STATUS_LABELS: Record<string, string> = {
-  all:        "All",
-  pending:    "Pending",
-  processing: "Processing",
-  fulfilled:  "Fulfilled",
-  cancelled:  "Cancelled",
+  all:           "All",
+  pending:       "Pending",
+  processing:    "Processing",
+  fulfilled:     "Fulfilled",
+  "needs-match": "Needs Match",
+  cancelled:     "Cancelled",
 };
 
 const PAGE_SIZE = 50;
@@ -47,7 +48,7 @@ async function fetchOrders(status: StatusFilter, q: string, page: number) {
 }
 
 async function fetchCounts() {
-  const statuses = ["pending", "processing", "fulfilled", "cancelled"] as const;
+  const statuses = ["pending", "processing", "fulfilled", "needs-match", "cancelled"] as const;
   const results = await Promise.all(
     statuses.map(s =>
       supabaseAdmin

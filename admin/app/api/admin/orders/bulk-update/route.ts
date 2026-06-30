@@ -10,7 +10,7 @@ import { rateLimit } from "@/lib/server/rateLimiter";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_STATUSES = ["pending", "processing", "fulfilled", "cancelled"] as const;
+const ALLOWED_STATUSES = ["pending", "processing", "fulfilled", "needs-match", "cancelled", "event"] as const;
 type FulfillmentStatus = (typeof ALLOWED_STATUSES)[number];
 
 function isStatus(v: unknown): v is FulfillmentStatus {

@@ -193,7 +193,9 @@ async function handleSessionCompleted(event: Stripe.Event) {
     order_total_cents: session.amount_total,
     order_currency: session.currency ?? "usd",
     order_summary: meta.order_summary ?? null,
-    fulfillment_status: "pending",
+    fulfillment_status: /entry.?fee|open.?play|tournament.?entry|tournament.?pass/i.test(meta.order_summary ?? "")
+      ? "event"
+      : "pending",
     heard_about_us: heardAboutUs,
     customer_order_notes: orderNotes,
     raw_stripe_session: event as unknown as Record<string, unknown>,

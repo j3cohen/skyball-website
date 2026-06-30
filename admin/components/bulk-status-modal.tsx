@@ -9,10 +9,11 @@ type Props = {
 };
 
 const STATUS_OPTIONS = [
-  { value: "pending",    label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "fulfilled",  label: "Fulfilled" },
-  { value: "cancelled",  label: "Cancelled" },
+  { value: "pending",      label: "Pending" },
+  { value: "processing",   label: "Processing" },
+  { value: "fulfilled",    label: "Fulfilled" },
+  { value: "needs-match",  label: "Needs Match" },
+  { value: "cancelled",    label: "Cancelled" },
 ] as const;
 
 export default function BulkStatusModal({ orderIds, onClose, onSuccess }: Props) {
