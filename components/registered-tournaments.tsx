@@ -3,19 +3,17 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 
-// exactly what Supabase returns per row
+// Registrations now live in the mobile project's tournament_entries table
+// (profile_id / cancelled_at), joined to tournaments.start_date.
+type TournamentJoin = { id: string; name: string; start_date: string }
 type RawRegistration = {
   id: string
   registered_at: string
-  tournament: {
-    id: string
-    name: string
-    date: string
-  }[]
+  tournament: TournamentJoin[] | TournamentJoin | null
 }
 
 // Your “clean” shape:
@@ -37,17 +35,30 @@ export default function RegisteredTournaments() {
     async function load() {
       setLoading(true)
 
-      const { data, error } = await supabase
-        .from("registrations")
+      const mobile = getMobileSupabaseClient()
+      const {
+        data: { session },
+      } = await mobile.auth.getSession()
+
+      if (!session) {
+        setItems([])
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await mobile
+        .from("tournament_entries")
         .select(`
           id,
           registered_at,
           tournament: tournaments (
             id,
             name,
-            date
+            start_date
           )
         `)
+        .eq("profile_id", session.user.id)
+        .is("cancelled_at", null)
         .order("registered_at", { ascending: false })
 
       if (error) {
@@ -55,14 +66,26 @@ export default function RegisteredTournaments() {
         setItems([])
       } else if (data) {
         // map RawRegistration[] ➔ Registration[]
-        const raw = data as RawRegistration[]
-        const clean: Registration[] = (raw).map((r) => ({
-          id: r.id,
-          registered_at: r.registered_at,
-          tournament: Array.isArray(r.tournament)
-            ? r.tournament[0]
-            : r.tournament || { id: "", name: "", date: "" },
-        }))
+        const raw = data as unknown as RawRegistration[]
+        const clean: Registration[] = raw
+          .map((r) => {
+            const t = Array.isArray(r.tournament) ? r.tournament[0] : r.tournament
+            if (!t) return null
+            return {
+              id: r.id,
+              registered_at: r.registered_at,
+              tournament: {
+                id: t.id,
+                name: t.name,
+                date: new Date(t.start_date).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                }),
+              },
+            }
+          })
+          .filter((r): r is Registration => r !== null)
 
         // filter out past tournaments
         const now = new Date()

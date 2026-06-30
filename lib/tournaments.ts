@@ -57,32 +57,49 @@ function rowToEvent(row: TournamentRow): StaticEvent {
 export async function getAllTournaments(): Promise<StaticEvent[]> {
   const supabase = getMobileSupabase()
 
-  const { data, error } = await supabase
-    .from("tournament_with_counts")
-    .select("*")
-    .neq("status", "draft")
-    .order("start_date", { ascending: false })
+  // The base tournaments table carries the display fields (location,
+  // time_string, image); the tournament_with_counts view only adds
+  // participant counts, so read the base table and merge counts in.
+  const [{ data, error }, { data: counts }] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select("*")
+      .neq("status", "draft")
+      .order("start_date", { ascending: false }),
+    supabase
+      .from("tournament_with_counts")
+      .select("id, current_participants"),
+  ])
 
   if (error) {
     console.error("getAllTournaments error:", error.message)
     return []
   }
 
-  return (data ?? []).map(rowToEvent)
+  const countById = new Map(
+    (counts ?? []).map((c) => [(c as { id: string }).id, (c as { current_participants: number }).current_participants])
+  )
+
+  return (data ?? []).map((row) => {
+    const r = row as TournamentRow
+    return rowToEvent({ ...r, current_participants: countById.get(r.id) ?? 0 })
+  })
 }
 
 /** Fetch a single tournament by ID */
 export async function getTournamentById(id: string): Promise<StaticEvent | null> {
   const supabase = getMobileSupabase()
 
-  const { data, error } = await supabase
-    .from("tournament_with_counts")
-    .select("*")
-    .eq("id", id)
-    .single()
+  const [{ data, error }, { data: countRow }] = await Promise.all([
+    supabase.from("tournaments").select("*").eq("id", id).single(),
+    supabase.from("tournament_with_counts").select("current_participants").eq("id", id).single(),
+  ])
 
   if (error || !data) return null
-  return rowToEvent(data as TournamentRow)
+  return rowToEvent({
+    ...(data as TournamentRow),
+    current_participants: (countRow as { current_participants: number } | null)?.current_participants ?? 0,
+  })
 }
 
 /** Fetch winner/runner-up/score summary for a past tournament */
