@@ -8,12 +8,11 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { submitRegistration } from "@/app/actions/registration"
-import { ExternalLink } from "lucide-react"
 
 type Tournament = {
   id: string
   name: string
-  payment_link: string | null
+  entry_fee: number | null
 }
 
 export default function RegisterPage({ params }: { params: { id: string } }) {
@@ -35,7 +34,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
 
       const { data: tournamentData, error: tournamentError } = await mobile
         .from("tournaments")
-        .select("id, name, payment_link")
+        .select("id, name, entry_fee")
         .eq("id", params.id)
         .single()
 
@@ -83,10 +82,27 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     }
   }
 
-  // 3) Paid events → open the Stripe payment link
-  const handlePaymentLink = () => {
-    if (tournament?.payment_link) {
-      window.open(tournament.payment_link, "_blank")
+  // 3) Paid events → site-generated Stripe checkout (carries tournament_id so
+  //    the webhook can dual-write revenue + mobile registration).
+  const handlePaidRegister = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/event-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId: params.id, profileId: userId }),
+      })
+      const json = await res.json()
+      if (res.ok && json.url) {
+        window.location.href = json.url as string
+      } else {
+        setError(json.error ?? "Could not start checkout.")
+        setSubmitting(false)
+      }
+    } catch {
+      setError("Network error starting checkout.")
+      setSubmitting(false)
     }
   }
 
@@ -181,18 +197,6 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 {submitting ? "Submitting…" : "Submit Registration"}
               </Button>
             </form>
-          ) : tournament?.payment_link ? (
-            // PAYMENT-LINK REGISTRATION (paid events; guests welcome)
-            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-2">Register</h3>
-              <p className="text-gray-600 mb-4">
-                You&apos;ll be redirected to complete your registration and payment.
-              </p>
-              <Button onClick={handlePaymentLink} className="w-full bg-blue-600 hover:bg-blue-700">
-                Continue to Registration
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
           ) : alreadyRegistered ? (
             // Already registered
             <div className="space-y-4">
@@ -201,8 +205,24 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 Go to Dashboard
               </Button>
             </div>
+          ) : (tournament?.entry_fee ?? 0) > 0 ? (
+            // PAID EVENT → site-generated Stripe checkout (guests welcome)
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6 space-y-4">
+              <h3 className="text-lg font-semibold">Register &amp; Pay</h3>
+              <p className="text-gray-600">
+                Entry fee ${tournament?.entry_fee}. You&apos;ll be taken to secure checkout to complete your registration.
+              </p>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <Button
+                onClick={handlePaidRegister}
+                disabled={submitting}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {submitting ? "Starting checkout…" : `Register & Pay ($${tournament?.entry_fee})`}
+              </Button>
+            </div>
           ) : userId ? (
-            // DIRECT REGISTRATION (free / no-link events, signed in)
+            // DIRECT REGISTRATION (free events, signed in)
             <div className="border-2 border-sky-200 bg-sky-50 rounded-lg p-6 space-y-4">
               <h3 className="text-lg font-semibold">Register</h3>
               <p className="text-gray-600">Confirm your spot for this event.</p>

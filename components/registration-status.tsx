@@ -67,21 +67,13 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
     )
   }
 
-  // 4) not signed in or not yet registered → show Register button
-  const handleClick = async () => {
-    const {
-      data: { session },
-    } = await getMobileSupabaseClient().auth.getSession()
-
-    if (!session) {
-      router.push(`/login?from=/play/${tournamentId}/register`)
-      return
-    }
-    router.push(`/play/${tournamentId}/register`)
-  }
-
+  // 4) not yet registered → go to the register page, which handles paid
+  //    (Stripe checkout, guests welcome), free (direct), and guest sign-in.
   return (
-    <Button onClick={handleClick} className="bg-sky-600 hover:bg-sky-700 text-white">
+    <Button
+      onClick={() => router.push(`/play/${tournamentId}/register`)}
+      className="bg-sky-600 hover:bg-sky-700 text-white"
+    >
       Register for Event
     </Button>
   )
