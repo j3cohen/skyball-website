@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 import { submitRegistration } from "@/app/actions/registration"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 
 type TabValue = "open-play" | "tournaments"
 
@@ -48,6 +49,33 @@ function TelegramRegistrationForm({
   const [dob, setDob] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Prefill from the signed-in user's profile (all fields stay editable).
+  // ZIP isn't stored on the profile, so it's left blank.
+  useEffect(() => {
+    ;(async () => {
+      const mobile = getMobileSupabaseClient()
+      const {
+        data: { session },
+      } = await mobile.auth.getSession()
+      if (!session) return
+
+      setEmail((prev) => prev || session.user.email || "")
+
+      const { data: profile } = await mobile
+        .from("profiles")
+        .select("full_name, phone, birthdate")
+        .eq("id", session.user.id)
+        .single()
+
+      const p = profile as { full_name?: string | null; phone?: string | null; birthdate?: string | null } | null
+      if (p) {
+        if (p.full_name) setName((prev) => prev || p.full_name!)
+        if (p.phone) setPhone((prev) => prev || p.phone!)
+        if (p.birthdate) setDob((prev) => prev || p.birthdate!)
+      }
+    })()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
