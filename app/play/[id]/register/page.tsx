@@ -85,6 +85,54 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     })()
   }, [params.id])
 
+  // Save a free registration. For signed-in users, revive a prior (possibly
+  // cancelled) entry instead of inserting a second row — there's a unique
+  // constraint on (tournament_id, profile_id) that isn't filtered by
+  // cancelled_at, so a fresh insert after cancelling would fail. Returns an
+  // error message, or null on success.
+  async function saveFreeEntry(guestName: string, guestEmail: string): Promise<string | null> {
+    const mobile = getMobileSupabaseClient()
+
+    if (userId) {
+      const { data: existing } = await mobile
+        .from("tournament_entries")
+        .select("id")
+        .eq("tournament_id", params.id)
+        .eq("profile_id", userId)
+        .maybeSingle()
+
+      if (existing) {
+        const { error } = await mobile
+          .from("tournament_entries")
+          .update({
+            cancelled_at: null,
+            registered_at: new Date().toISOString(),
+            payment_method: "free",
+            payment_status: "unpaid",
+          })
+          .eq("id", (existing as { id: string }).id)
+        return error?.message ?? null
+      }
+
+      const { error } = await mobile.from("tournament_entries").insert({
+        tournament_id: params.id,
+        profile_id: userId,
+        payment_method: "free",
+        payment_status: "unpaid",
+      })
+      return error?.message ?? null
+    }
+
+    const { error } = await mobile.from("tournament_entries").insert({
+      tournament_id: params.id,
+      guest_name: guestName,
+      guest_email: guestEmail,
+      payment_method: "free",
+      payment_status: "unpaid",
+    })
+    return error?.message ?? null
+  }
+
   // 2) Free-50 signup form
   const handleFree50 = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -102,24 +150,12 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     }
 
     // Record the registration in the DB (guest or signed-in), like every other flow
-    const mobile = getMobileSupabaseClient()
-    const row = userId
-      ? {
-          tournament_id: params.id,
-          profile_id: userId,
-          payment_method: "free",
-          payment_status: "unpaid",
-        }
-      : {
-          tournament_id: params.id,
-          guest_name: String(form.get("name") ?? ""),
-          guest_email: String(form.get("email") ?? ""),
-          payment_method: "free",
-          payment_status: "unpaid",
-        }
-    const { error: insertErr } = await mobile.from("tournament_entries").insert(row)
-    if (insertErr) {
-      setError(insertErr.message)
+    const saveErr = await saveFreeEntry(
+      String(form.get("name") ?? ""),
+      String(form.get("email") ?? "")
+    )
+    if (saveErr) {
+      setError(saveErr)
       setSubmitting(false)
       return
     }
@@ -165,25 +201,9 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     setSubmitting(true)
     setError(null)
 
-    const mobile = getMobileSupabaseClient()
-    const row = userId
-      ? {
-          tournament_id: params.id,
-          profile_id: userId,
-          payment_method: "free",
-          payment_status: "unpaid",
-        }
-      : {
-          tournament_id: params.id,
-          guest_name: regName,
-          guest_email: regEmail,
-          payment_method: "free",
-          payment_status: "unpaid",
-        }
-
-    const { error: insertErr } = await mobile.from("tournament_entries").insert(row)
-    if (insertErr) {
-      setError(insertErr.message)
+    const saveErr = await saveFreeEntry(regName, regEmail)
+    if (saveErr) {
+      setError(saveErr)
       setSubmitting(false)
       return
     }

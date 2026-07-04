@@ -247,22 +247,49 @@ async function recordEventRegistration(
     return;
   }
 
-  const { error } = await mobile.from("tournament_entries").insert({
-    tournament_id: tournamentId,
-    profile_id: profileId,
-    // When signed in we have a profile; otherwise record the payer as a guest.
-    guest_email: profileId ? null : email,
-    guest_name: profileId ? null : name,
+  const paid = {
     payment_method: "stripe",
     payment_status: "paid",
     stripe_payment_id: paymentId,
-  });
+    cancelled_at: null,
+  };
 
+  // Signed-in: revive a prior (possibly cancelled) entry — a unique constraint
+  // on (tournament_id, profile_id) blocks a second row even after cancelling.
+  if (profileId) {
+    const { data: prior } = await mobile
+      .from("tournament_entries")
+      .select("id")
+      .eq("tournament_id", tournamentId)
+      .eq("profile_id", profileId)
+      .maybeSingle();
+
+    if (prior) {
+      const { error } = await mobile
+        .from("tournament_entries")
+        .update({ ...paid, registered_at: new Date().toISOString() })
+        .eq("id", (prior as { id: string }).id);
+      if (error) throw new Error(`Mobile tournament_entries revive failed: ${error.message}`);
+      console.log(`✅ Mobile registration revived: tournament ${tournamentId}`);
+      return;
+    }
+
+    const { error } = await mobile
+      .from("tournament_entries")
+      .insert({ tournament_id: tournamentId, profile_id: profileId, ...paid });
+    if (error) throw new Error(`Mobile tournament_entries insert failed: ${error.message}`);
+    console.log(`✅ Mobile registration recorded: tournament ${tournamentId}`);
+    return;
+  }
+
+  // Guest payer
+  const { error } = await mobile
+    .from("tournament_entries")
+    .insert({ tournament_id: tournamentId, guest_email: email, guest_name: name, ...paid });
   if (error) {
     // Throw so Stripe retries — the order upsert and this insert are both
     // idempotent, so a retry won't duplicate revenue or registration.
     throw new Error(`Mobile tournament_entries insert failed: ${error.message}`);
   }
-
   console.log(`✅ Mobile registration recorded: tournament ${tournamentId}`);
 }
