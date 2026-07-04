@@ -8,6 +8,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { submitRegistration } from "@/app/actions/registration"
+import RefundPolicyNotice from "@/components/refund-policy-notice"
 import { ExternalLink } from "lucide-react"
 
 type Tournament = {
@@ -289,6 +290,7 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
               >
                 {submitting ? "Starting checkout…" : `Register & Pay ($${tournament?.entry_fee})`}
               </Button>
+              <RefundPolicyNotice />
             </div>
           ) : (
             // FREE EVENT → registration form (guests welcome; prefilled + editable when signed in)

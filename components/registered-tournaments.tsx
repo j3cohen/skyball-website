@@ -5,31 +5,34 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import RefundPolicyNotice from "@/components/refund-policy-notice"
 
-
-// Registrations now live in the mobile project's tournament_entries table
-// (profile_id / cancelled_at), joined to tournaments.start_date.
-type TournamentJoin = { id: string; name: string; start_date: string }
+// Registrations live in the mobile project's tournament_entries table
+// (profile_id / cancelled_at), joined to the tournament.
+type TournamentJoin = { id: string; name: string; start_date: string; entry_fee: number | null }
 type RawRegistration = {
   id: string
   registered_at: string
   tournament: TournamentJoin[] | TournamentJoin | null
 }
 
-// Your “clean” shape:
 type Registration = {
   id: string
-  registered_at: string
   tournament: {
     id: string
     name: string
     date: string
+    startDate: string
+    entryFee: number | null
   }
 }
 
 export default function RegisteredTournaments() {
   const [items, setItems] = useState<Registration[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cancelling, setCancelling] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -45,6 +48,7 @@ export default function RegisteredTournaments() {
         setLoading(false)
         return
       }
+      setUserId(session.user.id)
 
       const { data, error } = await mobile
         .from("tournament_entries")
@@ -54,7 +58,8 @@ export default function RegisteredTournaments() {
           tournament: tournaments (
             id,
             name,
-            start_date
+            start_date,
+            entry_fee
           )
         `)
         .eq("profile_id", session.user.id)
@@ -65,7 +70,6 @@ export default function RegisteredTournaments() {
         console.error("Error loading registrations:", error)
         setItems([])
       } else if (data) {
-        // map RawRegistration[] ➔ Registration[]
         const raw = data as unknown as RawRegistration[]
         const clean: Registration[] = raw
           .map((r) => {
@@ -73,7 +77,6 @@ export default function RegisteredTournaments() {
             if (!t) return null
             return {
               id: r.id,
-              registered_at: r.registered_at,
               tournament: {
                 id: t.id,
                 name: t.name,
@@ -82,6 +85,8 @@ export default function RegisteredTournaments() {
                   day: "numeric",
                   year: "numeric",
                 }),
+                startDate: t.start_date,
+                entryFee: t.entry_fee,
               },
             }
           })
@@ -90,7 +95,7 @@ export default function RegisteredTournaments() {
         // filter out past tournaments
         const now = new Date()
         const upcoming = clean.filter((r) => {
-          const dt = new Date(r.tournament.date)
+          const dt = new Date(r.tournament.startDate)
           return !isNaN(dt.valueOf()) && dt >= now
         })
 
@@ -103,11 +108,63 @@ export default function RegisteredTournaments() {
     load()
   }, [])
 
+  async function handleCancel(reg: Registration) {
+    const paid = (reg.tournament.entryFee ?? 0) > 0
+    const hoursUntil = (new Date(reg.tournament.startDate).getTime() - Date.now()) / 3_600_000
+    const refundEligible = paid && hoursUntil > 36
+
+    const confirmMsg = !paid
+      ? `Cancel your registration for ${reg.tournament.name}?`
+      : refundEligible
+        ? `Cancel your registration for ${reg.tournament.name}? You're more than 36 hours out, so you'll be refunded your entry fee less a 20% service fee.`
+        : `Cancel your registration for ${reg.tournament.name}? You're within 36 hours of the event, so the entry fee is non-refundable. You can email info@skyball.us to request a credit toward a future tournament.`
+
+    if (!window.confirm(confirmMsg)) return
+
+    setCancelling(reg.id)
+    const mobile = getMobileSupabaseClient()
+    const { error } = await mobile
+      .from("tournament_entries")
+      .update({ cancelled_at: new Date().toISOString() })
+      .eq("id", reg.id)
+      .eq("profile_id", userId ?? "")
+
+    if (error) {
+      alert(`Could not cancel: ${error.message}`)
+      setCancelling(null)
+      return
+    }
+
+    // Notify admin (paid cancellations need a refund/credit decision)
+    if (paid) {
+      const { data: prof } = await mobile
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId ?? "")
+        .single()
+      fetch("/api/telegram-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          heading: "TOURNAMENT CANCELLATION",
+          tournamentName: reg.tournament.name,
+          fullName: (prof as { full_name?: string } | null)?.full_name ?? "(account holder)",
+          note: refundEligible
+            ? "Refund due: entry fee less 20% service fee (>36h before event)."
+            : "No refund (within 36h). Credit on request.",
+        }),
+      }).catch(() => {})
+    }
+
+    setItems((prev) => prev.filter((x) => x.id !== reg.id))
+    setCancelling(null)
+  }
+
   if (loading) {
     return <p>Loading your registrations…</p>
   }
   if (items.length === 0) {
-    return <p>You’re not registered for any upcoming tournaments yet.</p>
+    return <p>You&rsquo;re not registered for any upcoming tournaments yet.</p>
   }
 
   return (
@@ -116,18 +173,29 @@ export default function RegisteredTournaments() {
         <CardTitle>Your Upcoming Registrations</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-2">
-          {items.map((r) => (
-            <li key={r.id}>
-              <Link
-                href={`/play/${r.tournament.id}`}
-                className="text-sky-600 hover:underline"
-              >
-                {r.tournament.name}
-              </Link>{" "}
-              on {r.tournament.date}
-            </li>
-          ))}
+        <ul className="space-y-4">
+          {items.map((r) => {
+            const paid = (r.tournament.entryFee ?? 0) > 0
+            return (
+              <li key={r.id} className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/play/${r.tournament.id}`} className="text-sky-600 hover:underline">
+                    {r.tournament.name}
+                  </Link>{" "}
+                  on {r.tournament.date}
+                  {paid && <RefundPolicyNotice className="mt-1" />}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={cancelling === r.id}
+                  onClick={() => handleCancel(r)}
+                >
+                  {cancelling === r.id ? "Cancelling…" : "Cancel"}
+                </Button>
+              </li>
+            )
+          })}
         </ul>
       </CardContent>
     </Card>

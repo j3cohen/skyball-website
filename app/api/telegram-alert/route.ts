@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
   try {
-    const { tournamentName, fullName } = await req.json()
+    const { tournamentName, fullName, heading, note } = await req.json()
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     const chatId = process.env.TELEGRAM_CHAT_ID
@@ -13,13 +13,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing credentials" }, { status: 500 })
     }
 
+    const title = heading ?? "NEW TOURNAMENT REGISTRATION"
     const message = `
-*NEW TOURNAMENT REGISTRATION*
+*${title}*
 
 *Tournament:* ${tournamentName}
-*Player:* ${fullName}
+*Player:* ${fullName}${note ? `\n*Note:* ${note}` : ""}
 
-_Registered at ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_
+_${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} Eastern_
 `
 
     const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
