@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/server/stripe";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
+import { getMobileSupabase } from "@/lib/server/supabaseMobile";
 
 export const dynamic = "force-dynamic";
 
@@ -193,7 +194,9 @@ async function handleSessionCompleted(event: Stripe.Event) {
     order_total_cents: session.amount_total,
     order_currency: session.currency ?? "usd",
     order_summary: meta.order_summary ?? null,
-    fulfillment_status: "pending",
+    fulfillment_status: /entry.?fee|open.?play|tournament.?entry|tournament.?pass/i.test(meta.order_summary ?? "")
+      ? "event"
+      : "pending",
     heard_about_us: heardAboutUs,
     customer_order_notes: orderNotes,
     raw_stripe_session: event as unknown as Record<string, unknown>,
@@ -208,4 +211,85 @@ async function handleSessionCompleted(event: Stripe.Event) {
   }
 
   console.log(`✅ Order stored: ${session.id}`);
+
+  // Event/tournament payments also create a registration in the mobile project.
+  if (meta.kind === "event_registration" && meta.tournament_id) {
+    await recordEventRegistration(session, meta);
+  }
+}
+
+// ── Mobile-project registration (paid events) ────────────────────────────────
+
+async function recordEventRegistration(
+  session: Stripe.Checkout.Session,
+  meta: Record<string, string>
+) {
+  const tournamentId = meta.tournament_id;
+  const profileId = meta.profile_id && meta.profile_id.length > 0 ? meta.profile_id : null;
+  const email = session.customer_details?.email ?? null;
+  const name = session.customer_details?.name ?? null;
+  const paymentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : (session.payment_intent as Stripe.PaymentIntent | null)?.id ?? session.id;
+
+  const mobile = getMobileSupabase();
+
+  // Idempotency: the webhook can fire more than once — don't double-register.
+  const { data: existing } = await mobile
+    .from("tournament_entries")
+    .select("id")
+    .eq("stripe_payment_id", paymentId)
+    .maybeSingle();
+
+  if (existing) {
+    console.log(`↺ Event registration already recorded for ${paymentId}`);
+    return;
+  }
+
+  const paid = {
+    payment_method: "stripe",
+    payment_status: "paid",
+    stripe_payment_id: paymentId,
+    cancelled_at: null,
+  };
+
+  // Signed-in: revive a prior (possibly cancelled) entry — a unique constraint
+  // on (tournament_id, profile_id) blocks a second row even after cancelling.
+  if (profileId) {
+    const { data: prior } = await mobile
+      .from("tournament_entries")
+      .select("id")
+      .eq("tournament_id", tournamentId)
+      .eq("profile_id", profileId)
+      .maybeSingle();
+
+    if (prior) {
+      const { error } = await mobile
+        .from("tournament_entries")
+        .update({ ...paid, registered_at: new Date().toISOString() })
+        .eq("id", (prior as { id: string }).id);
+      if (error) throw new Error(`Mobile tournament_entries revive failed: ${error.message}`);
+      console.log(`✅ Mobile registration revived: tournament ${tournamentId}`);
+      return;
+    }
+
+    const { error } = await mobile
+      .from("tournament_entries")
+      .insert({ tournament_id: tournamentId, profile_id: profileId, ...paid });
+    if (error) throw new Error(`Mobile tournament_entries insert failed: ${error.message}`);
+    console.log(`✅ Mobile registration recorded: tournament ${tournamentId}`);
+    return;
+  }
+
+  // Guest payer
+  const { error } = await mobile
+    .from("tournament_entries")
+    .insert({ tournament_id: tournamentId, guest_email: email, guest_name: name, ...paid });
+  if (error) {
+    // Throw so Stripe retries — the order upsert and this insert are both
+    // idempotent, so a retry won't duplicate revenue or registration.
+    throw new Error(`Mobile tournament_entries insert failed: ${error.message}`);
+  }
+  console.log(`✅ Mobile registration recorded: tournament ${tournamentId}`);
 }

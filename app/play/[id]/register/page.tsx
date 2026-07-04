@@ -3,38 +3,48 @@
 
 import { useState, useEffect, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import BuyPassSection from "@/components/buy-pass-section"
 import { submitRegistration } from "@/app/actions/registration"
+import RefundPolicyNotice from "@/components/refund-policy-notice"
 import { ExternalLink } from "lucide-react"
 
 type Tournament = {
   id: string
   name: string
   payment_link: string | null
+  entry_fee: number | null
 }
 
 export default function RegisterPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const [passes, setPasses] = useState<{ id: string; quantity_remaining: number }[]>([])
   const [tournament, setTournament] = useState<Tournament | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Free-event registration form (prefilled for signed-in users, editable)
+  const [regName, setRegName] = useState("")
+  const [regEmail, setRegEmail] = useState("")
+  const [regPhone, setRegPhone] = useState("")
+  // Set when a guest enters an email that already has an account.
+  const [emailHasAccount, setEmailHasAccount] = useState(false)
 
   // detect any "free 50" tournaments
   const isFree50 = params.id.startsWith("skyball-50-")
 
-  // 1) Fetch tournament data and check authentication
+  // 1) Fetch tournament + current user + existing registration
   useEffect(() => {
     ;(async () => {
-      // First, fetch tournament data to check for payment_link
-      const { data: tournamentData, error: tournamentError } = await supabase
+      const mobile = getMobileSupabaseClient()
+
+      const { data: tournamentData, error: tournamentError } = await mobile
         .from("tournaments")
-        .select("id, name, payment_link")
+        .select("id, name, payment_link, entry_fee")
         .eq("id", params.id)
         .single()
 
@@ -43,100 +53,207 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
         setLoading(false)
         return
       }
+      setTournament(tournamentData as Tournament)
 
-      setTournament(tournamentData)
-
-      // Check authentication status
       const {
         data: { session },
-      } = await supabase.auth.getSession()
-      setIsAuthenticated(!!session)
+      } = await mobile.auth.getSession()
+      setUserId(session?.user.id ?? null)
 
-      // If not authenticated and no payment link, redirect to login
-      if (!session && !tournamentData.payment_link && !isFree50) {
-        router.push(`/login?from=/play/${params.id}/register`)
-        return
-      }
-
-      if (isFree50) {
-        // no passes to fetch
-        setLoading(false)
-        return
-      }
-
-      // If authenticated, load passes
+      // If signed in, check existing registration and prefill the form from
+      // the profile (all fields stay editable).
       if (session) {
-        const { data, error } = await supabase
-          .from("passes")
-          .select("id, quantity_remaining")
-          .gt("quantity_remaining", 0)
+        setRegEmail((prev) => prev || session.user.email || "")
 
-        if (error) {
-          setError(error.message)
-        } else {
-          setPasses(data ?? [])
-        }
+        const { count } = await mobile
+          .from("tournament_entries")
+          .select("id", { head: true, count: "exact" })
+          .eq("profile_id", session.user.id)
+          .eq("tournament_id", params.id)
+          .is("cancelled_at", null)
+        setAlreadyRegistered((count ?? 0) > 0)
+
+        const { data: prof } = await mobile
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", session.user.id)
+          .single()
+        const p = prof as { full_name?: string | null; phone?: string | null } | null
+        if (p?.full_name) setRegName((prev) => prev || p.full_name!)
+        if (p?.phone) setRegPhone((prev) => prev || p.phone!)
       }
 
       setLoading(false)
     })()
-  }, [params.id, router, isFree50])
+  }, [params.id])
 
-  // 2) Redeem an existing pass (authenticated users only)
-  const redeemPass = async (passId: string) => {
-    setLoading(true)
-    setError(null)
-
-    const { error } = await supabase.rpc("register_for_tournament", {
-      p_tournament_id: params.id,
-      p_pass_id: passId,
-    })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      // send telegram alert too
-      const [tournRes, profRes] = await Promise.all([
-        supabase.from("tournaments").select("name").eq("id", params.id).single(),
-        supabase.from("profiles").select("full_name").single(),
-      ])
-
-      const tournamentName = tournRes.data?.name ?? params.id
-      const fullName = profRes.data?.full_name ?? "(anonymous)"
-
-      await fetch("/api/telegram-alert", {
+  // Returns true if a guest's email already belongs to an account (so we can
+  // steer them to log in instead of registering as a guest).
+  async function guestEmailHasAccount(email: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/account-exists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentName, fullName }),
+        body: JSON.stringify({ email }),
       })
-
-      router.push(`/play/${params.id}?registered=1`)
+      const json = await res.json()
+      return !!json.exists
+    } catch {
+      return false
     }
   }
 
-  // 3) Handle free-50 signup form
+  // Save a free registration. For signed-in users, revive a prior (possibly
+  // cancelled) entry instead of inserting a second row — there's a unique
+  // constraint on (tournament_id, profile_id) that isn't filtered by
+  // cancelled_at, so a fresh insert after cancelling would fail. Returns an
+  // error message, or null on success.
+  async function saveFreeEntry(guestName: string, guestEmail: string): Promise<string | null> {
+    const mobile = getMobileSupabaseClient()
+
+    if (userId) {
+      const { data: existing } = await mobile
+        .from("tournament_entries")
+        .select("id")
+        .eq("tournament_id", params.id)
+        .eq("profile_id", userId)
+        .maybeSingle()
+
+      if (existing) {
+        const { error } = await mobile
+          .from("tournament_entries")
+          .update({
+            cancelled_at: null,
+            registered_at: new Date().toISOString(),
+            payment_method: "free",
+            payment_status: "unpaid",
+          })
+          .eq("id", (existing as { id: string }).id)
+        return error?.message ?? null
+      }
+
+      const { error } = await mobile.from("tournament_entries").insert({
+        tournament_id: params.id,
+        profile_id: userId,
+        payment_method: "free",
+        payment_status: "unpaid",
+      })
+      return error?.message ?? null
+    }
+
+    const { error } = await mobile.from("tournament_entries").insert({
+      tournament_id: params.id,
+      guest_name: guestName,
+      guest_email: guestEmail,
+      payment_method: "free",
+      payment_status: "unpaid",
+    })
+    return error?.message ?? null
+  }
+
+  // 2) Free-50 signup form
   const handleFree50 = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     setError(null)
 
     const form = new FormData(e.currentTarget)
-    const result = await submitRegistration(form)
+    setEmailHasAccount(false)
 
-    if (result.success) {
-      router.push(`/play/${params.id}?registered=1`)
-    } else {
+    // Validate + notify admin (enforces name/email/phone/dob/zip rules)
+    const result = await submitRegistration(form)
+    if (!result.success) {
       setError(result.message)
-      setLoading(false)
+      setSubmitting(false)
+      return
+    }
+
+    if (!userId && (await guestEmailHasAccount(String(form.get("email") ?? "")))) {
+      setEmailHasAccount(true)
+      setError("That email already has a SkyBall account. Please log in to register with it.")
+      setSubmitting(false)
+      return
+    }
+
+    // Record the registration in the DB (guest or signed-in), like every other flow
+    const saveErr = await saveFreeEntry(
+      String(form.get("name") ?? ""),
+      String(form.get("email") ?? "")
+    )
+    if (saveErr) {
+      setError(saveErr)
+      setSubmitting(false)
+      return
+    }
+
+    router.push(`/play/${params.id}?registered=1`)
+  }
+
+  // 3a) External registration (partner systems like CourtReserve, or a legacy
+  //     Stripe payment link). Takes precedence over site checkout.
+  const handleExternalLink = () => {
+    if (tournament?.payment_link) window.open(tournament.payment_link, "_blank")
+  }
+
+  // 3b) Paid events without an external link → site-generated Stripe checkout
+  //     (carries tournament_id so the webhook can dual-write revenue + mobile
+  //     registration).
+  const handlePaidRegister = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/event-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId: params.id, profileId: userId }),
+      })
+      const json = await res.json()
+      if (res.ok && json.url) {
+        window.location.href = json.url as string
+      } else {
+        setError(json.error ?? "Could not start checkout.")
+        setSubmitting(false)
+      }
+    } catch {
+      setError("Network error starting checkout.")
+      setSubmitting(false)
     }
   }
 
-  // 4) Handle guest registration (open payment link)
-  const handleGuestRegistration = () => {
-    if (tournament?.payment_link) {
-      window.open(tournament.payment_link, "_blank")
+  // 4) Free / no-link events → registration form. Works for guests (recorded as
+  //    a guest entry) and signed-in users (recorded under their profile).
+  const handleFreeRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+    setEmailHasAccount(false)
+
+    if (!userId && (await guestEmailHasAccount(regEmail))) {
+      setEmailHasAccount(true)
+      setError("That email already has a SkyBall account. Please log in to register with it.")
+      setSubmitting(false)
+      return
     }
+
+    const saveErr = await saveFreeEntry(regName, regEmail)
+    if (saveErr) {
+      setError(saveErr)
+      setSubmitting(false)
+      return
+    }
+
+    // Best-effort admin notification (don't block on it)
+    const contact = [regName, regPhone, regEmail].filter(Boolean).join(" — ")
+    fetch("/api/telegram-alert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tournamentName: tournament?.name ?? params.id,
+        fullName: contact || "(no name)",
+      }),
+    }).catch(() => {})
+
+    router.push(`/play/${params.id}?registered=1`)
   }
 
   return (
@@ -145,6 +262,14 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       <main className="py-24">
         <div className="container mx-auto max-w-xl">
           <h1 className="text-2xl font-bold mb-4">Register for Tournament</h1>
+
+          <button
+            type="button"
+            onClick={() => router.push(`/play/${params.id}`)}
+            className="text-sm text-sky-600 hover:underline mb-4 inline-block"
+          >
+            ← Back to event details
+          </button>
 
           {tournament && (
             <div className="mb-6">
@@ -188,64 +313,113 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 <input name="zip" required className="mt-1 block w-full border rounded p-2" />
               </div>
 
-              <Button type="submit" disabled={loading}>
-                {loading ? "Submitting…" : "Submit Registration"}
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Submitting…" : "Submit Registration"}
               </Button>
             </form>
-          ) : (
-            // REGULAR TOURNAMENT REGISTRATION OPTIONS
-            <div className="space-y-6">
-              {/* Guest Registration Option (if payment link exists) */}
-              {tournament?.payment_link && (
-                <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-2">Register as Guest</h3>
-                  <p className="text-gray-600 mb-4">
-                    Register quickly without creating an account. You&apos;ll be redirected to complete payment.
-                  </p>
-                  <Button onClick={handleGuestRegistration} className="w-full bg-blue-600 hover:bg-blue-700">
-                    Continue as Guest
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Separator if both options exist */}
-              {tournament?.payment_link && isAuthenticated && (
-                <div className="text-center text-gray-500">
-                  <span className="bg-white px-4">or</span>
-                  <hr className="border-gray-300 -mt-3" />
-                </div>
-              )}
-
-              {/* Authenticated User Options */}
-              {isAuthenticated ? (
-                passes.length === 0 ? (
-                  <div className="space-y-6">
-                    <p>No valid passes to use for this tournament.</p>
-                    <BuyPassSection />
-                  </div>
-                ) : (
-                  passes.map((p) => (
-                    <div key={p.id} className="mb-4 flex justify-between items-center">
-                      <span>
-                        {p.quantity_remaining} pass{p.quantity_remaining > 1 ? "es" : ""} remaining
-                      </span>
-                      <Button onClick={() => redeemPass(p.id)}>Use Pass</Button>
-                    </div>
-                  ))
-                )
-              ) : (
-                // Show login prompt only if no payment link
-                !tournament?.payment_link && (
-                  <div className="text-center">
-                    <p className="mb-4">You need to log in to register for this tournament.</p>
-                    <Button onClick={() => router.push(`/login?from=/play/${params.id}/register`)}>
-                      Log In to Continue
-                    </Button>
-                  </div>
-                )
-              )}
+          ) : alreadyRegistered ? (
+            // Already registered
+            <div className="space-y-4">
+              <p className="font-medium text-green-700">You&apos;re registered for this event.</p>
+              <Button variant="outline" onClick={() => router.push("/dashboard")}>
+                Go to Dashboard
+              </Button>
             </div>
+          ) : tournament?.payment_link ? (
+            // EXTERNAL REGISTRATION (CourtReserve / legacy Stripe link)
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-2">Register</h3>
+              <p className="text-gray-600 mb-4">
+                You&apos;ll be redirected to complete your registration.
+              </p>
+              <Button onClick={handleExternalLink} className="w-full bg-blue-600 hover:bg-blue-700">
+                Continue to Registration
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          ) : (tournament?.entry_fee ?? 0) > 0 ? (
+            // PAID EVENT (no external link) → site-generated Stripe checkout (guests welcome)
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6 space-y-4">
+              <h3 className="text-lg font-semibold">Register &amp; Pay</h3>
+              <p className="text-gray-600">
+                Entry fee ${tournament?.entry_fee}. You&apos;ll be taken to secure checkout to complete your registration.
+              </p>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <Button
+                onClick={handlePaidRegister}
+                disabled={submitting}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {submitting ? "Starting checkout…" : `Register & Pay ($${tournament?.entry_fee})`}
+              </Button>
+              <RefundPolicyNotice />
+            </div>
+          ) : (
+            // FREE EVENT → registration form (guests welcome; prefilled + editable when signed in)
+            <form
+              onSubmit={handleFreeRegister}
+              className="border-2 border-sky-200 bg-sky-50 rounded-lg p-6 space-y-4"
+            >
+              <h3 className="text-lg font-semibold">Register</h3>
+
+              {!userId && (
+                <div className="rounded-md border border-sky-300 bg-white p-3 text-sm">
+                  <span className="text-gray-700">Have a SkyBall account? </span>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/login?from=/play/${params.id}/register`)}
+                    className="font-semibold text-sky-700 underline"
+                  >
+                    Log in
+                  </button>{" "}
+                  <span className="text-gray-600">to register with it — or continue as a guest below.</span>
+                </div>
+              )}
+
+              <p className="text-gray-600 text-sm">
+                {userId ? "Confirm your details and register." : "Register as a guest:"}
+              </p>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              {emailHasAccount && (
+                <Button
+                  type="button"
+                  onClick={() => router.push(`/login?from=/play/${params.id}/register`)}
+                  className="w-full bg-sky-600 hover:bg-sky-700"
+                >
+                  Log In to Continue
+                </Button>
+              )}
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <input
+                  required
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Phone</label>
+                <input
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <Button type="submit" disabled={submitting} className="w-full bg-sky-600 hover:bg-sky-700">
+                {submitting ? "Registering…" : "Complete Registration"}
+              </Button>
+            </form>
           )}
         </div>
       </main>

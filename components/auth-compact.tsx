@@ -17,6 +17,7 @@ export function AuthCompact() {
   const router = useRouter()
   const [session, setSession] = useState<Session | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
+  const [isForgot, setIsForgot] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -57,6 +58,19 @@ export function AuthCompact() {
     setLoading(false)
   }
 
+  // Handle Forgot Password → email a reset link
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) setMessage({ text: error.message, type: "error" })
+    else setMessage({ text: "If that email has an account, a reset link is on its way.", type: "success" })
+    setLoading(false)
+  }
+
   // Handle Sign Out
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -93,7 +107,7 @@ export function AuthCompact() {
           <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 p-0" align="end">
             <Card className="border-0 shadow-none">
               <CardContent className="p-4 pt-4">
-                <h3 className="text-lg font-semibold mb-2">{isSignUp ? "Create Account" : "Sign In"}</h3>
+                <h3 className="text-lg font-semibold mb-2">{isForgot ? "Reset Password" : isSignUp ? "Create Account" : "Sign In"}</h3>
                 {message && (
                   <div
                     className={cn(
@@ -109,7 +123,7 @@ export function AuthCompact() {
                     <p>{message.text}</p>
                   </div>
                 )}
-                <form onSubmit={handleAuth} autoComplete="on">
+                <form onSubmit={isForgot ? handleForgot : handleAuth} autoComplete="on">
                   <div className="space-y-3">
                     <Input
                       name="email"
@@ -122,28 +136,64 @@ export function AuthCompact() {
                       className="text-sm"
                       required
                     />
-                    <Input
-                      name="password"
-                      id="password"
-                      type="password"
-                      placeholder="Password"
-                      autoComplete={isSignUp ? "new-password" : "current-password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="text-sm"
-                      required
-                    />
+                    {!isForgot && (
+                      <Input
+                        name="password"
+                        id="password"
+                        type="password"
+                        placeholder="Password"
+                        autoComplete={isSignUp ? "new-password" : "current-password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="text-sm"
+                        required
+                      />
+                    )}
                     <Button type="submit" disabled={loading} className="w-full" size="sm">
-                      {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
+                      {loading
+                        ? "Loading..."
+                        : isForgot
+                          ? "Send reset link"
+                          : isSignUp
+                            ? "Create Account"
+                            : "Sign In"}
                     </Button>
-                    <div className="text-center">
-                      <Button
-                        variant="link"
-                        onClick={() => setIsSignUp(!isSignUp)}
-                        className="text-center text-xs p-0 h-auto mt-2"
-                      >
-                        {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-                      </Button>
+                    <div className="text-center space-y-1">
+                      {!isSignUp && !isForgot && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          onClick={() => {
+                            setIsForgot(true)
+                            setMessage(null)
+                          }}
+                          className="block mx-auto text-center text-xs p-0 h-auto"
+                        >
+                          Forgot password?
+                        </Button>
+                      )}
+                      {isForgot ? (
+                        <Button
+                          type="button"
+                          variant="link"
+                          onClick={() => {
+                            setIsForgot(false)
+                            setMessage(null)
+                          }}
+                          className="text-center text-xs p-0 h-auto mt-2"
+                        >
+                          Back to Sign In
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="link"
+                          onClick={() => setIsSignUp(!isSignUp)}
+                          className="text-center text-xs p-0 h-auto mt-2"
+                        >
+                          {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </form>

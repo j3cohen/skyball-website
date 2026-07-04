@@ -1,12 +1,20 @@
 // middleware.ts
-import { NextResponse }           from "next/server"
-import type { NextRequest }       from "next/server"
+// Auth sessions use the mobile Supabase project (cymvgxkxhpxjxdyeqcbr).
+import { NextResponse }  from "next/server"
+import type { NextRequest } from "next/server"
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
 export async function middleware(req: NextRequest) {
-  // ── Standard session refresh ─────────────────────────────────────────────
   const res      = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+  // Refresh the mobile-project session. Pass the mobile URL/key explicitly so
+  // this never depends on the ambiguous NEXT_PUBLIC_SUPABASE_URL.
+  const supabase = createMiddlewareClient(
+    { req, res },
+    {
+      supabaseUrl: process.env.NEXT_PUBLIC_MOBILE_SUPABASE_URL,
+      supabaseKey: process.env.NEXT_PUBLIC_MOBILE_SUPABASE_ANON_KEY,
+    }
+  )
   await supabase.auth.getSession()
   return res
 }

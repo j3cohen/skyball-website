@@ -12,6 +12,7 @@ import Link from "next/link"
 import { Calendar, MapPin, Clock, Trophy, DollarSign, Award, Info } from "lucide-react"
 import RegistrationStatus from "@/components/registration-status"
 import GuestRegistrationButton from "@/components/guest-registration-button"
+import RefundPolicyNotice from "@/components/refund-policy-notice"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
 import type { Metadata } from "next"
 import BasicResultsSummary from "@/components/basic-results-summary"
@@ -160,6 +161,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                               <Calendar className="w-5 h-5 mr-3 text-sky-600" />
                               <span>Registration Deadline: {staticEvent.registrationDeadline}</span>
                             </div>
+                          )}
+                          {event.registrationFee && event.registrationFee !== "Free" && (
+                            <RefundPolicyNotice className="pt-1" />
                           )}
                         </div>
                       </div>

@@ -4,8 +4,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { Database } from "@/lib/database.types"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 
 interface Player {
   slug:        string
@@ -17,7 +16,6 @@ interface Player {
 }
 
 export default function RankingsTable() {
-  const supabase = createClientComponentClient<Database>()
   const [rankedPlayers, setRankedPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
@@ -25,19 +23,10 @@ export default function RankingsTable() {
   useEffect(() => {
     async function loadRankings() {
       setLoading(true)
-      const { data, error } = await supabase
+      // mobile current_rankings view includes player columns directly (0023 migration)
+      const { data, error } = await getMobileSupabaseClient()
         .from("current_rankings")
-        .select(`
-          player_id,
-          total_points,
-          current_rank,
-          players (
-            slug,
-            name,
-            headshot_url,
-            hometown
-          )
-        `)
+        .select("id, slug, name, headshot_url, hometown, total_points, current_rank")
         .gt("total_points", 0)
         .order("current_rank", { ascending: true })
 
@@ -45,13 +34,13 @@ export default function RankingsTable() {
         setError(error.message)
       } else if (data) {
         setRankedPlayers(
-          data.map((row) => ({
-            slug:        row.players!.slug,
+          (data as { id: string; slug: string; name: string; headshot_url: string | null; hometown: string | null; total_points: number; current_rank: number }[]).map((row) => ({
+            slug:        row.slug,
             rank:        row.current_rank ?? 0,
             totalPoints: row.total_points ?? 0,
-            name:        row.players!.name,
-            headshot:    row.players!.headshot_url || "/placeholder.svg",
-            hometown:    row.players!.hometown ?? "",
+            name:        row.name,
+            headshot:    row.headshot_url || "/placeholder.svg",
+            hometown:    row.hometown ?? "",
           }))
         )
       }
@@ -59,7 +48,7 @@ export default function RankingsTable() {
     }
 
     loadRankings()
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return <p className="text-center py-8">Loading rankings…</p>

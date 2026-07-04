@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 // import { Calendar, MapPin, Users, Trophy, Clock, ChevronRight, AlertCircle, History, Bell } from "lucide-react"
 import { Calendar, MapPin, Trophy, Clock, ChevronRight, History, Bell } from "lucide-react"
@@ -15,117 +15,11 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
-import { submitRegistration } from "@/app/actions/registration"
 
 type TabValue = "open-play" | "tournaments"
 
 interface PlayEventProps {
   events: Event[]
-}
-
-function Modal({ open, onClose, children }: { open: boolean; onClose(): void; children: React.ReactNode }) {
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <button className="text-gray-500 mb-4" onClick={onClose}>✕ Close</button>
-        {children}
-      </div>
-    </div>
-  )
-}
-function TelegramRegistrationForm({
-  event,
-  onSuccess,
-}: {
-  event: Event
-  onSuccess(): void
-}) {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [zip, setZip] = useState("")
-  const [dob, setDob] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    const formData = new FormData()
-    formData.append("tournamentId", event.id)
-    formData.append("tournamentName", event.name)
-    formData.append("tournamentDate", event.date)
-    formData.append("name", name)
-    formData.append("email", email)
-    formData.append("phone", phone)
-    formData.append("zip", zip)
-    formData.append("dob", dob)
-    const result = await submitRegistration(formData)
-    if (result.success) {
-      onSuccess()
-    } else {
-      setError(result.message ?? "Submission failed")
-      setSubmitting(false)
-    }
-  }
-
-   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-red-600">{error}</p>}
-      <div>
-        <Label>Name</Label>
-        <input
-          required
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="w-full border rounded px-2 py-1"
-        />
-      </div>
-      <div>
-        <Label>Email</Label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded px-2 py-1"
-        />
-      </div>
-      <div>
-        <Label>Phone</Label>
-        <input
-          required
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          className="w-full border rounded px-2 py-1"
-        />
-      </div>
-      <div>
-        <Label>ZIP Code</Label>
-        <input
-          required
-          value={zip}
-          onChange={e => setZip(e.target.value)}
-          className="w-full border rounded px-2 py-1"
-        />
-      </div>
-      <div>
-        <Label>Date of Birth</Label>
-        <input
-          type="date"
-          required
-          value={dob}
-          onChange={e => setDob(e.target.value)}
-          className="w-full border rounded px-2 py-1"
-        />
-      </div>
-      <Button type="submit" disabled={submitting}>
-        {submitting ? "Submitting…" : "Submit Registration"}
-      </Button>
-    </form>
-  )
 }
 
 export function PlayEvents({ events }: PlayEventProps) {
@@ -138,7 +32,7 @@ export function PlayEvents({ events }: PlayEventProps) {
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab)
   const [includePastEvents, setIncludePastEvents] = useState(false)
 
-  const [modalEvent, setModalEvent] = useState<Event | null>(null)
+  const router = useRouter()
 
 
   // Update URL when tab changes
@@ -337,7 +231,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                               Register
                             </a>
                           ) : (
-                            <Button size="sm" onClick={() => setModalEvent(event)}>
+                            <Button size="sm" onClick={() => router.push(`/play/${event.id}/register`)}>
                               Register
                             </Button>
                           )}
@@ -605,14 +499,6 @@ export function PlayEvents({ events }: PlayEventProps) {
           </div>
         </section>
       )}
-      <Modal open={!!modalEvent} onClose={() => setModalEvent(null)}>
-        {modalEvent && (
-          <TelegramRegistrationForm
-            event={modalEvent}
-            onSuccess={() => setModalEvent(null)}
-          />
-        )}
-      </Modal>
     </div>
   )
 }

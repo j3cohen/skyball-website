@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { Button } from "@/components/ui/button"
 
 export default function RegistrationStatus({ tournamentId }: { tournamentId: string }) {
@@ -15,10 +15,11 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
 
   useEffect(() => {
     ;(async () => {
-      // 1) grab current session
+      const mobile = getMobileSupabaseClient()
+      // 1) grab current session from mobile project
       const {
         data: { session },
-      } = await supabase.auth.getSession()
+      } = await mobile.auth.getSession()
 
       // not signed in
       if (!session) {
@@ -28,11 +29,12 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
       }
 
       // 2) check if user already registered for this tournament
-      const { count, error } = await supabase
-        .from("registrations")
+      const { count, error } = await mobile
+        .from("tournament_entries")
         .select("id", { head: true, count: "exact" })
-        .eq("user_id", session.user.id)
+        .eq("profile_id", session.user.id)
         .eq("tournament_id", tournamentId)
+        .is("cancelled_at", null)
 
       if (error) {
         console.error("Error checking registration:", error.message)
@@ -65,21 +67,13 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
     )
   }
 
-  // 4) not signed in or not yet registered → show Register button
-  const handleClick = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      router.push(`/login?from=/play/${tournamentId}/register`)
-      return
-    }
-    router.push(`/play/${tournamentId}/register`)
-  }
-
+  // 4) not yet registered → go to the register page, which handles paid
+  //    (Stripe checkout, guests welcome), free (direct), and guest sign-in.
   return (
-    <Button onClick={handleClick} className="bg-sky-600 hover:bg-sky-700 text-white">
+    <Button
+      onClick={() => router.push(`/play/${tournamentId}/register`)}
+      className="bg-sky-600 hover:bg-sky-700 text-white"
+    >
       Register for Event
     </Button>
   )

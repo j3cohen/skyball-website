@@ -11,11 +11,14 @@ function fmtMoney(cents: number) {
 }
 
 function fmtDate(dateStr: string) {
+  // Bucket keys are UTC (dateKey uses toISOString), so format them in UTC too.
+  // Without timeZone:"UTC", a browser west of UTC renders each bucket one
+  // month/day early (e.g. the "2026-01" bucket shows as "Dec '25").
   if (dateStr.length === 7) {
     // YYYY-MM
-    return new Date(dateStr + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+    return new Date(dateStr + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
   }
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 type TimePoint = { date: string; revenue: number; orders: number };

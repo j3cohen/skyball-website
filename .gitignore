@@ -46,3 +46,14 @@ next-env.d.ts
 
 # Claude Code
 CLAUDE.md
+
+# Local-only Supabase migration scripts (contain service-role keys — never commit)
+/scripts/migrate-to-mobile.js
+/scripts/migrate-auth.js
+/scripts/link-profiles.js
+/scripts/dedup-tournaments.js
+
+# Local-only working docs (DB query scratch, test plans)
+/pass-holders-query.md
+/preview-testing-plan.md
+/outstanding-items.md

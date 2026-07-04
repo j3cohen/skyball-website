@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { GripColorPicker } from "@/components/grip-color-picker";
 import { BallColorPicker } from "@/components/ball-color-picker";
-import { supabase } from "@/lib/supabaseClient";
+import { getWebsiteShopClient } from "@/lib/websiteShopClient";
 import { cartLineKey } from "@/lib/cart-line-key";
 import type { CartItemMeta, GripColor, BallColor } from "@/lib/cart";
 
@@ -138,7 +138,7 @@ export default function CartPage() {
         }));
         const priceRowIds = cartItems.map((i) => i.priceRowId);
 
-        const { data, error: sbErr } = await supabase
+        const { data, error: sbErr } = await getWebsiteShopClient()
           .from("product_prices")
           .select(
             `

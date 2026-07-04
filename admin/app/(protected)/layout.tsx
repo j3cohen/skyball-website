@@ -1,11 +1,12 @@
 // app/(protected)/layout.tsx
 // Auth guard + sidebar chrome for all protected admin pages.
 
-import { redirect } from "next/navigation";
-import { cookies }  from "next/headers";
-import Link         from "next/link";
-import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
-import AdminSignOut from "@/components/admin-sign-out";
+import { redirect }                    from "next/navigation";
+import { cookies }                     from "next/headers";
+import Link                            from "next/link";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabaseAdmin }               from "@/lib/server/supabaseAdmin";
+import AdminSignOut                    from "@/components/admin-sign-out";
 
 async function getPendingCount(): Promise<number> {
   const { count } = await supabaseAdmin
@@ -20,28 +21,15 @@ export default async function ProtectedAdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Verify authenticated session by reading the auth cookie directly.
-  // createServerComponentClient has a dev-mode bug where it can't always read
-  // cookies set by the client. Reading the raw JWT and validating via
-  // supabaseAdmin.auth.getUser() is reliable in both dev and prod.
+  // 1. Verify authenticated session.
+  // createServerComponentClient handles both the old v0.9 array cookie format
+  // and the v0.10 object format, and correctly reassembles chunked cookies.
   const cookieStore = cookies();
-  const authCookie = cookieStore
-    .getAll()
-    .find((c) => c.name.includes("-auth-token") && !c.name.includes("."));
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
 
-  let user: Awaited<ReturnType<typeof supabaseAdmin.auth.getUser>>["data"]["user"] = null;
-  if (authCookie) {
-    try {
-      const parsed: unknown = JSON.parse(decodeURIComponent(authCookie.value));
-      const accessToken = Array.isArray(parsed) ? (parsed[0] as string) : null;
-      if (accessToken) {
-        const { data } = await supabaseAdmin.auth.getUser(accessToken);
-        user = data.user;
-      }
-    } catch { /* invalid cookie — fall through to redirect */ }
-  }
-
-  if (!user) redirect("/login?reason=no-session");
+  if (!session) redirect("/login?reason=no-session");
+  const user = session.user;
 
   // 2. Verify admin role (uses service role to bypass RLS)
   const { data: adminRow } = await supabaseAdmin

@@ -142,6 +142,15 @@ function isEventOrder(order: CandidateOrder): boolean {
   return /entry fee|open.?play/i.test(s);
 }
 
+/** Returns the stored tracking_status for a given tracking number on an order, or null if not found. */
+function getStoredStatus(order: CandidateOrder, trackingNumber: string): string | null {
+  const tn = trackingNumber.trim();
+  for (const entry of order.tracking_numbers ?? []) {
+    if (entry.number.trim() === tn) return entry.tracking_status;
+  }
+  return null;
+}
+
 // ─── matchRows ────────────────────────────────────────────────────────────────
 
 export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): RowMatch[] {
@@ -202,12 +211,14 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
       existingOrderIds.includes(c.id)
     );
     if (existingInEmailCandidates) {
+      const storedStatus = getStoredStatus(existingInEmailCandidates, row.trackingNumber);
+      const noChange = storedStatus !== null && storedStatus === row.status;
       results.push({
         row, rowIndex,
         confidence:         "already-imported",
         candidates:         emailCandidates,
         selectedOrderId:    existingInEmailCandidates.id,
-        skipped:            false,
+        skipped:            noChange,
         isStatusUpdate:     true,
         additionalOrderIds: additionalFor(existingInEmailCandidates.id),
       });
@@ -217,12 +228,15 @@ export function matchRows(rows: PirateShipRow[], allOrders: CandidateOrder[]): R
     // ── Priority 2: label already recorded but no email match found ─────────
     // (e.g. order has no email, or email in DB differs — still update status)
     if (existingOrderIds.length > 0 && emailCandidates.length === 0) {
+      const primaryOrder = allOrders.find(o => o.id === existingOrderIds[0]);
+      const storedStatus = primaryOrder ? getStoredStatus(primaryOrder, row.trackingNumber) : null;
+      const noChange = storedStatus !== null && storedStatus === row.status;
       results.push({
         row, rowIndex,
         confidence:         "already-imported",
         candidates:         [],
         selectedOrderId:    existingOrderIds[0],
-        skipped:            false,
+        skipped:            noChange,
         isStatusUpdate:     true,
         additionalOrderIds: existingOrderIds.slice(1),
       });

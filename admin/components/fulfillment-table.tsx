@@ -10,7 +10,7 @@ import TrackingImportModal             from "./tracking-import-modal";
 import StripeImportModal               from "./stripe-import-modal";
 import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
 
-const STATUS_OPTS = ["pending", "processing", "fulfilled", "cancelled"] as const;
+const STATUS_OPTS = ["pending", "processing", "fulfilled", "needs-match", "cancelled", "event"] as const;
 type FulfillmentStatus = (typeof STATUS_OPTS)[number];
 
 type Props = {
@@ -24,10 +24,12 @@ type Props = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  pending:    "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
-  fulfilled:  "bg-green-100 text-green-800",
-  cancelled:  "bg-gray-100 text-gray-600",
+  pending:      "bg-yellow-100 text-yellow-800",
+  processing:   "bg-blue-100 text-blue-800",
+  fulfilled:    "bg-green-100 text-green-800",
+  "needs-match": "bg-orange-100 text-orange-700",
+  cancelled:    "bg-gray-100 text-gray-600",
+  event:        "bg-purple-100 text-purple-800",
 };
 
 function fmtDate(iso: string) {
@@ -108,9 +110,10 @@ export default function FulfillmentTable({
   }
 
   // Inline status editing
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
-  const [openStatusId,    setOpenStatusId]    = useState<string | null>(null);
-  const [statusSaving,    setStatusSaving]    = useState<string | null>(null);
+  const [statusOverrides,  setStatusOverrides]  = useState<Record<string, string>>({});
+  const [openStatusId,     setOpenStatusId]     = useState<string | null>(null);
+  const [statusSaving,     setStatusSaving]     = useState<string | null>(null);
+  const [dropdownUpward,   setDropdownUpward]   = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -269,6 +272,25 @@ export default function FulfillmentTable({
     }
   }
 
+  async function handleMarkEvents() {
+    try {
+      const res = await fetch("/api/admin/orders/mark-events", { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        if (json.updated === 0) {
+          showSuccess("No pending event orders found.");
+        } else {
+          showSuccess(`Marked ${json.updated} order${json.updated !== 1 ? "s" : ""} as "event".`);
+          router.refresh();
+        }
+      } else {
+        alert(json.error ?? "Failed to mark events.");
+      }
+    } catch {
+      alert("Network error.");
+    }
+  }
+
   if (orders.length === 0) {
     return <div className="text-center py-20 text-gray-400">No orders found.</div>;
   }
@@ -385,6 +407,13 @@ export default function FulfillmentTable({
             Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
           </button>
           <button
+            onClick={handleMarkEvents}
+            className="px-4 py-2 text-sm font-medium bg-white border border-purple-300 text-purple-500
+                       rounded-lg hover:bg-purple-50 transition-colors text-xs"
+          >
+            Mark Events
+          </button>
+          <button
             onClick={handleResyncColors}
             className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-400
                        rounded-lg hover:bg-gray-50 transition-colors text-xs"
@@ -475,7 +504,12 @@ export default function FulfillmentTable({
                     <button
                       type="button"
                       disabled={statusSaving === order.id}
-                      onClick={() => setOpenStatusId((prev) => prev === order.id ? null : order.id)}
+                      onClick={(e) => {
+                        if (openStatusId === order.id) { setOpenStatusId(null); return; }
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDropdownUpward(window.innerHeight - rect.bottom < 180);
+                        setOpenStatusId(order.id);
+                      }}
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
                         transition-opacity ${statusSaving === order.id ? "opacity-50" : "hover:opacity-80 cursor-pointer"}
                         ${STATUS_BADGE[statusOverrides[order.id] ?? order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}
@@ -487,7 +521,8 @@ export default function FulfillmentTable({
                     </button>
 
                     {openStatusId === order.id && (
-                      <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]">
+                      <div className={`absolute left-0 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]
+                        ${dropdownUpward ? "bottom-full mb-1" : "top-full mt-1"}`}>
                         {STATUS_OPTS.map((s) => (
                           <button
                             key={s}

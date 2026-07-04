@@ -6,9 +6,6 @@ import { useRouter }       from "next/navigation"
 
 import Profile                       from "@/components/profile"
 import RegisteredTournaments         from "@/components/registered-tournaments"
-import AvailableTournamentPasses     from "@/components/available-tournament-passes"
-import PurchaseTournamentPasses      from "@/components/buy-pass-section"
-import TournamentPassHistory         from "@/components/tournament-pass-history"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import UpcomingTournaments           from "@/components/upcoming-tournaments"
 import { DashboardNotifications }    from "@/components/dashboard-notifications"
@@ -16,7 +13,7 @@ import { DashboardNotifications }    from "@/components/dashboard-notifications"
 
 
 export default function DashboardContent() {
-  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; current_city?: string } | null>(null)
+  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; location_city?: string } | null>(null)
   const [loading, setLoading]   = useState(true)
   const [version, setVersion]   = useState(0)
   const router = useRouter()
@@ -36,7 +33,7 @@ export default function DashboardContent() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, phone, current_city")
+      .select("full_name, phone, location_city")
       .eq("id", session.user.id)
       .single()
 
@@ -44,7 +41,7 @@ export default function DashboardContent() {
       console.error("Error loading profile:", error)
       setProfile(null)
     } else {
-      setProfile(data)
+      setProfile(data as { full_name?: string; phone?: string; location_city?: string } | null)
     }
     setLoading(false)
   }
@@ -63,7 +60,7 @@ export default function DashboardContent() {
     !profile ||
     !profile.full_name?.trim() ||
     !profile.phone?.trim() ||
-    !profile.current_city?.trim()
+    !profile.location_city?.trim()
 
   return (
     <>
@@ -85,9 +82,6 @@ export default function DashboardContent() {
       {/* >>> The rest of your dashboard */}
       <RegisteredTournaments />
       <UpcomingTournaments />
-      <AvailableTournamentPasses />
-      <PurchaseTournamentPasses />
-      <TournamentPassHistory />
 
       {/* >>> Once profile is complete, render it again at the bottom */}
       {!incomplete && (

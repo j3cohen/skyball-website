@@ -6,18 +6,14 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import PlayerTournamentHistory from "@/components/player-tournament-history"
 
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import type { Database } from "@/lib/database.types"
+import { getMobileSupabase } from "@/lib/server/supabaseMobile"
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 
-type PlayerRow = Database["public"]["Tables"]["players"]["Row"]
-type PlayerRecordsRow = Database["public"]["Views"]["player_records"]["Row"]
-type CurrentRankingsRow = Database["public"]["Views"]["current_rankings"]["Row"]
-type PlayerTournamentPointsRow =
-  Database["public"]["Tables"]["player_tournament_points"]["Row"] & {
-    tournament: Database["public"]["Tables"]["tournaments"]["Row"] | null
-  }
+type PlayerRow = { id: string; name: string; slug: string; birthdate: string | null; headshot_url: string | null; fullbody_url: string | null; hometown: string | null }
+type PlayerRecordsRow = { wins: number; losses: number }
+type CurrentRankingsRow = { current_rank: number; total_points: number }
+type PlayerTournamentPointsRow = { points: number; tournament_id: string; tournament: { id: string; name: string; start_date: string; date?: string; points_value: number } | null }
 
 
 export async function generateMetadata({
@@ -25,29 +21,24 @@ export async function generateMetadata({
 }: {
   params: { id: string }
 }): Promise<Metadata> {
-  const supabase = createServerComponentClient<Database>({ cookies })
+  const supabase = getMobileSupabase()
   const { data: player } = await supabase
     .from("players")
     .select("name, hometown, headshot_url")
     .eq("slug", params.id)
-    .single()
+    .single<PlayerRow>()
 
   if (!player) return { title: "Player Not Found" }
 
   const title = `${player.name} — SkyBall™ Player Profile`
   const description = `View ${player.name}'s SkyBall™ rankings, win/loss record, and full tournament history.${player.hometown ? ` From ${player.hometown}.` : ""}`
 
-  return {
+  return pageMetadata({
     title,
     description,
-    alternates: { canonical: `https://skyball.us/players/${params.id}` },
-    openGraph: {
-      title,
-      description,
-      url: `https://skyball.us/players/${params.id}`,
-      ...(player.headshot_url ? { images: [{ url: player.headshot_url }] } : {}),
-    },
-  }
+    path: `/players/${params.id}`,
+    ...(player.headshot_url ? { image: player.headshot_url } : {}),
+  })
 }
 
 export default async function PlayerPage({
@@ -55,7 +46,7 @@ export default async function PlayerPage({
 }: {
   params: { id: string }
 }) {
-  const supabase = createServerComponentClient<Database>({ cookies })
+  const supabase = getMobileSupabase()
 
   // —1️⃣ Load the core player row
   const { data: player, error: playerError } = await supabase
@@ -90,11 +81,12 @@ export default async function PlayerPage({
   const wins = rec?.wins ?? 0
   const losses = rec?.losses ?? 0
 
-  // —3️⃣ Load current rank & total_points from your current_rankings view
+  // —3️⃣ Load current rank & total_points from current_rankings view
+  // Mobile view uses id (player id) as the key column, not player_id
   const { data: rankRow, error: rankError } = await supabase
     .from("current_rankings")
     .select(`current_rank, total_points`)
-    .eq("player_id", player.id)
+    .eq("id", player.id)
     .single<CurrentRankingsRow>()
 
   if (rankError && rankError.code !== "PGRST116") {
@@ -112,12 +104,12 @@ export default async function PlayerPage({
       tournament: tournaments (
         id,
         name,
-        date,
+        start_date,
         points_value
       )
     `)
     .eq("player_id", player.id)
-    .order("date", { foreignTable: "tournament", ascending: false })
+    .order("start_date", { foreignTable: "tournament", ascending: false })
     .returns<PlayerTournamentPointsRow[]>()
 
   if (ptsError) {
@@ -129,7 +121,7 @@ export default async function PlayerPage({
     .map((r) => ({
       id: r.tournament_id,
       name: r.tournament!.name,
-      date: r.tournament!.date,
+      date: new Date(r.tournament!.date ?? r.tournament!.start_date ?? "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
       points: r.points,
       countedForRankings: true,
     }))

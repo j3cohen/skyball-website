@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import TournamentResultsContent from "@/components/tournament-results-content"
 
 type RawMatchRow = {
@@ -14,11 +14,7 @@ type RawMatchRow = {
   player2_seed: number
   player2_name: string
   winner_slug:  string
-  sets: {
-    set_number:    number
-    player1Score:  number
-    player2Score:  number
-  }[]
+  sets: { p1_score: number; p2_score: number }[]
 }
 
 export default function MatchResultsSection({
@@ -34,7 +30,7 @@ export default function MatchResultsSection({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase
+    getMobileSupabaseClient()
       .rpc("get_match_details_by_tournament", { p_tournament_id: tournamentId })
       .then((res) => {
         if (res.error) {
@@ -58,9 +54,9 @@ export default function MatchResultsSection({
     round: r.round,
     player1: { id: r.player1_slug, name: r.player1_name, seed: r.player1_seed },
     player2: { id: r.player2_slug, name: r.player2_name, seed: r.player2_seed },
-    sets: r.sets.map((s) => ({
-      player1Score: s.player1Score,
-      player2Score: s.player2Score,
+    sets: (r.sets ?? []).map((s) => ({
+      player1Score: s.p1_score,
+      player2Score: s.p2_score,
     })),
     winnerId: r.winner_slug,
   }))
