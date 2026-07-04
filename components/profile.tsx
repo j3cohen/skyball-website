@@ -25,13 +25,13 @@ export default function Profile({ onSave, readOnly }: Props) {
       if (!session) return
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, phone, current_city")
+        .select("full_name, phone, location_city")
         .eq("id", session.user.id)
         .single()
       if (data) {
-        setFullName(data.full_name || "")
-        setPhone(data.phone     || "")
-        setHometown(data.current_city || "")
+        setFullName((data.full_name as string) || "")
+        setPhone((data.phone as string) || "")
+        setHometown((data.location_city as string) || "")
       }
     })()
   }, [])
@@ -47,7 +47,7 @@ export default function Profile({ onSave, readOnly }: Props) {
       id: session.user.id,
       full_name: fullName,
       phone,
-      current_city,
+      location_city: current_city,
       updated_at: new Date().toISOString(),
     }
 
@@ -87,7 +87,7 @@ export default function Profile({ onSave, readOnly }: Props) {
         />
       </div>
       {!readOnly && (
-        <Button onClick={save} disabled={loading || !fullName || !phone || !current_city}>
+        <Button onClick={save} disabled={loading}>
           {loading ? "Saving…" : "Save Profile"}
         </Button>
       )}

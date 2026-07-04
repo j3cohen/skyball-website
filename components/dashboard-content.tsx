@@ -13,7 +13,7 @@ import { DashboardNotifications }    from "@/components/dashboard-notifications"
 
 
 export default function DashboardContent() {
-  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; current_city?: string } | null>(null)
+  const [profile, setProfile]   = useState<{ full_name?: string; phone?: string; location_city?: string } | null>(null)
   const [loading, setLoading]   = useState(true)
   const [version, setVersion]   = useState(0)
   const router = useRouter()
@@ -33,7 +33,7 @@ export default function DashboardContent() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, phone, current_city")
+      .select("full_name, phone, location_city")
       .eq("id", session.user.id)
       .single()
 
@@ -41,7 +41,7 @@ export default function DashboardContent() {
       console.error("Error loading profile:", error)
       setProfile(null)
     } else {
-      setProfile(data)
+      setProfile(data as { full_name?: string; phone?: string; location_city?: string } | null)
     }
     setLoading(false)
   }
@@ -60,7 +60,7 @@ export default function DashboardContent() {
     !profile ||
     !profile.full_name?.trim() ||
     !profile.phone?.trim() ||
-    !profile.current_city?.trim()
+    !profile.location_city?.trim()
 
   return (
     <>
