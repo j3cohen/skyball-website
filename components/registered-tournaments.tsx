@@ -33,6 +33,7 @@ export default function RegisteredTournaments() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -158,46 +159,69 @@ export default function RegisteredTournaments() {
 
     setItems((prev) => prev.filter((x) => x.id !== reg.id))
     setCancelling(null)
+
+    const confirmationNote = !paid
+      ? ""
+      : refundEligible
+        ? " A refund (entry fee less 20% service fee) will be processed."
+        : " Within 36 hours of the event, so it's non-refundable — email info@skyball.us to request a credit."
+    setNotice(`Registration for ${reg.tournament.name} cancelled.${confirmationNote}`)
+    window.setTimeout(() => setNotice(null), 8000)
   }
 
   if (loading) {
     return <p>Loading your registrations…</p>
   }
-  if (items.length === 0) {
-    return <p>You&rsquo;re not registered for any upcoming tournaments yet.</p>
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Upcoming Registrations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-4">
-          {items.map((r) => {
-            const paid = (r.tournament.entryFee ?? 0) > 0
-            return (
-              <li key={r.id} className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <Link href={`/play/${r.tournament.id}`} className="text-sky-600 hover:underline">
-                    {r.tournament.name}
-                  </Link>{" "}
-                  on {r.tournament.date}
-                  {paid && <RefundPolicyNotice className="mt-1" />}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={cancelling === r.id}
-                  onClick={() => handleCancel(r)}
-                >
-                  {cancelling === r.id ? "Cancelling…" : "Cancel"}
-                </Button>
-              </li>
-            )
-          })}
-        </ul>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {notice && (
+        <div className="rounded-md bg-green-50 text-green-700 px-4 py-2 text-sm flex items-start justify-between gap-3">
+          <span>{notice}</span>
+          <button
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss"
+            className="shrink-0 text-green-700/60 hover:text-green-700"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <p>You&rsquo;re not registered for any upcoming tournaments yet.</p>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Upcoming Registrations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4">
+              {items.map((r) => {
+                const paid = (r.tournament.entryFee ?? 0) > 0
+                return (
+                  <li key={r.id} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link href={`/play/${r.tournament.id}`} className="text-sky-600 hover:underline">
+                        {r.tournament.name}
+                      </Link>{" "}
+                      on {r.tournament.date}
+                      {paid && <RefundPolicyNotice className="mt-1" />}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={cancelling === r.id}
+                      onClick={() => handleCancel(r)}
+                    >
+                      {cancelling === r.id ? "Cancelling…" : "Cancel"}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
