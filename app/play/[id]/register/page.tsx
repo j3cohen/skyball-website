@@ -263,6 +263,14 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
         <div className="container mx-auto max-w-xl">
           <h1 className="text-2xl font-bold mb-4">Register for Tournament</h1>
 
+          <button
+            type="button"
+            onClick={() => router.push(`/play/${params.id}`)}
+            className="text-sm text-sky-600 hover:underline mb-4 inline-block"
+          >
+            ← Back to event details
+          </button>
+
           {tournament && (
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-700">{tournament.name}</h2>
