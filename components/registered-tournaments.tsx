@@ -112,13 +112,13 @@ export default function RegisteredTournaments() {
   async function handleCancel(reg: Registration) {
     const paid = (reg.tournament.entryFee ?? 0) > 0
     const hoursUntil = (new Date(reg.tournament.startDate).getTime() - Date.now()) / 3_600_000
-    const refundEligible = paid && hoursUntil > 36
+    const refundEligible = paid && hoursUntil > 48
 
     const confirmMsg = !paid
       ? `Cancel your registration for ${reg.tournament.name}?`
       : refundEligible
-        ? `Cancel your registration for ${reg.tournament.name}? You're more than 36 hours out, so you'll be refunded your entry fee less a 20% service fee.`
-        : `Cancel your registration for ${reg.tournament.name}? You're within 36 hours of the event, so the entry fee is non-refundable. You can email info@skyball.us to request a credit toward a future tournament.`
+        ? `Cancel your registration for ${reg.tournament.name}? You're more than 48 hours out, so you'll be refunded your entry fee less a 10% service fee.`
+        : `Cancel your registration for ${reg.tournament.name}? You're within 48 hours of the event, so the entry fee is non-refundable. You can email info@skyball.us to request a credit toward a future tournament.`
 
     if (!window.confirm(confirmMsg)) return
 
@@ -151,7 +151,7 @@ export default function RegisteredTournaments() {
           tournamentName: reg.tournament.name,
           fullName: (prof as { full_name?: string } | null)?.full_name ?? "(account holder)",
           note: refundEligible
-            ? "Refund due: entry fee less 20% service fee (>36h before event)."
+            ? "Refund due: entry fee less 10% service fee (>48h before event)."
             : "No refund (within 36h). Credit on request.",
         }),
       }).catch(() => {})
@@ -163,8 +163,8 @@ export default function RegisteredTournaments() {
     const confirmationNote = !paid
       ? ""
       : refundEligible
-        ? " A refund (entry fee less 20% service fee) will be processed."
-        : " Within 36 hours of the event, so it's non-refundable — email info@skyball.us to request a credit."
+        ? " A refund (entry fee less 10% service fee) will be processed."
+        : " Within 48 hours of the event, so it's non-refundable — email info@skyball.us to request a credit."
     setNotice(`Registration for ${reg.tournament.name} cancelled.${confirmationNote}`)
     window.setTimeout(() => setNotice(null), 8000)
   }
