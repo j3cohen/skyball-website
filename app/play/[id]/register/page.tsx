@@ -91,14 +91,39 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     setError(null)
 
     const form = new FormData(e.currentTarget)
-    const result = await submitRegistration(form)
 
-    if (result.success) {
-      router.push(`/play/${params.id}?registered=1`)
-    } else {
+    // Validate + notify admin (enforces name/email/phone/dob/zip rules)
+    const result = await submitRegistration(form)
+    if (!result.success) {
       setError(result.message)
       setSubmitting(false)
+      return
     }
+
+    // Record the registration in the DB (guest or signed-in), like every other flow
+    const mobile = getMobileSupabaseClient()
+    const row = userId
+      ? {
+          tournament_id: params.id,
+          profile_id: userId,
+          payment_method: "free",
+          payment_status: "unpaid",
+        }
+      : {
+          tournament_id: params.id,
+          guest_name: String(form.get("name") ?? ""),
+          guest_email: String(form.get("email") ?? ""),
+          payment_method: "free",
+          payment_status: "unpaid",
+        }
+    const { error: insertErr } = await mobile.from("tournament_entries").insert(row)
+    if (insertErr) {
+      setError(insertErr.message)
+      setSubmitting(false)
+      return
+    }
+
+    router.push(`/play/${params.id}?registered=1`)
   }
 
   // 3a) External registration (partner systems like CourtReserve, or a legacy
