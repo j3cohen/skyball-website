@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next"
-import { upcomingTournaments, pastTournaments } from "@/data/tournaments"
+import { pastTournaments } from "@/data/tournaments"
 import { getSupabasePublic } from "@/lib/server/supabasePublic"
 import { getMobileSupabase } from "@/lib/server/supabaseMobile"
 import { SITE_URL } from "@/lib/seo"
@@ -11,7 +11,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, priority: 1.0, changeFrequency: "weekly", lastModified: new Date("2025-03-01") },
     { url: `${SITE_URL}/shop`, priority: 0.9, changeFrequency: "weekly", lastModified: new Date("2025-03-01") },
-    { url: `${SITE_URL}/tournaments`, priority: 0.9, changeFrequency: "weekly", lastModified: new Date("2025-03-01") },
     { url: `${SITE_URL}/play`, priority: 0.8, changeFrequency: "weekly", lastModified: new Date("2025-03-01") },
     { url: `${SITE_URL}/rules`, priority: 0.8, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
     { url: `${SITE_URL}/how-to`, priority: 0.8, changeFrequency: "monthly", lastModified: new Date("2025-01-01") },
@@ -29,20 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/privacypolicy`, priority: 0.3, changeFrequency: "yearly", lastModified: new Date("2026-04-06") },
   ]
 
-  const tournamentPages: MetadataRoute.Sitemap = [
-    ...upcomingTournaments.map((t) => ({
-      url: `${SITE_URL}/tournaments/${t.id}`,
-      priority: 0.8 as const,
-      changeFrequency: "weekly" as const,
-      lastModified: new Date("2025-03-01"),
-    })),
-    ...pastTournaments.map((t) => ({
-      url: `${SITE_URL}/past-tournaments/${t.id}`,
-      priority: 0.5 as const,
-      changeFrequency: "yearly" as const,
-      lastModified: new Date("2025-01-01"),
-    })),
-  ]
+  const tournamentPages: MetadataRoute.Sitemap = pastTournaments.map((t) => ({
+    url: `${SITE_URL}/past-tournaments/${t.id}`,
+    priority: 0.5 as const,
+    changeFrequency: "yearly" as const,
+    lastModified: new Date("2025-01-01"),
+  }))
 
   const supabase = getSupabasePublic()
 
