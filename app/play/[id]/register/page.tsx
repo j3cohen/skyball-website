@@ -26,6 +26,11 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Free-event registration form (prefilled for signed-in users, editable)
+  const [regName, setRegName] = useState("")
+  const [regEmail, setRegEmail] = useState("")
+  const [regPhone, setRegPhone] = useState("")
+
   // detect any "free 50" tournaments
   const isFree50 = params.id.startsWith("skyball-50-")
 
@@ -52,8 +57,11 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       } = await mobile.auth.getSession()
       setUserId(session?.user.id ?? null)
 
-      // If signed in, check whether they're already registered
+      // If signed in, check existing registration and prefill the form from
+      // the profile (all fields stay editable).
       if (session) {
+        setRegEmail((prev) => prev || session.user.email || "")
+
         const { count } = await mobile
           .from("tournament_entries")
           .select("id", { head: true, count: "exact" })
@@ -61,6 +69,15 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
           .eq("tournament_id", params.id)
           .is("cancelled_at", null)
         setAlreadyRegistered((count ?? 0) > 0)
+
+        const { data: prof } = await mobile
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", session.user.id)
+          .single()
+        const p = prof as { full_name?: string | null; phone?: string | null } | null
+        if (p?.full_name) setRegName((prev) => prev || p.full_name!)
+        if (p?.phone) setRegPhone((prev) => prev || p.phone!)
       }
 
       setLoading(false)
@@ -115,20 +132,30 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     }
   }
 
-  // 4) Free / no-link events → direct registration for signed-in users
-  const handleDirectRegister = async () => {
-    if (!userId) return
+  // 4) Free / no-link events → registration form. Works for guests (recorded as
+  //    a guest entry) and signed-in users (recorded under their profile).
+  const handleFreeRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setSubmitting(true)
     setError(null)
 
     const mobile = getMobileSupabaseClient()
-    const { error: insertErr } = await mobile.from("tournament_entries").insert({
-      tournament_id: params.id,
-      profile_id: userId,
-      payment_method: "free",
-      payment_status: "unpaid",
-    })
+    const row = userId
+      ? {
+          tournament_id: params.id,
+          profile_id: userId,
+          payment_method: "free",
+          payment_status: "unpaid",
+        }
+      : {
+          tournament_id: params.id,
+          guest_name: regName,
+          guest_email: regEmail,
+          payment_method: "free",
+          payment_status: "unpaid",
+        }
 
+    const { error: insertErr } = await mobile.from("tournament_entries").insert(row)
     if (insertErr) {
       setError(insertErr.message)
       setSubmitting(false)
@@ -136,17 +163,13 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     }
 
     // Best-effort admin notification (don't block on it)
-    const { data: prof } = await mobile
-      .from("profiles")
-      .select("full_name")
-      .eq("id", userId)
-      .single()
+    const contact = [regName, regPhone, regEmail].filter(Boolean).join(" — ")
     fetch("/api/telegram-alert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tournamentName: tournament?.name ?? params.id,
-        fullName: (prof as { full_name?: string } | null)?.full_name ?? "(no name)",
+        fullName: contact || "(no name)",
       }),
     }).catch(() => {})
 
@@ -242,28 +265,50 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
                 {submitting ? "Starting checkout…" : `Register & Pay ($${tournament?.entry_fee})`}
               </Button>
             </div>
-          ) : userId ? (
-            // DIRECT REGISTRATION (free events, signed in)
-            <div className="border-2 border-sky-200 bg-sky-50 rounded-lg p-6 space-y-4">
-              <h3 className="text-lg font-semibold">Register</h3>
-              <p className="text-gray-600">Confirm your spot for this event.</p>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button
-                onClick={handleDirectRegister}
-                disabled={submitting}
-                className="w-full bg-sky-600 hover:bg-sky-700"
-              >
-                {submitting ? "Registering…" : "Confirm Registration"}
-              </Button>
-            </div>
           ) : (
-            // Guest on a free / no-link event → must sign in to register
-            <div className="text-center space-y-4">
-              <p>You need to be signed in to register for this event.</p>
-              <Button onClick={() => router.push(`/login?from=/play/${params.id}/register`)}>
-                Log In to Continue
+            // FREE EVENT → registration form (guests welcome; prefilled + editable when signed in)
+            <form
+              onSubmit={handleFreeRegister}
+              className="border-2 border-sky-200 bg-sky-50 rounded-lg p-6 space-y-4"
+            >
+              <h3 className="text-lg font-semibold">Register</h3>
+              <p className="text-gray-600 text-sm">
+                {userId
+                  ? "Confirm your details and register."
+                  : "Enter your details to register for this event."}
+              </p>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <input
+                  required
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Phone</label>
+                <input
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              </div>
+              <Button type="submit" disabled={submitting} className="w-full bg-sky-600 hover:bg-sky-700">
+                {submitting ? "Registering…" : "Complete Registration"}
               </Button>
-            </div>
+            </form>
           )}
         </div>
       </main>
