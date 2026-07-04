@@ -31,6 +31,8 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   const [regName, setRegName] = useState("")
   const [regEmail, setRegEmail] = useState("")
   const [regPhone, setRegPhone] = useState("")
+  // Set when a guest enters an email that already has an account.
+  const [emailHasAccount, setEmailHasAccount] = useState(false)
 
   // detect any "free 50" tournaments
   const isFree50 = params.id.startsWith("skyball-50-")
@@ -84,6 +86,22 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
       setLoading(false)
     })()
   }, [params.id])
+
+  // Returns true if a guest's email already belongs to an account (so we can
+  // steer them to log in instead of registering as a guest).
+  async function guestEmailHasAccount(email: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/account-exists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      const json = await res.json()
+      return !!json.exists
+    } catch {
+      return false
+    }
+  }
 
   // Save a free registration. For signed-in users, revive a prior (possibly
   // cancelled) entry instead of inserting a second row — there's a unique
@@ -140,11 +158,19 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     setError(null)
 
     const form = new FormData(e.currentTarget)
+    setEmailHasAccount(false)
 
     // Validate + notify admin (enforces name/email/phone/dob/zip rules)
     const result = await submitRegistration(form)
     if (!result.success) {
       setError(result.message)
+      setSubmitting(false)
+      return
+    }
+
+    if (!userId && (await guestEmailHasAccount(String(form.get("email") ?? "")))) {
+      setEmailHasAccount(true)
+      setError("That email already has a SkyBall account. Please log in to register with it.")
       setSubmitting(false)
       return
     }
@@ -200,6 +226,14 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
+    setEmailHasAccount(false)
+
+    if (!userId && (await guestEmailHasAccount(regEmail))) {
+      setEmailHasAccount(true)
+      setError("That email already has a SkyBall account. Please log in to register with it.")
+      setSubmitting(false)
+      return
+    }
 
     const saveErr = await saveFreeEntry(regName, regEmail)
     if (saveErr) {
@@ -319,12 +353,34 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
               className="border-2 border-sky-200 bg-sky-50 rounded-lg p-6 space-y-4"
             >
               <h3 className="text-lg font-semibold">Register</h3>
+
+              {!userId && (
+                <div className="rounded-md border border-sky-300 bg-white p-3 text-sm">
+                  <span className="text-gray-700">Have a SkyBall account? </span>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/login?from=/play/${params.id}/register`)}
+                    className="font-semibold text-sky-700 underline"
+                  >
+                    Log in
+                  </button>{" "}
+                  <span className="text-gray-600">to register with it — or continue as a guest below.</span>
+                </div>
+              )}
+
               <p className="text-gray-600 text-sm">
-                {userId
-                  ? "Confirm your details and register."
-                  : "Enter your details to register for this event."}
+                {userId ? "Confirm your details and register." : "Register as a guest:"}
               </p>
               {error && <p className="text-sm text-red-600">{error}</p>}
+              {emailHasAccount && (
+                <Button
+                  type="button"
+                  onClick={() => router.push(`/login?from=/play/${params.id}/register`)}
+                  className="w-full bg-sky-600 hover:bg-sky-700"
+                >
+                  Log In to Continue
+                </Button>
+              )}
               <div>
                 <label className="block text-sm font-medium">Name</label>
                 <input
