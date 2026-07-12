@@ -144,7 +144,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
             const isNeedsInput = result.kind === "needs-input";
             const isExpanded   = expandedIds.has(order.id);
             const dims         = overrideDims[order.id];
-            const detectedBox  = !isNeedsInput ? (result as { kind: "large" | "xl" | "small"; box: BoxDimensions }).box : null;
+            const detectedBox  = !isNeedsInput ? (result as Exclude<BoxResult, { kind: "needs-input" }>).box : null;
             const isEdited     = detectedBox && dims
               ? DIM_FIELDS.some(f => dims[f] !== detectedBox[f])
               : false;
@@ -168,7 +168,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {order.customer_name ?? "—"}
                     </p>
-                    <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+                    <p className={`text-xs text-gray-500 mt-0.5 ${isExpanded ? "" : "line-clamp-1"}`}>
                       {order.order_summary ?? "No summary"}
                     </p>
                   </div>

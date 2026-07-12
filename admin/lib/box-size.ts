@@ -13,27 +13,36 @@ export type BoxDimensions = {
 };
 
 export type BoxResult =
-  | { kind: "large"; box: BoxDimensions }
-  | { kind: "xl";    box: BoxDimensions }
-  | { kind: "small"; box: BoxDimensions }
+  | { kind: "large";      box: BoxDimensions }
+  | { kind: "xl";         box: BoxDimensions }
+  | { kind: "essentials"; box: BoxDimensions }
+  | { kind: "ball";       box: BoxDimensions }
+  | { kind: "small";      box: BoxDimensions }
   | { kind: "needs-input" };
 
-// 24×12×6 — essentials kits, partners packs, multi-racket, multi-ball orders
+// 24×12×6 — multi-racket, Partners packs, 31–50 ball orders, misc large orders
 export const LARGE_BOX: BoxDimensions = { length: 24, width: 12, height: 6, pounds: 4, ounces: 0 };
+// 24×12×4 — Essentials kit (+ ≤1 extra 3-pack), or ball-only 13–30 balls
+export const ESSENTIALS_BOX: BoxDimensions = { length: 24, width: 12, height: 4, pounds: 3, ounces: 0 };
+// 10×8×8 — ball-only 4–12 balls (one 12-pack or 2–4 three-packs)
+export const BALL_BOX: BoxDimensions = { length: 10, width: 8, height: 8, pounds: 3, ounces: 0 };
 // 10×4×4 — single 3-ball pack only
 export const SMALL_BOX: BoxDimensions = { length: 10, width: 4, height: 4, pounds: 1, ounces: 0 };
-// 48×13×8 — anywhere kit (includes net)
+// 48×13×8 — Anywhere Kit / Anywhere Pro (includes net)
 export const ANYWHERE_BOX: BoxDimensions = { length: 48, width: 13, height: 8, pounds: 13, ounces: 0 };
 
-function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } {
+function matchItem(item: OrderDataItem, s: string): boolean {
   const slug = (item.slug ?? "").toLowerCase();
   const name = (item.product_name ?? "").toLowerCase();
-  const qty  = item.quantity ?? 1;
+  return slug.includes(s) || name.includes(s);
+}
 
-  const match = (s: string) => slug.includes(s) || name.includes(s);
+function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } {
+  const qty = item.quantity ?? 1;
+  const match = (s: string) => matchItem(item, s);
 
   // Kits (contain both rackets and balls)
-  if (match("partners"))  return { rackets: 4 * qty, balls: 3 * qty };
+  if (match("partners"))   return { rackets: 4 * qty, balls: 3 * qty };
   if (match("essentials")) return { rackets: 2 * qty, balls: 3 * qty };
 
   // Single racket (exclude covers/bags)
@@ -48,35 +57,43 @@ function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } 
   return { rackets: 0, balls: 0 };
 }
 
-/**
- * Classify the box size for an order given its line items.
- *
- * Rules:
- *  - >8 rackets OR >50 balls → needs-input
- *  - exactly 1×3-ball-pack, no rackets → small box
- *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
- */
+// Anywhere Kit or Anywhere Pro — both contain a net and ship in ANYWHERE_BOX
 function isAnywhereKit(item: OrderDataItem): boolean {
-  const slug = (item.slug ?? "").toLowerCase();
-  const name = (item.product_name ?? "").toLowerCase();
-  return slug.includes("anywhere") || name.includes("anywhere");
+  return matchItem(item, "anywhere");
 }
 
 function hasOtherNet(item: OrderDataItem): boolean {
-  const slug = (item.slug ?? "").toLowerCase();
-  const name = (item.product_name ?? "").toLowerCase();
-  return (slug.includes("net") || name.includes("net")) && !isAnywhereKit(item);
+  return matchItem(item, "net") && !isAnywhereKit(item);
+}
+
+function isEssentialsKit(item: OrderDataItem): boolean {
+  return matchItem(item, "essentials");
+}
+
+function isThreePack(item: OrderDataItem): boolean {
+  return matchItem(item, "3-pack") || matchItem(item, "3 pack");
+}
+
+// Grips, covers, bags, crewnecks, etc. — items that don't affect box choice
+function isSizeNeutralAccessory(item: OrderDataItem): boolean {
+  const { rackets, balls } = getItemCounts(item);
+  return rackets === 0 && balls === 0 && !matchItem(item, "net");
 }
 
 /**
  * Classify the box size for an order given its line items.
  *
- * Rules:
- *  - anywhere kit (qty 1) → ANYWHERE_BOX (43×13×8, 13 lb); qty >1 → needs-input
+ * Rules (first match wins):
+ *  - Anywhere Kit/Pro ×1 → ANYWHERE_BOX (48×13×8, 13 lb); qty >1 → needs-input
  *  - any other net item → needs-input
  *  - >8 rackets OR >50 balls → needs-input
- *  - exactly 1×3-ball-pack, no rackets → small box
- *  - everything else (kits, multi-racket, multi-ball, accessories) → large box
+ *  - 1× Essentials kit + ≤1 extra 3-pack (accessories OK) → ESSENTIALS_BOX (24×12×4, 3 lb)
+ *  - ball-only orders, by total balls:
+ *      ≤3 → SMALL_BOX (10×4×4, 1 lb)
+ *      4–12 → BALL_BOX (10×8×8, 3 lb)
+ *      13–30 → ESSENTIALS_BOX (24×12×4, 3 lb)
+ *      31–50 → LARGE_BOX
+ *  - everything else (Partners, multi-racket, mixed orders) → LARGE_BOX
  */
 export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
   const anywhereItems = items.filter(isAnywhereKit);
@@ -98,6 +115,27 @@ export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
   }
 
   if (totalRackets > 8 || totalBalls > 50) return { kind: "needs-input" };
-  if (totalRackets === 0 && totalBalls > 0 && totalBalls <= 3) return { kind: "small", box: SMALL_BOX };
+
+  // Essentials box: exactly one Essentials kit plus at most one extra 3-pack;
+  // size-neutral add-ons (bags, grips, covers) don't disqualify. Product-level
+  // check so Partners packs (same racket/ball counts ×2) don't match.
+  const essentialsQty = items.filter(isEssentialsKit).reduce((s, i) => s + (i.quantity ?? 1), 0);
+  const threePackQty  = items.filter(i => isThreePack(i) && !isEssentialsKit(i))
+                             .reduce((s, i) => s + (i.quantity ?? 1), 0);
+  const onlyEssentialsCompatible = items.every(
+    i => isEssentialsKit(i) || isThreePack(i) || isSizeNeutralAccessory(i)
+  );
+  if (onlyEssentialsCompatible && essentialsQty === 1 && threePackQty <= 1) {
+    return { kind: "essentials", box: ESSENTIALS_BOX };
+  }
+
+  // Ball-only tiers
+  if (totalRackets === 0 && totalBalls > 0) {
+    if (totalBalls <= 3)  return { kind: "small",      box: SMALL_BOX };
+    if (totalBalls <= 12) return { kind: "ball",       box: BALL_BOX };
+    if (totalBalls <= 30) return { kind: "essentials", box: ESSENTIALS_BOX };
+    return { kind: "large", box: LARGE_BOX }; // 31–50 balls, incl. a lone 50-pack
+  }
+
   return { kind: "large", box: LARGE_BOX };
 }

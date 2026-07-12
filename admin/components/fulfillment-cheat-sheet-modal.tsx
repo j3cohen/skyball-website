@@ -58,6 +58,19 @@ function colorSuffix(ball?: string, grips?: string[]): string {
   return parts.length ? ` — ${parts.join(" · ")}` : "";
 }
 
+const BOX_LABELS: Record<string, string> = {
+  xl:           "XL",
+  large:        "Large",
+  essentials:   "Essentials",
+  ball:         "Ball",
+  small:        "Small",
+  "needs-input": "⚠ Check",
+};
+
+function boxLabelFor(kind: string): string {
+  return BOX_LABELS[kind] ?? "⚠ Check";
+}
+
 function ColorTag({ label }: { label: string }) {
   return (
     <span className="ml-1 rounded bg-gray-100 text-gray-600 px-1.5 py-0.5 text-[10px] font-medium leading-none">
@@ -228,13 +241,15 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
   }
 
   // Box counts
-  let largeCt = 0, xlCt = 0, smallCt = 0, inputCt = 0;
+  let largeCt = 0, xlCt = 0, essentialsCt = 0, ballCt = 0, smallCt = 0, inputCt = 0;
   for (const order of orders) {
     const r = classifyBoxSize(getItems(order));
-    if      (r.kind === "large") largeCt++;
-    else if (r.kind === "xl")    xlCt++;
-    else if (r.kind === "small") smallCt++;
-    else                         inputCt++;
+    if      (r.kind === "large")      largeCt++;
+    else if (r.kind === "xl")         xlCt++;
+    else if (r.kind === "essentials") essentialsCt++;
+    else if (r.kind === "ball")       ballCt++;
+    else if (r.kind === "small")      smallCt++;
+    else                              inputCt++;
   }
 
   function handlePrint() {
@@ -258,21 +273,19 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
     ].join("");
 
     const boxRows = [
-      largeCt > 0 ? `<tr><td class="qty">${largeCt}×</td><td>Large box (24×12×6")</td></tr>` : "",
-      xlCt    > 0 ? `<tr><td class="qty">${xlCt}×</td><td>XL box (48×13×8") — Anywhere Kit</td></tr>` : "",
-      smallCt > 0 ? `<tr><td class="qty">${smallCt}×</td><td>Small box (10×4×4")</td></tr>` : "",
-      inputCt > 0 ? `<tr class="warn"><td class="qty">${inputCt}×</td><td>⚠ Manual size needed</td></tr>` : "",
+      largeCt      > 0 ? `<tr><td class="qty">${largeCt}×</td><td>Large box (24×12×6")</td></tr>` : "",
+      xlCt         > 0 ? `<tr><td class="qty">${xlCt}×</td><td>XL box (48×13×8") — Anywhere Kit</td></tr>` : "",
+      essentialsCt > 0 ? `<tr><td class="qty">${essentialsCt}×</td><td>Essentials box (24×12×4")</td></tr>` : "",
+      ballCt       > 0 ? `<tr><td class="qty">${ballCt}×</td><td>Ball box (10×8×8")</td></tr>` : "",
+      smallCt      > 0 ? `<tr><td class="qty">${smallCt}×</td><td>Small box (10×4×4")</td></tr>` : "",
+      inputCt      > 0 ? `<tr class="warn"><td class="qty">${inputCt}×</td><td>⚠ Manual size needed</td></tr>` : "",
     ].join("");
 
     const orderList = orders.map(order => {
       const items            = getItems(order);
       const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
       const boxResult        = classifyBoxSize(items);
-      const boxLabel  =
-        boxResult.kind === "xl"      ? "XL"
-        : boxResult.kind === "large" ? "Large"
-        : boxResult.kind === "small" ? "Small"
-        : "⚠ Check";
+      const boxLabel         = boxLabelFor(boxResult.kind);
       const badgeClass = boxResult.kind === "needs-input" ? "badge-warn" : "badge";
       const lines = items.map((item) => {
         const qty             = item.quantity ?? 1;
@@ -431,6 +444,18 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                     <td className="text-gray-700 py-0.5">XL box (48×13×8&quot;) — Anywhere Kit</td>
                   </tr>
                 )}
+                {essentialsCt > 0 && (
+                  <tr>
+                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{essentialsCt}×</td>
+                    <td className="text-gray-700 py-0.5">Essentials box (24×12×4&quot;)</td>
+                  </tr>
+                )}
+                {ballCt > 0 && (
+                  <tr>
+                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{ballCt}×</td>
+                    <td className="text-gray-700 py-0.5">Ball box (10×8×8&quot;)</td>
+                  </tr>
+                )}
                 {smallCt > 0 && (
                   <tr>
                     <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{smallCt}×</td>
@@ -457,11 +482,7 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
                 const items            = getItems(order);
                 const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
                 const boxResult        = classifyBoxSize(items);
-                const boxLabel  =
-                  boxResult.kind === "xl"      ? "XL"
-                  : boxResult.kind === "large" ? "Large"
-                  : boxResult.kind === "small" ? "Small"
-                  : "⚠ Check";
+                const boxLabel         = boxLabelFor(boxResult.kind);
                 const badgeColor =
                   boxResult.kind === "needs-input"
                     ? "text-amber-700 bg-amber-50"
