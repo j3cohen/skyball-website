@@ -303,10 +303,10 @@ export default function FulfillForm({
                       type="button"
                       disabled={trackingSaving}
                       onClick={() => startEdit(i)}
-                      className="shrink-0 p-1 rounded text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors disabled:opacity-40"
+                      className="shrink-0 p-2 rounded text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors disabled:opacity-40"
                       aria-label="Edit"
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
@@ -315,10 +315,10 @@ export default function FulfillForm({
                       type="button"
                       disabled={trackingSaving}
                       onClick={() => void handleRemoveTracking(i)}
-                      className="shrink-0 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                      className="shrink-0 p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
                       aria-label="Remove"
                     >
-                      <X size={14} />
+                      <X size={16} />
                     </button>
                   </div>
                 )}
@@ -328,14 +328,14 @@ export default function FulfillForm({
         )}
 
         {/* Add new tracking number */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             type="text"
             value={newNumber}
             onChange={(e) => setNewNumber(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddTracking(); } }}
             placeholder="Add tracking number…"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-mono
+            className="basis-full sm:basis-auto sm:flex-1 min-w-0 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-mono
                        focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <select

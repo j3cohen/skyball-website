@@ -1,12 +1,11 @@
 // app/(protected)/layout.tsx
-// Auth guard + sidebar chrome for all protected admin pages.
+// Auth guard + nav chrome for all protected admin pages.
 
 import { redirect }                    from "next/navigation";
 import { cookies }                     from "next/headers";
-import Link                            from "next/link";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { supabaseAdmin }               from "@/lib/server/supabaseAdmin";
-import AdminSignOut                    from "@/components/admin-sign-out";
+import AdminNav                        from "@/components/admin-nav";
 
 async function getPendingCount(): Promise<number> {
   const { count } = await supabaseAdmin
@@ -43,56 +42,11 @@ export default async function ProtectedAdminLayout({
   const pendingCount = await getPendingCount();
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="w-56 shrink-0 bg-gray-900 flex flex-col">
-        {/* Brand */}
-        <div className="px-5 py-5 border-b border-gray-800">
-          <span className="text-lg font-bold text-white tracking-tight">SkyBall</span>
-          <span className="ml-1 text-lg font-light text-sky-400">Admin</span>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          <NavLink href="/fulfillment" label="Fulfillment" badge={pendingCount} />
-          <NavLink href="/revenue" label="Revenue" />
-          <NavLink href="/sales" label="Sales Data" />
-        </nav>
-
-        {/* Footer */}
-        <div className="px-4 py-4 border-t border-gray-800 space-y-2">
-          <p className="text-xs text-gray-500 truncate">{user.email}</p>
-          <AdminSignOut />
-        </div>
-      </aside>
+    <div className="flex min-h-screen flex-col md:flex-row bg-gray-100">
+      <AdminNav email={user.email ?? ""} pendingCount={pendingCount} />
 
       {/* ── Main content ─────────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
-  );
-}
-
-function NavLink({
-  href,
-  label,
-  badge,
-}: {
-  href: string;
-  label: string;
-  badge?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between rounded-md px-3 py-2 text-sm
-                 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-    >
-      <span>{label}</span>
-      {badge != null && badge > 0 && (
-        <span className="ml-2 rounded-full bg-sky-600 px-2 py-0.5 text-xs font-medium text-white">
-          {badge}
-        </span>
-      )}
-    </Link>
   );
 }

@@ -150,17 +150,17 @@ export default function SalesFulfillmentTab({ filters }: { filters: AnalyticsFil
           </div>
           <div className="divide-y divide-gray-50">
             {byCarrier.map((r) => (
-              <div key={r.carrier} className="px-5 py-2.5 flex items-center gap-4">
+              <div key={r.carrier} className="px-5 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:flex-nowrap">
                 <span className="w-20 text-sm font-medium text-gray-700">{r.carrier}</span>
-                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div className="basis-full order-last sm:basis-auto sm:order-none sm:flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-sky-500"
                     style={{ width: `${Math.round((r.shippingCents / maxCarrierCost) * 100)}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-14 text-right">{r.count} labels</span>
-                <span className="text-sm font-medium text-gray-800 w-20 text-right">{fmtMoney(r.shippingCents)}</span>
-                <span className="text-xs text-gray-400 w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
+                <span className="ml-auto sm:ml-0 text-xs text-gray-500 sm:w-14 text-right">{r.count} labels</span>
+                <span className="text-sm font-medium text-gray-800 sm:w-20 text-right">{fmtMoney(r.shippingCents)}</span>
+                <span className="text-xs text-gray-400 sm:w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
               </div>
             ))}
           </div>
@@ -175,19 +175,19 @@ export default function SalesFulfillmentTab({ filters }: { filters: AnalyticsFil
           </div>
           <div className="divide-y divide-gray-50">
             {byCountry.filter(r => r.count > 0).map((r) => (
-              <div key={r.country} className="px-5 py-2.5 flex items-center gap-4">
-                <span className="w-36 text-sm font-medium text-gray-700 truncate">
+              <div key={r.country} className="px-5 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:flex-nowrap">
+                <span className="sm:w-36 text-sm font-medium text-gray-700 truncate">
                   {COUNTRY_NAMES[r.country] ?? r.country}
                 </span>
-                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div className="basis-full order-last sm:basis-auto sm:order-none sm:flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-violet-400"
                     style={{ width: `${Math.round((r.shippingCents / maxCountryCost) * 100)}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-16 text-right">{r.count} orders</span>
-                <span className="text-sm font-medium text-gray-800 w-20 text-right">{fmtMoney(r.shippingCents)}</span>
-                <span className="text-xs text-gray-400 w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
+                <span className="ml-auto sm:ml-0 text-xs text-gray-500 sm:w-16 text-right">{r.count} orders</span>
+                <span className="text-sm font-medium text-gray-800 sm:w-20 text-right">{fmtMoney(r.shippingCents)}</span>
+                <span className="text-xs text-gray-400 sm:w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
               </div>
             ))}
           </div>
@@ -203,16 +203,16 @@ export default function SalesFulfillmentTab({ filters }: { filters: AnalyticsFil
           </div>
           <div className="divide-y divide-gray-50">
             {displayedStates.map((r) => (
-              <div key={r.state} className="px-5 py-2 flex items-center gap-4">
+              <div key={r.state} className="px-5 py-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:flex-nowrap">
                 <span className="w-12 text-sm font-medium text-gray-700">{r.state}</span>
-                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div className="basis-full order-last sm:basis-auto sm:order-none sm:flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-teal-400"
                     style={{ width: `${Math.round((r.avgCents / maxStateAvg) * 100)}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-16 text-right">{r.count} orders</span>
-                <span className="text-sm font-medium text-gray-800 w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
+                <span className="ml-auto sm:ml-0 text-xs text-gray-500 sm:w-16 text-right">{r.count} orders</span>
+                <span className="text-sm font-medium text-gray-800 sm:w-20 text-right">avg {fmtMoney(r.avgCents)}</span>
               </div>
             ))}
           </div>
@@ -245,10 +245,10 @@ function KpiCard({ label, value, sub, alert }: { label: string; value: string; s
 function LoadingSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[1,2,3,4].map((i) => <div key={i} className="h-24 bg-gray-100 rounded-xl" />)}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="h-48 bg-gray-100 rounded-xl" />
         <div className="h-48 bg-gray-100 rounded-xl" />
       </div>

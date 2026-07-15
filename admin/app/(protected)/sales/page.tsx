@@ -21,7 +21,7 @@ export default function SalesPage() {
   const [tab, setTab] = useState<Tab>("customers");
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-4 md:p-8 max-w-6xl">
       <div className="mb-2">
         <h1 className="text-2xl font-bold text-gray-900">Sales Data</h1>
         <p className="text-sm text-gray-500 mt-0.5">Deep-drill analytics · Excludes cancelled orders · USD</p>
@@ -33,12 +33,12 @@ export default function SalesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${
               tab === t.key
                 ? "border-sky-600 text-sky-600"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
