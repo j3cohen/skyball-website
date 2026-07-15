@@ -58,7 +58,7 @@ export default function BulkStatusModal({ orderIds, onClose, onSuccess }: Props)
       />
 
       {/* Modal panel */}
-      <div className="relative z-10 bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <div className="relative z-10 bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 mb-1">Change Order Status</h2>
         <p className="text-sm text-gray-500 mb-5">
           Updating {orderIds.length} selected order{orderIds.length !== 1 ? "s" : ""}.

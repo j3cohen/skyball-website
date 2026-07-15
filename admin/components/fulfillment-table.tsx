@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link                            from "next/link";
 import { useRouter }                   from "next/navigation";
 import type { ExportableOrder }        from "@/lib/order-types";
@@ -31,6 +31,14 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled:    "bg-gray-100 text-gray-600",
   event:        "bg-purple-100 text-purple-800",
 };
+
+// Rarely-used toolbar actions: rendered inline on desktop, in a "More" menu on mobile
+const MORE_ACTIONS = [
+  { label: "Import from Stripe", accent: "border-violet-300 text-violet-700 hover:bg-violet-50" },
+  { label: "Mark Events",        accent: "border-purple-300 text-purple-500 hover:bg-purple-50" },
+  { label: "Re-sync Colors",     accent: "border-gray-300 text-gray-400 hover:bg-gray-50" },
+] as const;
+type MoreActionLabel = (typeof MORE_ACTIONS)[number]["label"];
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -114,18 +122,26 @@ export default function FulfillmentTable({
   const [openStatusId,     setOpenStatusId]     = useState<string | null>(null);
   const [statusSaving,     setStatusSaving]     = useState<string | null>(null);
   const [dropdownUpward,   setDropdownUpward]   = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (the pill renders in both the desktop
+  // table and the mobile card list, so detect via data attribute, not a ref)
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Element | null;
+      if (!target?.closest?.("[data-status-dropdown]")) {
         setOpenStatusId(null);
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  function toggleStatusDropdown(orderId: string, e: React.MouseEvent<HTMLButtonElement>) {
+    if (openStatusId === orderId) { setOpenStatusId(null); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDropdownUpward(window.innerHeight - rect.bottom < 180);
+    setOpenStatusId(orderId);
+  }
 
   async function handleInlineStatusChange(orderId: string, newStatus: FulfillmentStatus) {
     setStatusSaving(orderId);
@@ -291,6 +307,12 @@ export default function FulfillmentTable({
     }
   }
 
+  function handleMoreAction(label: MoreActionLabel) {
+    if (label === "Import from Stripe") setShowStripeImportModal(true);
+    else if (label === "Mark Events")   void handleMarkEvents();
+    else                                void handleResyncColors();
+  }
+
   if (orders.length === 0) {
     return <div className="text-center py-20 text-gray-400">No orders found.</div>;
   }
@@ -305,30 +327,21 @@ export default function FulfillmentTable({
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <div className="flex items-center gap-4 flex-wrap">
-          <button
-            onClick={selectAllPending}
-            className="text-sm text-sky-600 hover:text-sky-800 font-medium transition-colors"
-          >
-            Select all pending
-          </button>
-          {selectedIds.size > 0 && (
-            <span className="text-sm text-gray-500">{selectedIds.size} selected</span>
-          )}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-3">
+        <div className="flex items-center gap-x-4 gap-y-3 flex-wrap">
           {/* Server-side search */}
-          <form onSubmit={handleSearch} className="flex gap-1">
+          <form onSubmit={handleSearch} className="flex gap-1 w-full sm:w-auto">
             <input
               type="search"
               placeholder="Search name, email, summary…"
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-56
+              className="text-sm border border-gray-300 rounded-lg px-3 py-2 md:py-1.5 flex-1 min-w-0 sm:flex-none sm:w-56
                          focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
             />
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm bg-white border border-gray-300 text-gray-600
+              className="px-3 py-2 md:py-1.5 text-sm bg-white border border-gray-300 text-gray-600
                          rounded-lg hover:bg-gray-50 transition-colors"
             >
               Go
@@ -337,20 +350,29 @@ export default function FulfillmentTable({
               <button
                 type="button"
                 onClick={() => { setSearchDraft(""); router.push(buildHref({ q: "", page: 0 })); }}
-                className="px-2 py-1.5 text-sm text-gray-400 hover:text-gray-600"
+                className="px-2 py-2 md:py-1.5 text-sm text-gray-400 hover:text-gray-600"
                 aria-label="Clear search"
               >
                 ×
               </button>
             )}
           </form>
+          <button
+            onClick={selectAllPending}
+            className="text-sm text-sky-600 hover:text-sky-800 font-medium transition-colors py-1"
+          >
+            Select all pending
+          </button>
+          {selectedIds.size > 0 && (
+            <span className="text-sm text-gray-500">{selectedIds.size} selected</span>
+          )}
           {/* Domestic / International filter */}
           <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
             {(["all", "domestic", "international"] as const).map((opt) => (
               <button
                 key={opt}
                 onClick={() => setIntlFilter(opt)}
-                className={`px-3 py-1.5 capitalize transition-colors
+                className={`px-3 py-2 md:py-1.5 capitalize transition-colors
                   ${intlFilter === opt
                     ? "bg-sky-600 text-white"
                     : "bg-white text-gray-600 hover:bg-gray-50"}`}
@@ -360,7 +382,7 @@ export default function FulfillmentTable({
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {selectedIds.size > 0 && (
             <button
               onClick={() => setShowBulkStatusModal(true)}
@@ -376,13 +398,6 @@ export default function FulfillmentTable({
                        rounded-lg hover:bg-gray-50 transition-colors"
           >
             Import Tracking
-          </button>
-          <button
-            onClick={() => setShowStripeImportModal(true)}
-            className="px-4 py-2 text-sm font-medium bg-white border border-violet-300 text-violet-700
-                       rounded-lg hover:bg-violet-50 transition-colors"
-          >
-            Import from Stripe
           </button>
           <button
             onClick={() => setShowCheatSheetModal(true)}
@@ -402,24 +417,44 @@ export default function FulfillmentTable({
           <button
             onClick={handleExportCSV}
             className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-600
-                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
+                       rounded-lg hover:bg-gray-50 transition-colors"
           >
             Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
           </button>
-          <button
-            onClick={handleMarkEvents}
-            className="px-4 py-2 text-sm font-medium bg-white border border-purple-300 text-purple-500
-                       rounded-lg hover:bg-purple-50 transition-colors text-xs"
-          >
-            Mark Events
-          </button>
-          <button
-            onClick={handleResyncColors}
-            className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-400
-                       rounded-lg hover:bg-gray-50 transition-colors text-xs"
-          >
-            Re-sync Colors
-          </button>
+          {/* Rare actions: inline on desktop, tucked in a "More" menu on mobile */}
+          {MORE_ACTIONS.map(({ label, accent }) => (
+            <button
+              key={label}
+              onClick={() => handleMoreAction(label)}
+              className={`hidden md:inline-flex px-4 py-2 text-sm font-medium bg-white border
+                          rounded-lg transition-colors ${accent}`}
+            >
+              {label}
+            </button>
+          ))}
+          <details className="relative md:hidden">
+            <summary
+              className="list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none
+                         inline-flex px-4 py-2 text-sm font-medium bg-white border border-gray-300
+                         text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              More ▾
+            </summary>
+            <div className="absolute right-0 z-20 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+              {MORE_ACTIONS.map(({ label }) => (
+                <button
+                  key={label}
+                  onClick={(e) => {
+                    e.currentTarget.closest("details")?.removeAttribute("open");
+                    handleMoreAction(label);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </details>
         </div>
       </div>
 
@@ -441,8 +476,8 @@ export default function FulfillmentTable({
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      {/* Table (desktop) */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -500,44 +535,14 @@ export default function FulfillmentTable({
                   {fmtMoney(order.order_total_cents, order.order_currency)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                  <div className="relative inline-block" ref={openStatusId === order.id ? dropdownRef : null}>
-                    <button
-                      type="button"
-                      disabled={statusSaving === order.id}
-                      onClick={(e) => {
-                        if (openStatusId === order.id) { setOpenStatusId(null); return; }
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setDropdownUpward(window.innerHeight - rect.bottom < 180);
-                        setOpenStatusId(order.id);
-                      }}
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-                        transition-opacity ${statusSaving === order.id ? "opacity-50" : "hover:opacity-80 cursor-pointer"}
-                        ${STATUS_BADGE[statusOverrides[order.id] ?? order.fulfillment_status] ?? "bg-gray-100 text-gray-600"}`}
-                    >
-                      {statusOverrides[order.id] ?? order.fulfillment_status}
-                      <svg className="w-2.5 h-2.5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {openStatusId === order.id && (
-                      <div className={`absolute left-0 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]
-                        ${dropdownUpward ? "bottom-full mb-1" : "top-full mt-1"}`}>
-                        {STATUS_OPTS.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => void handleInlineStatusChange(order.id, s)}
-                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2
-                              ${(statusOverrides[order.id] ?? order.fulfillment_status) === s ? "font-semibold" : ""}`}
-                          >
-                            <span className={`inline-block w-2 h-2 rounded-full ${STATUS_BADGE[s]?.split(" ")[0] ?? ""}`} />
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <StatusPill
+                    status={statusOverrides[order.id] ?? order.fulfillment_status}
+                    saving={statusSaving === order.id}
+                    open={openStatusId === order.id}
+                    upward={dropdownUpward}
+                    onToggle={(e) => toggleStatusDropdown(order.id, e)}
+                    onSelect={(s) => void handleInlineStatusChange(order.id, s)}
+                  />
                 </td>
                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                   <Link
@@ -560,16 +565,80 @@ export default function FulfillmentTable({
         </table>
       </div>
 
+      {/* Card list (mobile) */}
+      <div className="md:hidden space-y-2">
+        {filteredOrders.map((order) => (
+          <div
+            key={order.id}
+            onClick={() => toggleOne(order.id)}
+            className={`rounded-xl border p-3 shadow-sm transition-colors ${
+              selectedIds.has(order.id) ? "bg-sky-50 border-sky-300" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectedIds.has(order.id)}
+                onChange={() => toggleOne(order.id)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-5 w-5 shrink-0 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+              />
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <span className="font-medium text-gray-900 truncate">{order.customer_name ?? "—"}</span>
+                {getOrderNote(order) && (
+                  <span title={getOrderNote(order)!} className="text-amber-500 text-xs leading-none">💬</span>
+                )}
+              </div>
+              <span onClick={(e) => e.stopPropagation()}>
+                <StatusPill
+                  status={statusOverrides[order.id] ?? order.fulfillment_status}
+                  saving={statusSaving === order.id}
+                  open={openStatusId === order.id}
+                  upward={dropdownUpward}
+                  onToggle={(e) => toggleStatusDropdown(order.id, e)}
+                  onSelect={(s) => void handleInlineStatusChange(order.id, s)}
+                  large
+                  align="right"
+                />
+              </span>
+            </div>
+            <div className="mt-1 pl-8 text-xs text-gray-400 truncate">
+              {order.customer_email ?? "—"} · {fmtDate(order.created_at)}
+            </div>
+            <p className="mt-2 pl-8 text-xs text-gray-600 line-clamp-2">
+              {order.order_summary ?? "—"}
+            </p>
+            <div className="mt-1 pl-8 flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">
+                {fmtMoney(order.order_total_cents, order.order_currency)}
+              </span>
+              <Link
+                href={`/fulfillment/${order.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-sky-600 hover:text-sky-800 font-medium text-sm px-3 py-2 -my-1 -mr-3"
+              >
+                View →
+              </Link>
+            </div>
+          </div>
+        ))}
+        {filteredOrders.length === 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-12 text-center text-gray-400 text-sm">
+            No orders match your search.
+          </div>
+        )}
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">
+        <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-sm text-gray-500 text-center sm:text-left">
             Showing {currentPage * 50 + 1}–{Math.min((currentPage + 1) * 50, total)} of {total.toLocaleString()} orders
           </p>
           <div className="flex items-center gap-1">
             <Link
               href={buildHref({ page: 0 })}
-              className={`px-2 py-1 text-xs rounded border transition-colors ${
+              className={`hidden sm:inline-block px-2 py-1 text-xs rounded border transition-colors ${
                 currentPage === 0 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
               }`}
             >
@@ -577,14 +646,19 @@ export default function FulfillmentTable({
             </Link>
             <Link
               href={buildHref({ page: currentPage - 1 })}
-              className={`px-3 py-1 text-xs rounded border transition-colors ${
+              className={`flex-1 sm:flex-none text-center px-4 py-2 text-sm sm:px-3 sm:py-1 sm:text-xs rounded border transition-colors ${
                 currentPage === 0 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
               }`}
             >
               ← Prev
             </Link>
 
-            {/* Page number pills */}
+            {/* Page indicator (mobile) */}
+            <span className="sm:hidden px-3 text-sm text-gray-500 whitespace-nowrap">
+              {currentPage + 1} / {totalPages}
+            </span>
+
+            {/* Page number pills (desktop) */}
             {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
               const startPage = Math.max(0, Math.min(currentPage - 3, totalPages - 7));
               const p = startPage + i;
@@ -592,7 +666,7 @@ export default function FulfillmentTable({
                 <Link
                   key={p}
                   href={buildHref({ page: p })}
-                  className={`px-3 py-1 text-xs rounded border transition-colors ${
+                  className={`hidden sm:inline-block px-3 py-1 text-xs rounded border transition-colors ${
                     p === currentPage
                       ? "bg-sky-600 text-white border-sky-600"
                       : "border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -605,7 +679,7 @@ export default function FulfillmentTable({
 
             <Link
               href={buildHref({ page: currentPage + 1 })}
-              className={`px-3 py-1 text-xs rounded border transition-colors ${
+              className={`flex-1 sm:flex-none text-center px-4 py-2 text-sm sm:px-3 sm:py-1 sm:text-xs rounded border transition-colors ${
                 currentPage >= totalPages - 1 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
               }`}
             >
@@ -613,7 +687,7 @@ export default function FulfillmentTable({
             </Link>
             <Link
               href={buildHref({ page: totalPages - 1 })}
-              className={`px-2 py-1 text-xs rounded border transition-colors ${
+              className={`hidden sm:inline-block px-2 py-1 text-xs rounded border transition-colors ${
                 currentPage >= totalPages - 1 ? "opacity-40 pointer-events-none border-gray-200 text-gray-400" : "border-gray-300 text-gray-600 hover:bg-gray-50"
               }`}
             >
@@ -674,5 +748,74 @@ export default function FulfillmentTable({
         />
       )}
     </>
+  );
+}
+
+// Inline status badge + dropdown, shared by the desktop table and mobile cards.
+// All state lives in the parent; `large`/`align` size it for touch and keep the
+// menu on-screen when the pill sits at a card's right edge.
+function StatusPill({
+  status,
+  saving,
+  open,
+  upward,
+  onToggle,
+  onSelect,
+  large = false,
+  align = "left",
+}: {
+  status: string;
+  saving: boolean;
+  open: boolean;
+  upward: boolean;
+  onToggle: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onSelect: (s: FulfillmentStatus) => void;
+  large?: boolean;
+  align?: "left" | "right";
+}) {
+  return (
+    <div className="relative inline-block" data-status-dropdown>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={onToggle}
+        className={`inline-flex items-center gap-1 rounded-full font-medium transition-opacity
+          ${large ? "px-3 py-1.5 text-sm" : "px-2.5 py-0.5 text-xs"}
+          ${saving ? "opacity-50" : "hover:opacity-80 cursor-pointer"}
+          ${STATUS_BADGE[status] ?? "bg-gray-100 text-gray-600"}`}
+      >
+        {status}
+        <svg
+          className={`ml-0.5 ${large ? "w-3 h-3" : "w-2.5 h-2.5"}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className={`absolute z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px]
+            ${align === "right" ? "right-0" : "left-0"}
+            ${upward ? "bottom-full mb-1" : "top-full mt-1"}`}
+        >
+          {STATUS_OPTS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onSelect(s)}
+              className={`w-full text-left px-3 hover:bg-gray-50 flex items-center gap-2
+                ${large ? "py-2.5 text-sm" : "py-1.5 text-xs"}
+                ${status === s ? "font-semibold" : ""}`}
+            >
+              <span className={`inline-block w-2 h-2 rounded-full ${STATUS_BADGE[s]?.split(" ")[0] ?? ""}`} />
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

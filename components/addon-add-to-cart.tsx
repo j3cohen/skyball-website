@@ -137,39 +137,32 @@ export function AddonAddToCart(props: {
     );
   }
 
-  // Grip add-ons: two buttons (Add + Choose colors). Crewneck: one button (opens size picker).
+  // Grip add-ons: one outline button that opens the color picker.
+  // Crewneck: one solid button that opens the size picker.
   return (
     <>
-      <div className="flex flex-col gap-2 items-end">
-        <Button
-          type="button"
-          className="w-auto px-4 py-2 h-auto text-sm"
-          onClick={() => setOpen(true)}
-          aria-live="polite"
-        >
-          <span className="inline-flex items-center gap-2">
-            {added ? (
-              <>
-                <CheckIcon />
-                Added
-              </>
-            ) : (
-              buttonLabel
-            )}
-          </span>
-        </Button>
-
-        {isGrip && (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-auto px-4 py-2 h-auto text-sm"
-            onClick={() => setOpen(true)}
-          >
-            Choose colors
-          </Button>
-        )}
-      </div>
+      <Button
+        type="button"
+        variant={isGrip ? "outline" : "default"}
+        className={
+          isGrip
+            ? "w-auto px-4 py-2 h-auto text-sm border-sky-300 text-sky-700 hover:bg-sky-50 hover:text-sky-800"
+            : "w-auto px-4 py-2 h-auto text-sm"
+        }
+        onClick={() => setOpen(true)}
+        aria-live="polite"
+      >
+        <span className="inline-flex items-center gap-2">
+          {added ? (
+            <>
+              <CheckIcon />
+              Added
+            </>
+          ) : (
+            buttonLabel
+          )}
+        </span>
+      </Button>
 
       {/* Modal overlay */}
       {open && (

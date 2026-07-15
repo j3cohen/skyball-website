@@ -87,7 +87,7 @@ export default async function FulfillmentPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Fulfillment</h1>
@@ -95,14 +95,14 @@ export default async function FulfillmentPage({
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
         {STATUSES.map(s => {
           const href = s === "all" ? "/fulfillment" : `/fulfillment?status=${s}`;
           return (
             <Link
               key={s}
               href={href}
-              className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors
+              className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap shrink-0
                 ${status === s
                   ? "border-b-2 border-sky-600 text-sky-700 bg-white"
                   : "text-gray-500 hover:text-gray-700"}`}

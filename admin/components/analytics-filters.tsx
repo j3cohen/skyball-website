@@ -75,7 +75,7 @@ export default function AnalyticsFilters({ value, onChange }: Props) {
           <button
             key={p.value}
             onClick={() => setPreset(p.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               value.preset === p.value
                 ? "bg-sky-600 text-white"
                 : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -101,7 +101,7 @@ export default function AnalyticsFilters({ value, onChange }: Props) {
           <button
             key={r.value}
             onClick={() => setRegion(r.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               value.region === r.value
                 ? "bg-gray-800 text-white"
                 : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"

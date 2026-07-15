@@ -125,7 +125,7 @@ export default function RevenuePage() {
   const totalCents = (stats?.totalCents as number) ?? 0;
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-4 md:p-8 max-w-6xl">
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Revenue</h1>
@@ -224,7 +224,7 @@ export default function RevenuePage() {
             )}
           </div>
           {netRevenue && netRevenue.productCents > 0 && (
-            <div className="bg-gray-50 rounded-lg px-4 py-2 text-xs text-gray-500 flex items-center gap-2">
+            <div className="bg-gray-50 rounded-lg px-4 py-2 text-xs text-gray-500 flex items-center gap-2 flex-wrap">
               <span className="font-medium text-gray-700">{fmtMoney(netRevenue.productCents)}</span>
               <span>product revenue</span>
               {netRevenue.totalFeesCents > 0 && <>

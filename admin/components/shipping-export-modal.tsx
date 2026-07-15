@@ -205,7 +205,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
                         Large or unusual order — enter dimensions manually:
                       </p>
                     )}
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                       {DIM_FIELDS.map(field => (
                         <div key={field}>
                           <label className="block text-xs text-gray-500 mb-0.5 capitalize">

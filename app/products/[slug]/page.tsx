@@ -260,6 +260,18 @@ function isGripAddon(slug: string): boolean {
   );
 }
 
+function gripNoun(slug: string): string {
+  return slug === "professional-over-grip-skyball" ? "grip" : "grips";
+}
+
+const GRIP_SWATCHES = [
+  { color: "#ffffff", label: "White" },
+  { color: "#3b82f6", label: "Blue" },
+  { color: "#f97316", label: "Orange" },
+  { color: "#facc15", label: "Yellow" },
+  { color: "#f472b6", label: "Pink" },
+];
+
 export default async function ProductPage({
   params,
 }: {
@@ -406,12 +418,17 @@ export default async function ProductPage({
 
                 {/* Main CTA Section */}
                 <div className="border rounded-lg p-4 bg-gray-50 mb-6">
-                  {/* Grip upsell - ABOVE main add to cart */}
+                  {/* Grip upsell - above the main CTA so it's seen without scrolling */}
                   {gripAddons.length > 0 && (
                     <div className="mb-4 pb-4 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-3">
-                        Enhance your grip
-                      </p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-medium text-gray-700">
+                          Enhance your grip
+                        </p>
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-sky-700 bg-sky-100 rounded-full px-2 py-0.5">
+                          Popular
+                        </span>
+                      </div>
                       <div className="space-y-3">
                         {gripAddons.map((a) => (
                           <div
@@ -422,15 +439,27 @@ export default async function ProductPage({
                               <div className="font-medium text-sm leading-tight">
                                 {a.name}
                               </div>
-                              <div className="text-sm text-sky-600 font-semibold mt-0.5">
-                                {formatMoney(a.unit_amount, a.currency)}
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-sm text-sky-600 font-semibold">
+                                  {formatMoney(a.unit_amount, a.currency)}
+                                </span>
+                                <span className="flex gap-1">
+                                  {GRIP_SWATCHES.map((s) => (
+                                    <span
+                                      key={s.label}
+                                      title={s.label}
+                                      className="w-3 h-3 rounded-full border border-black/20"
+                                      style={{ backgroundColor: s.color }}
+                                    />
+                                  ))}
+                                </span>
                               </div>
                             </div>
                             <div className="shrink-0">
                               <AddonAddToCart
                                 priceRowId={a.priceRowId}
                                 addonSlug={a.slug}
-                                label="Add"
+                                label={`+ Add ${gripNoun(a.slug)} · ${formatMoney(a.unit_amount, a.currency)}`}
                               />
                             </div>
                           </div>
