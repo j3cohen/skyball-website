@@ -1,7 +1,7 @@
 "use client";
 
 import { useState }                         from "react";
-import { X, ChevronUp, Pencil } from "lucide-react";
+import { X, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { classifyBoxSize }                  from "@/lib/box-size";
 import type { BoxDimensions, BoxResult }    from "@/lib/box-size";
 import { buildCsvString, triggerCsvDownload } from "@/lib/csv-export";
@@ -38,14 +38,16 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
     result: classifyBoxSize(getItems(order)),
   }));
 
-  // All orders get an override entry.
-  // Auto-classified: pre-filled with detected box values.
-  // Needs-input: empty (user must fill before download is enabled).
-  const [overrideDims, setOverrideDims] = useState<Record<string, Partial<BoxDimensions>>>(
+  // Each order carries an array of boxes (parcels). Most orders ship in one box,
+  // but some are cheaper to split across several — each box becomes its own
+  // Pirate Ship label / CSV row.
+  // Auto-classified: one box pre-filled with detected values.
+  // Needs-input: one empty box (user must fill before download is enabled).
+  const [overrideBoxes, setOverrideBoxes] = useState<Record<string, Partial<BoxDimensions>[]>>(
     Object.fromEntries(
       classified.map(({ order, result }) => [
         order.id,
-        result.kind !== "needs-input" ? { ...result.box } : {},
+        result.kind !== "needs-input" ? [{ ...result.box }] : [{}],
       ])
     )
   );
@@ -55,12 +57,30 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
     new Set(classified.filter(c => c.result.kind === "needs-input").map(c => c.order.id))
   );
 
-  const updateDim = (id: string, field: keyof BoxDimensions, raw: string) => {
+  const updateDim = (id: string, boxIdx: number, field: keyof BoxDimensions, raw: string) => {
     const n = parseFloat(raw);
-    setOverrideDims(prev => ({
+    setOverrideBoxes(prev => ({
       ...prev,
-      [id]: { ...prev[id], [field]: isNaN(n) ? undefined : n },
+      [id]: prev[id].map((box, i) =>
+        i === boxIdx ? { ...box, [field]: isNaN(n) ? undefined : n } : box
+      ),
     }));
+  };
+
+  const addBox = (id: string) => {
+    setOverrideBoxes(prev => ({ ...prev, [id]: [...prev[id], {}] }));
+    setExpandedIds(prev => new Set(prev).add(id));
+  };
+
+  const removeBox = (id: string, boxIdx: number) => {
+    setOverrideBoxes(prev => {
+      const next = prev[id].filter((_, i) => i !== boxIdx);
+      return { ...prev, [id]: next.length ? next : [{}] };
+    });
+  };
+
+  const resetBoxes = (id: string, box: BoxDimensions) => {
+    setOverrideBoxes(prev => ({ ...prev, [id]: [{ ...box }] }));
   };
 
   const toggleExpand = (id: string) => {
@@ -72,32 +92,24 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
     });
   };
 
-  // Download is only blocked if a needs-input order has unfilled dims.
-  const needsInput = classified.filter(c => c.result.kind === "needs-input");
-  const allFilled = needsInput.every(({ order }) => dimsFilled(overrideDims[order.id]));
+  // Download is blocked until every box of every order has all dims filled.
+  const allFilled = classified.every(({ order }) => {
+    const boxes = overrideBoxes[order.id] ?? [];
+    return boxes.length > 0 && boxes.every(dimsFilled);
+  });
+
+  const totalLabels = classified.reduce(
+    (sum, { order }) => sum + (overrideBoxes[order.id]?.length ?? 0),
+    0
+  );
 
   const handleDownload = () => {
-    const rows = classified.map(({ order, result }) => {
-      const addr = getAddr(order);
-      const override = overrideDims[order.id];
+    const rows = classified.flatMap(({ order }) => {
+      const addr  = getAddr(order);
+      const boxes = overrideBoxes[order.id] ?? [];
 
-      const box: BoxDimensions = result.kind !== "needs-input"
-        ? {
-            length: override?.length ?? result.box.length,
-            width:  override?.width  ?? result.box.width,
-            height: override?.height ?? result.box.height,
-            pounds: override?.pounds ?? result.box.pounds,
-            ounces: override?.ounces ?? result.box.ounces,
-          }
-        : {
-            length: override?.length ?? 0,
-            width:  override?.width  ?? 0,
-            height: override?.height ?? 0,
-            pounds: override?.pounds ?? 0,
-            ounces: override?.ounces ?? 0,
-          };
-
-      return {
+      // One CSV row (label) per box.
+      return boxes.map(box => ({
         customer_name:  order.customer_name,
         customer_email: order.customer_email,
         address_line1:  addr?.line1,
@@ -106,8 +118,12 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
         state:          addr?.state,
         zip:            addr?.postal_code,
         country:        addr?.country,
-        ...box,
-      };
+        length: box.length ?? 0,
+        width:  box.width  ?? 0,
+        height: box.height ?? 0,
+        pounds: box.pounds ?? 0,
+        ounces: box.ounces ?? 0,
+      }));
     });
 
     const csv  = buildCsvString(rows);
@@ -130,7 +146,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
             <h2 className="text-lg font-semibold text-gray-900">Export Shipping Labels</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {orders.length} order{orders.length !== 1 ? "s" : ""} selected
-              {" · "}Click any label to edit its dimensions before export.
+              {" · "}Click a label to edit dimensions or split it into multiple boxes.
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -143,11 +159,13 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
           {classified.map(({ order, result }) => {
             const isNeedsInput = result.kind === "needs-input";
             const isExpanded   = expandedIds.has(order.id);
-            const dims         = overrideDims[order.id];
+            const boxes        = overrideBoxes[order.id] ?? [];
+            const isMulti      = boxes.length > 1;
             const detectedBox  = !isNeedsInput ? (result as Exclude<BoxResult, { kind: "needs-input" }>).box : null;
-            const isEdited     = detectedBox && dims
-              ? DIM_FIELDS.some(f => dims[f] !== detectedBox[f])
-              : false;
+            const isEdited     = isMulti || (detectedBox && boxes[0]
+              ? DIM_FIELDS.some(f => boxes[0][f] !== detectedBox[f])
+              : false);
+            const firstBox     = boxes[0];
 
             return (
               <div
@@ -176,7 +194,7 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
                   <div className="flex items-center gap-2 shrink-0">
                     {isNeedsInput ? (
                       <span className="text-xs font-medium text-amber-700 bg-amber-100 rounded-full px-2.5 py-1">
-                        Needs input
+                        Needs input{isMulti ? ` · ${boxes.length} boxes` : ""}
                       </span>
                     ) : (
                       <span className={`text-xs rounded-full px-2.5 py-1 font-medium ${
@@ -185,9 +203,13 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
                           : "bg-gray-100 text-gray-700"
                       }`}>
                         {isEdited ? "✎ " : ""}
-                        {dims?.length ?? result.box.length}×{dims?.width ?? result.box.width}×{dims?.height ?? result.box.height}&quot;
-                        {" · "}
-                        {dims?.pounds ?? result.box.pounds}lb {dims?.ounces ?? result.box.ounces}oz
+                        {isMulti
+                          ? `${boxes.length} boxes`
+                          : <>
+                              {firstBox?.length ?? result.box.length}×{firstBox?.width ?? result.box.width}×{firstBox?.height ?? result.box.height}&quot;
+                              {" · "}
+                              {firstBox?.pounds ?? result.box.pounds}lb {firstBox?.ounces ?? result.box.ounces}oz
+                            </>}
                       </span>
                     )}
                     {isNeedsInput ? null : isExpanded
@@ -197,44 +219,74 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
                   </div>
                 </button>
 
-                {/* Expandable dimension editor */}
+                {/* Expandable box editor */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-gray-200 pt-3">
+                  <div className="px-4 pb-4 border-t border-gray-200 pt-3 space-y-3">
                     {isNeedsInput && (
-                      <p className="text-xs font-medium text-amber-800 mb-2">
+                      <p className="text-xs font-medium text-amber-800">
                         Large or unusual order — enter dimensions manually:
                       </p>
                     )}
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                      {DIM_FIELDS.map(field => (
-                        <div key={field}>
-                          <label className="block text-xs text-gray-500 mb-0.5 capitalize">
-                            {field}
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="0"
-                            value={dims?.[field] ?? ""}
-                            onChange={e => updateDim(order.id, field, e.target.value)}
-                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm
-                                       focus:outline-none focus:ring-2 focus:ring-sky-400"
-                          />
+
+                    {boxes.map((box, boxIdx) => (
+                      <div
+                        key={boxIdx}
+                        className={isMulti ? "rounded-md border border-gray-200 bg-white p-3" : ""}
+                      >
+                        {isMulti && (
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-gray-700">
+                              Box {boxIdx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeBox(order.id, boxIdx)}
+                              className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                          {DIM_FIELDS.map(field => (
+                            <div key={field}>
+                              <label className="block text-xs text-gray-500 mb-0.5 capitalize">
+                                {field}
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                placeholder="0"
+                                value={box?.[field] ?? ""}
+                                onChange={e => updateDim(order.id, boxIdx, field, e.target.value)}
+                                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm
+                                           focus:outline-none focus:ring-2 focus:ring-sky-400"
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    {detectedBox && (
+                      </div>
+                    ))}
+
+                    <div className="flex items-center gap-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          setOverrideDims(prev => ({ ...prev, [order.id]: { ...detectedBox } }));
-                        }}
-                        className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline"
+                        onClick={() => addBox(order.id)}
+                        className="text-xs font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
                       >
-                        Reset to detected values
+                        <Plus size={14} /> Add another box
                       </button>
-                    )}
+                      {detectedBox && (
+                        <button
+                          type="button"
+                          onClick={() => resetBoxes(order.id, detectedBox)}
+                          className="text-xs text-gray-400 hover:text-gray-600 underline"
+                        >
+                          Reset to detected
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -244,6 +296,9 @@ export default function ShippingExportModal({ orders, onClose }: Props) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 shrink-0">
+          <span className="mr-auto text-xs text-gray-500">
+            {totalLabels} label{totalLabels !== 1 ? "s" : ""} to export
+          </span>
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"

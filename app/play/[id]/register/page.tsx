@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { submitRegistration } from "@/app/actions/registration"
 import RefundPolicyNotice from "@/components/refund-policy-notice"
 import { ExternalLink } from "lucide-react"
+import { trackRegisterClick } from "@/lib/analytics"
 
 type Tournament = {
   id: string
@@ -192,6 +193,12 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   // 3a) External registration (partner systems like CourtReserve, or a legacy
   //     Stripe payment link). Takes precedence over site checkout.
   const handleExternalLink = () => {
+    trackRegisterClick({
+      location: "register_page",
+      eventId: params.id,
+      eventName: tournament?.name,
+      method: "external",
+    })
     if (tournament?.payment_link) window.open(tournament.payment_link, "_blank")
   }
 
@@ -199,6 +206,12 @@ export default function RegisterPage({ params }: { params: { id: string } }) {
   //     (carries tournament_id so the webhook can dual-write revenue + mobile
   //     registration).
   const handlePaidRegister = async () => {
+    trackRegisterClick({
+      location: "register_page",
+      eventId: params.id,
+      eventName: tournament?.name,
+      method: "internal",
+    })
     setSubmitting(true)
     setError(null)
     try {

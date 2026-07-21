@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { subscribeToOpenPlayNotifications } from "@/app/actions/open-play-notifications"
 import { AddToCalendarDropdown } from "@/components/add-to-calendar-dropdown"
+import { trackRegisterClick } from "@/lib/analytics"
 
 type TabValue = "open-play" | "tournaments"
 
@@ -226,12 +227,31 @@ export function PlayEvents({ events }: PlayEventProps) {
                               href={event.paymentLink}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={() =>
+                                trackRegisterClick({
+                                  location: "play_openplay_list",
+                                  eventId: event.id,
+                                  eventName: event.name,
+                                  method: "external",
+                                })
+                              }
                               className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm"
                             >
                               Register
                             </a>
                           ) : (
-                            <Button size="sm" onClick={() => router.push(`/play/${event.id}/register`)}>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                trackRegisterClick({
+                                  location: "play_openplay_list",
+                                  eventId: event.id,
+                                  eventName: event.name,
+                                  method: "internal",
+                                })
+                                router.push(`/play/${event.id}/register`)
+                              }}
+                            >
                               Register
                             </Button>
                           )}
@@ -441,6 +461,14 @@ export function PlayEvents({ events }: PlayEventProps) {
                               href={event.paymentLink}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={() =>
+                                trackRegisterClick({
+                                  location: "play_tournament_list",
+                                  eventId: event.id,
+                                  eventName: event.name,
+                                  method: "external",
+                                })
+                              }
                               className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm"
                             >
                               Register
