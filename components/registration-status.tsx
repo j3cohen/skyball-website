@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { Button } from "@/components/ui/button"
+import { trackRegisterClick } from "@/lib/analytics"
 
 export default function RegistrationStatus({ tournamentId }: { tournamentId: string }) {
   const [loading, setLoading] = useState(true)
@@ -71,7 +72,14 @@ export default function RegistrationStatus({ tournamentId }: { tournamentId: str
   //    (Stripe checkout, guests welcome), free (direct), and guest sign-in.
   return (
     <Button
-      onClick={() => router.push(`/play/${tournamentId}/register`)}
+      onClick={() => {
+        trackRegisterClick({
+          location: "event_detail",
+          eventId: tournamentId,
+          method: "internal",
+        })
+        router.push(`/play/${tournamentId}/register`)
+      }}
       className="bg-sky-600 hover:bg-sky-700 text-white"
     >
       Register for Event

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { ExternalLink } from 'lucide-react'
+import { trackRegisterClick } from "@/lib/analytics"
 
 interface GuestRegistrationButtonProps {
   paymentLink: string
@@ -9,6 +10,7 @@ interface GuestRegistrationButtonProps {
 
 export default function GuestRegistrationButton({ paymentLink }: GuestRegistrationButtonProps) {
   const handleGuestRegistration = () => {
+    trackRegisterClick({ location: "guest_button", method: "guest" })
     window.open(paymentLink, "_blank")
   }
 
