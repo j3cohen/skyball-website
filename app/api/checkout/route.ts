@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 
 type ProductKind = "base" | "addon" | "bundle";
 
-type GripColor = "white" | "blue" | "orange" | "yellow" | "pink" | "random";
+type GripColor = "white" | "blue" | "orange" | "pink" | "random";
 type BallColor = "blue" | "orange";
 type CrewneckSize = "xs" | "s" | "m" | "l" | "xl" | "xxl";
 
@@ -60,7 +60,7 @@ function isProductKind(v: unknown): v is ProductKind {
 }
 
 function isGripColor(v: unknown): v is GripColor {
-  return v === "white" || v === "blue" || v === "orange" || v === "yellow" || v === "pink" || v === "random";
+  return v === "white" || v === "blue" || v === "orange" || v === "pink" || v === "random";
 }
 
 function isBallColor(v: unknown): v is BallColor {
