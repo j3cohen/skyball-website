@@ -372,6 +372,11 @@ export default function CartPage() {
                   </Button>
                 </div>
               </div>
+
+              <p className="text-sm text-gray-500 px-2">
+                Free shipping within the United States. We ship to Canada on orders over $89.99 — please
+                reach out with any questions or requests for other locations!
+              </p>
             </div>
           )}
         </div>

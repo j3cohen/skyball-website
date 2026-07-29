@@ -11,7 +11,6 @@ const COLORS: { key: GripColor; label: string }[] = [
   { key: "white", label: "White" },
   { key: "blue", label: "Blue" },
   { key: "orange", label: "Orange" },
-  { key: "yellow", label: "Yellow" },
   { key: "pink", label: "Pink" },
 ];
 

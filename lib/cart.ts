@@ -6,7 +6,6 @@ export type GripColor =
   | "white"
   | "blue"
   | "orange"
-  | "yellow"
   | "pink"
   | "random";
 export type CrewneckSize = "xs" | "s" | "m" | "l" | "xl" | "xxl";
@@ -32,7 +31,6 @@ function isGripColor(v: unknown): v is GripColor {
     v === "white" ||
     v === "blue" ||
     v === "orange" ||
-    v === "yellow" ||
     v === "pink" ||
     v === "random"
   );
