@@ -1,6 +1,6 @@
 "use client";
 
-export type DatePreset = "7d" | "30d" | "90d" | "mtd" | "lm" | "ytd" | "all";
+export type DatePreset = "7d" | "30d" | "90d" | "mtd" | "lm" | "ytd" | "all" | "custom";
 export type RegionFilter = "all" | "domestic" | "international";
 
 export type AnalyticsFilterState = {
@@ -18,6 +18,7 @@ export const DATE_PRESETS: { value: DatePreset; label: string }[] = [
   { value: "lm",  label: "Last month" },
   { value: "ytd", label: "Year to date" },
   { value: "all", label: "All time" },
+  { value: "custom", label: "Custom" },
 ];
 
 export function presetToDates(preset: DatePreset): { from: string | null; to: string | null } {
@@ -49,7 +50,14 @@ export function presetToDates(preset: DatePreset): { from: string | null; to: st
       return { from: d.toISOString(), to: toISO };
     }
     case "all": return { from: null, to: null };
+    // Custom keeps whatever the date inputs already hold; the caller preserves it.
+    case "custom": return { from: null, to: null };
   }
+}
+
+/** ISO instant → "YYYY-MM-DD" for binding to <input type="date">. */
+function toDateInput(iso: string | null): string {
+  return iso ? iso.slice(0, 10) : "";
 }
 
 type Props = {
@@ -59,8 +67,26 @@ type Props = {
 
 export default function AnalyticsFilters({ value, onChange }: Props) {
   function setPreset(preset: DatePreset) {
+    if (preset === "custom") {
+      // Seed the inputs from the range currently on screen so switching to
+      // Custom doesn't blank the report.
+      const now = new Date();
+      const from = value.from ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      onChange({ ...value, preset, from, to: value.to ?? now.toISOString() });
+      return;
+    }
     const dates = presetToDates(preset);
     onChange({ ...value, preset, ...dates });
+  }
+
+  function setCustomFrom(day: string) {
+    if (!day) return;
+    onChange({ ...value, preset: "custom", from: new Date(`${day}T00:00:00`).toISOString() });
+  }
+
+  function setCustomTo(day: string) {
+    if (!day) return;
+    onChange({ ...value, preset: "custom", to: new Date(`${day}T23:59:59.999`).toISOString() });
   }
 
   function setRegion(region: string) {
@@ -85,6 +111,29 @@ export default function AnalyticsFilters({ value, onChange }: Props) {
           </button>
         ))}
       </div>
+
+      {/* Custom range inputs */}
+      {value.preset === "custom" && (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={toDateInput(value.from)}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700
+                       focus:outline-none focus:ring-2 focus:ring-sky-500"
+            aria-label="Start date"
+          />
+          <span className="text-xs text-gray-400">to</span>
+          <input
+            type="date"
+            value={toDateInput(value.to)}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700
+                       focus:outline-none focus:ring-2 focus:ring-sky-500"
+            aria-label="End date"
+          />
+        </div>
+      )}
 
       {/* Divider */}
       <div className="h-5 w-px bg-gray-200" />

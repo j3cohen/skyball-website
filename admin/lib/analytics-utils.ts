@@ -92,6 +92,79 @@ export function dateKey(d: Date, gran: "day" | "week" | "month"): string {
   return d.toISOString().slice(0, 7);
 }
 
+// ── Reporting periods ──────────────────────────────────────────────────────
+//
+// Note: `dateKey` above buckets in UTC, which is fine for a trend line but
+// wrong at month boundaries — an order placed 8pm ET on Jan 31 lands in
+// February. The units report buckets in Eastern time instead, because "what
+// did we sell in June" has to match the calendar month the business runs on.
+// `dateKey` is left as-is so the existing revenue charts don't shift.
+
+export type Period = "week" | "month" | "quarter" | "year";
+
+const REPORTING_TZ = "America/New_York";
+
+const tzFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: REPORTING_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Calendar y/m/d of an instant, as seen in the reporting timezone. */
+function tzParts(d: Date): { y: number; m: number; d: number } {
+  const [y, m, day] = tzFormatter.format(d).split("-").map(Number);
+  return { y, m, d: day };
+}
+
+/** Bucket key for an instant: "2026-06", "2026-Q2", "2026", or a week's Sunday. */
+export function periodKey(date: Date, period: Period): string {
+  const { y, m, d } = tzParts(date);
+  if (period === "year")    return String(y);
+  if (period === "quarter") return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
+  if (period === "month")   return `${y}-${String(m).padStart(2, "0")}`;
+  // Week: Sunday-start, computed on the reporting-timezone calendar date.
+  const utcMidnight = Date.UTC(y, m - 1, d);
+  const dow = new Date(utcMidnight).getUTCDay();
+  return new Date(utcMidnight - dow * 864e5).toISOString().slice(0, 10);
+}
+
+/** Human label for a period key, e.g. "2026-06" → "Jun 2026". */
+export function periodLabel(key: string, period: Period): string {
+  if (period === "year" || period === "quarter") return key;
+  const [y, m, d] = key.split("-");
+  const monthName = MONTH_NAMES[Number(m) - 1] ?? m;
+  if (period === "month") return `${monthName} ${y}`;
+  return `${monthName} ${Number(d)}`;
+}
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/**
+ * Every period key between two instants, inclusive and gap-free, so the report
+ * shows empty periods as zero rather than skipping them. Walks day by day —
+ * cheap enough at these ranges and sidesteps timezone arithmetic entirely.
+ */
+export function enumeratePeriods(from: Date, to: Date, period: Period): string[] {
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  const cur = new Date(from.getTime());
+  while (cur <= to) {
+    const k = periodKey(cur, period);
+    if (!seen.has(k)) {
+      seen.add(k);
+      keys.push(k);
+    }
+    cur.setTime(cur.getTime() + 864e5);
+  }
+  const last = periodKey(to, period);
+  if (!seen.has(last)) keys.push(last);
+  return keys;
+}
+
 export function fillSeries(
   raw: Map<string, { revenue: number; orders: number }>,
   from: Date,

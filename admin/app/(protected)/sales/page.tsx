@@ -5,14 +5,16 @@ import AnalyticsFilters, { defaultFilters, type AnalyticsFilterState } from "@/c
 import SalesCustomersTab  from "@/components/sales-customers-tab";
 import SalesOrdersTab     from "@/components/sales-orders-tab";
 import SalesProductsTab   from "@/components/sales-products-tab";
+import SalesUnitsTab      from "@/components/sales-units-tab";
 import SalesFulfillmentTab from "@/components/sales-fulfillment-tab";
 
-type Tab = "customers" | "orders" | "products" | "fulfillment";
+type Tab = "customers" | "orders" | "products" | "units" | "fulfillment";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "customers",   label: "Customers" },
   { key: "orders",      label: "Orders" },
   { key: "products",    label: "Products" },
+  { key: "units",       label: "Units Sold" },
   { key: "fulfillment", label: "Fulfillment" },
 ];
 
@@ -53,6 +55,7 @@ export default function SalesPage() {
       {tab === "customers"   && <SalesCustomersTab   filters={filters} />}
       {tab === "orders"      && <SalesOrdersTab      filters={filters} />}
       {tab === "products"    && <SalesProductsTab    filters={filters} />}
+      {tab === "units"       && <SalesUnitsTab       filters={filters} />}
       {tab === "fulfillment" && <SalesFulfillmentTab filters={filters} />}
     </div>
   );

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "admin": "npm run dev --workspace=admin"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.2.3",
