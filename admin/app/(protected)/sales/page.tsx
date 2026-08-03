@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import AnalyticsFilters, { defaultFilters, type AnalyticsFilterState } from "@/components/analytics-filters";
+import AnalyticsFilters, {
+  defaultFilters,
+  type AnalyticsFilterState,
+  type FocusState,
+} from "@/components/analytics-filters";
+import DrillPanel, { type DrillTarget } from "@/components/drill-panel";
 import SalesCustomersTab  from "@/components/sales-customers-tab";
 import SalesOrdersTab     from "@/components/sales-orders-tab";
 import SalesProductsTab   from "@/components/sales-products-tab";
@@ -22,16 +27,29 @@ export default function SalesPage() {
   const [filters, setFilters] = useState<AnalyticsFilterState>(defaultFilters);
   const [tab, setTab] = useState<Tab>("customers");
 
+  // Drill-down target (the drawer) and the focus chip promoted from one.
+  const [drill, setDrill] = useState<DrillTarget | null>(null);
+  const [focus, setFocus] = useState<FocusState | null>(null);
+
+  const tabProps = { filters, focus, onDrill: setDrill };
+
   return (
     <div className="p-4 md:p-8 max-w-6xl">
       <div className="mb-2">
         <h1 className="text-2xl font-bold text-gray-900">Sales Data</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Deep-drill analytics · Excludes cancelled orders · USD</p>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Deep-drill analytics · Excludes cancelled orders · USD · Click any row for its orders
+        </p>
       </div>
 
-      {/* Filter bar */}
+      {/* Filter bar — scopes every tab below it */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 mb-6">
-        <AnalyticsFilters value={filters} onChange={setFilters} />
+        <AnalyticsFilters
+          value={filters}
+          onChange={setFilters}
+          focus={focus}
+          onClearFocus={() => setFocus(null)}
+        />
       </div>
 
       {/* Tabs */}
@@ -52,11 +70,17 @@ export default function SalesPage() {
       </div>
 
       {/* Tab content */}
-      {tab === "customers"   && <SalesCustomersTab   filters={filters} />}
+      {tab === "customers"   && <SalesCustomersTab   {...tabProps} />}
       {tab === "orders"      && <SalesOrdersTab      filters={filters} />}
-      {tab === "products"    && <SalesProductsTab    filters={filters} />}
-      {tab === "units"       && <SalesUnitsTab       filters={filters} />}
-      {tab === "fulfillment" && <SalesFulfillmentTab filters={filters} />}
+      {tab === "products"    && <SalesProductsTab    {...tabProps} />}
+      {tab === "units"       && <SalesUnitsTab       {...tabProps} />}
+      {tab === "fulfillment" && <SalesFulfillmentTab {...tabProps} />}
+
+      <DrillPanel
+        target={drill}
+        onClose={() => setDrill(null)}
+        onApplyFocus={(f, label) => setFocus({ dim: f.dim, val: f.val, label })}
+      />
     </div>
   );
 }

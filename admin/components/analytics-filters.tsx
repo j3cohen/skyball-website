@@ -1,5 +1,7 @@
 "use client";
 
+import { X } from "lucide-react";
+
 export type DatePreset = "7d" | "30d" | "90d" | "mtd" | "lm" | "ytd" | "all" | "custom";
 export type RegionFilter = "all" | "domestic" | "international";
 
@@ -60,12 +62,38 @@ function toDateInput(iso: string | null): string {
   return iso ? iso.slice(0, 10) : "";
 }
 
+/** A drill-down promoted to a dashboard-wide filter. */
+export type FocusState = { dim: string; val: string; label: string };
+
+/**
+ * Query params shared by every analytics fetch, so all tabs read the same
+ * slice. Keeping this in one place is what stops a tab from quietly ignoring
+ * the focus chip and showing numbers that disagree with its neighbours.
+ */
+export function analyticsParams(
+  filters: AnalyticsFilterState,
+  focus: FocusState | null,
+  extra: Record<string, string> = {}
+): URLSearchParams {
+  const params = new URLSearchParams(extra);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to)   params.set("to",   filters.to);
+  if (filters.region !== "all") params.set("region", filters.region);
+  if (focus) {
+    params.set("focusDim", focus.dim);
+    params.set("focusVal", focus.val);
+  }
+  return params;
+}
+
 type Props = {
   value: AnalyticsFilterState;
   onChange: (next: AnalyticsFilterState) => void;
+  focus?: FocusState | null;
+  onClearFocus?: () => void;
 };
 
-export default function AnalyticsFilters({ value, onChange }: Props) {
+export default function AnalyticsFilters({ value, onChange, focus, onClearFocus }: Props) {
   function setPreset(preset: DatePreset) {
     if (preset === "custom") {
       // Seed the inputs from the range currently on screen so switching to
@@ -160,6 +188,26 @@ export default function AnalyticsFilters({ value, onChange }: Props) {
           </button>
         ))}
       </div>
+
+      {/* Active drill-down focus. Lives in the filter row rather than inside a
+          card, so a narrowed dashboard can never look like the full one. */}
+      {focus && (
+        <>
+          <div className="h-5 w-px bg-gray-200" />
+          <div className="flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 py-1 pl-3 pr-1.5">
+            <span className="text-xs font-medium text-sky-800">
+              <span className="font-normal text-sky-600">Focused:</span> {focus.label}
+            </span>
+            <button
+              onClick={onClearFocus}
+              className="rounded-full p-0.5 text-sky-500 transition-colors hover:bg-sky-100 hover:text-sky-800"
+              aria-label="Clear focus filter"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

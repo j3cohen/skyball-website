@@ -2,6 +2,7 @@
 // Shared helpers for all analytics API routes.
 
 import type { ShippingAddress, OrderData, OrderDataItem } from "./order-types";
+import { resolveBom } from "./product-bom";
 
 export type Region = "all" | "domestic" | "international" | string;
 
@@ -100,7 +101,7 @@ export function dateKey(d: Date, gran: "day" | "week" | "month"): string {
 // did we sell in June" has to match the calendar month the business runs on.
 // `dateKey` is left as-is so the existing revenue charts don't shift.
 
-export type Period = "week" | "month" | "quarter" | "year";
+export type Period = "day" | "week" | "month" | "quarter" | "year";
 
 const REPORTING_TZ = "America/New_York";
 
@@ -117,12 +118,13 @@ function tzParts(d: Date): { y: number; m: number; d: number } {
   return { y, m, d: day };
 }
 
-/** Bucket key for an instant: "2026-06", "2026-Q2", "2026", or a week's Sunday. */
+/** Bucket key: "2026-06-15", "2026-06", "2026-Q2", "2026", or a week's Sunday. */
 export function periodKey(date: Date, period: Period): string {
   const { y, m, d } = tzParts(date);
   if (period === "year")    return String(y);
   if (period === "quarter") return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
   if (period === "month")   return `${y}-${String(m).padStart(2, "0")}`;
+  if (period === "day")     return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   // Week: Sunday-start, computed on the reporting-timezone calendar date.
   const utcMidnight = Date.UTC(y, m - 1, d);
   const dow = new Date(utcMidnight).getUTCDay();
@@ -264,6 +266,139 @@ export function normalizeProductName(raw: string): string {
   if (/racket cover/i.test(low))                        return "Racket Cover";
 
   return raw.trim(); // keep original for anything unrecognised
+}
+
+// ── Drill-down support ─────────────────────────────────────────────────────
+//
+// Every aggregate the dashboard shows must be able to name the orders that
+// produced it. Rather than re-deriving buckets at drill time (which would drift
+// from the number on screen), each response ships an id table and every row
+// carries integer indices into it — integers because a single country row can
+// reference most of the order table, and UUIDs at 37 bytes each add up fast.
+
+export type OrderIndex = {
+  /** Index of an order id, appending it to the table on first sight. */
+  idx(orderId: string): number;
+  /** The id table, in index order. */
+  ids(): string[];
+};
+
+export function createOrderIndex(): OrderIndex {
+  const ids: string[] = [];
+  const seen = new Map<string, number>();
+  return {
+    idx(orderId: string): number {
+      const hit = seen.get(orderId);
+      if (hit !== undefined) return hit;
+      const next = ids.length;
+      ids.push(orderId);
+      seen.set(orderId, next);
+      return next;
+    },
+    ids: () => ids,
+  };
+}
+
+// ── Carrier classification ─────────────────────────────────────────────────
+// Lives here, not in the fulfillment route, so the aggregation and the focus
+// filter can never classify the same tracking number differently.
+
+export type TrackingEntry = { number: string; tracking_status: string; added_at: string };
+
+export function inferCarrier(trackingNumbers: TrackingEntry[] | null | undefined): string {
+  const tn = trackingNumbers?.[0]?.number ?? "";
+  if (tn.startsWith("1Z"))                                        return "UPS";
+  if (/^9[2-4]\d{18,20}$/.test(tn))                               return "USPS";
+  if (/^(\d{12,14}|\d{15,22})$/.test(tn) && !tn.startsWith("1Z")) return "USPS";
+  if (/^[37]\d{11}$/.test(tn))                                    return "FedEx";
+  if (tn.length > 0)                                              return "Other";
+  return "No label";
+}
+
+// ── Unfulfilled age buckets ────────────────────────────────────────────────
+// Shared for the same reason as inferCarrier.
+
+export const AGE_BUCKETS = [
+  { label: "< 3 days",  min: 0,  max: 2  },
+  { label: "3–7 days",  min: 3,  max: 7  },
+  { label: "8–14 days", min: 8,  max: 14 },
+  { label: "15+ days",  min: 15, max: Infinity },
+] as const;
+
+export function orderAgeDays(order: { created_at: string }, now: Date): number {
+  return (now.getTime() - new Date(order.created_at).getTime()) / 864e5;
+}
+
+export function ageBucketLabel(order: { created_at: string }, now: Date): string {
+  const age = orderAgeDays(order, now);
+  return AGE_BUCKETS.find((b) => age >= b.min && age <= b.max)?.label ?? AGE_BUCKETS[0].label;
+}
+
+// ── Focus filter ───────────────────────────────────────────────────────────
+//
+// The chip set from a drill panel. Carried as a descriptor rather than a list
+// of order ids: the id list would overflow a URL and would go stale the moment
+// the date range changed.
+
+export type FocusDim =
+  | "carrier" | "country" | "state" | "status"
+  | "ageBucket" | "customerEmail" | "sku" | "component";
+
+export type Focus = { dim: FocusDim; val: string };
+
+export function parseFocus(dim: string | null, val: string | null): Focus | null {
+  const DIMS: FocusDim[] = [
+    "carrier", "country", "state", "status",
+    "ageBucket", "customerEmail", "sku", "component",
+  ];
+  if (!dim || !val) return null;
+  return DIMS.includes(dim as FocusDim) ? { dim: dim as FocusDim, val } : null;
+}
+
+/**
+ * Whether an order belongs to the focused slice.
+ *
+ * `sku` and `component` are order-level here ("orders containing this"); the
+ * units route applies them at line-item level instead, since its whole job is
+ * to break orders apart.
+ */
+export function orderMatchesFocus(
+  order: AnalyticsOrder & { tracking_numbers?: TrackingEntry[] | null },
+  focus: Focus | null,
+  now: Date = new Date()
+): boolean {
+  if (!focus) return true;
+  const addr = order.shipping_address as ShippingAddress | null;
+
+  switch (focus.dim) {
+    case "carrier":
+      return inferCarrier(order.tracking_numbers) === focus.val;
+    case "country":
+      return (addr?.country ?? "Unknown").toUpperCase() === focus.val.toUpperCase();
+    case "state":
+      return (addr?.state ?? "Unknown").toUpperCase() === focus.val.toUpperCase();
+    case "status":
+      return order.fulfillment_status === focus.val;
+    case "ageBucket":
+      return ageBucketLabel(order, now) === focus.val;
+    case "customerEmail":
+      return (order.customer_email ?? "").toLowerCase() === focus.val.toLowerCase();
+    case "sku":
+      return getOrderItems(order).some(
+        (it) => normalizeProductName(it.product_name ?? "Unknown") === focus.val
+      );
+    case "component":
+      // Resolved lazily to avoid a static import cycle with product-bom.
+      return orderHasComponent(order, focus.val);
+  }
+}
+
+function orderHasComponent(order: AnalyticsOrder, componentId: string): boolean {
+  return getOrderItems(order).some((it) => {
+    const { bom, source } = resolveBom(it);
+    if (source === "unmapped" || source === "non_goods") return false;
+    return (bom.components[componentId as keyof typeof bom.components] ?? 0) > 0;
+  });
 }
 
 export function fmtPct(a: number, b: number): number {

@@ -19,6 +19,8 @@ type Props = {
   currentTrackingNumbers?: TrackingEntry[];
   refundAmountCents?: number;
   refundStatus?: string;
+  /** Called after any successful write, so an embedding view can refresh. */
+  onSaved?: () => void;
 };
 
 const STATUS_OPTS: { value: FulfillmentStatus; label: string }[] = [
@@ -55,6 +57,7 @@ export default function FulfillForm({
   currentTrackingNumbers = [],
   refundAmountCents = 0,
   refundStatus = "none",
+  onSaved,
 }: Props) {
   // ── Status + notes (saved together) ───────────────────────────────────────
   const [savedStatus,   setSavedStatus]   = useState<FulfillmentStatus>(currentStatus);
@@ -115,6 +118,7 @@ export default function FulfillForm({
       setSaved(true);
       setShowOriginal(false);
       setTimeout(() => setSaved(false), 3000);
+      onSaved?.();
     }
     setSaving(false);
   }
@@ -150,6 +154,7 @@ export default function FulfillForm({
     } else {
       setTrackingNumbers(updated);
       setNewNumber("");
+      onSaved?.();
     }
     setTrackingSaving(false);
   }

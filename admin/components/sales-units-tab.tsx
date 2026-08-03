@@ -3,14 +3,24 @@
 import { useEffect, useState } from "react";
 import type { AnalyticsFilterState } from "./analytics-filters";
 import { buildCsv, triggerCsvDownload } from "@/lib/csv-export";
+import UnitsChart from "@/components/units-chart";
 
-type PeriodOption = "week" | "month" | "quarter" | "year";
+type PeriodOption = "day" | "week" | "month" | "quarter" | "year";
 
 const PERIODS: { value: PeriodOption; label: string }[] = [
+  { value: "day",     label: "Daily" },
   { value: "week",    label: "Weekly" },
   { value: "month",   label: "Monthly" },
   { value: "quarter", label: "Quarterly" },
   { value: "year",    label: "Yearly" },
+];
+
+// Fixed identity order that owns colour assignment in the chart — mirrors
+// COMPONENT_ORDER in lib/product-bom.ts. Kept here so the client bundle doesn't
+// pull in the whole BOM module just for an array of ids.
+const COMPONENT_COLOR_ORDER = [
+  "racket_pro", "racket_starter", "racket_original",
+  "net", "ball", "grip", "racket_cover", "crewneck",
 ];
 
 type PeriodCol = { key: string; label: string };
@@ -139,6 +149,21 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
           </p>
         </div>
       )}
+
+      {/* Density hint — daily over a long range makes the tables unwieldy */}
+      {cols.length > 90 && (
+        <p className="text-xs text-gray-400">
+          Showing {cols.length} periods. Narrow the date range above for a more readable table.
+        </p>
+      )}
+
+      <UnitsChart
+        periods={cols}
+        series={data.components.map((c) => ({ id: c.id, label: c.label, total: c.total }))}
+        values={Object.fromEntries(data.components.map((c) => [c.id, c.byPeriod]))}
+        period={period}
+        colorOrder={COMPONENT_COLOR_ORDER}
+      />
 
       <PivotTable
         title="Sold as"
