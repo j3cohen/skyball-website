@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AnalyticsFilterState } from "./analytics-filters";
+import { analyticsParams, type AnalyticsFilterState, type FocusState } from "./analytics-filters";
 import { buildCsv, triggerCsvDownload } from "@/lib/csv-export";
 import UnitsChart from "@/components/units-chart";
+import { makeTarget, type DrillTarget } from "@/components/drill-panel";
+import { useDrillSync } from "@/lib/use-drill-sync";
 
 type PeriodOption = "day" | "week" | "month" | "quarter" | "year";
 
@@ -25,24 +27,40 @@ const COMPONENT_COLOR_ORDER = [
 
 type PeriodCol = { key: string; label: string };
 type ByPeriod  = Record<string, number>;
+type Idx       = number[];
 
 type UnitsData = {
   period:     PeriodOption;
   periods:    PeriodCol[];
   orderCount: number;
-  skus:       { name: string; total: number; byPeriod: ByPeriod; revenue: number; revenueByPeriod: ByPeriod }[];
-  components: { id: string; label: string; total: number; byPeriod: ByPeriod }[];
-  ballPacks:  { size: number; label: string; total: number; byPeriod: ByPeriod }[];
-  unmapped:   { name: string; units: number; byPeriod: ByPeriod }[];
+  skus:       { name: string; total: number; byPeriod: ByPeriod; revenue: number; revenueByPeriod: ByPeriod; o: Idx }[];
+  components: {
+    id: string; label: string; total: number; byPeriod: ByPeriod; o: Idx;
+    sources: { name: string; units: number; orders: number; o: Idx }[];
+  }[];
+  ballPacks:  { size: number; label: string; total: number; byPeriod: ByPeriod; o: Idx }[];
+  unmapped:   { name: string; units: number; byPeriod: ByPeriod; o: Idx }[];
   inferred:   { name: string; units: number }[];
+  byPeriodOrders: Record<string, Idx>;
+  orderIds:   string[];
 };
 
 const EMPTY: UnitsData = {
   period: "month", periods: [], orderCount: 0,
   skus: [], components: [], ballPacks: [], unmapped: [], inferred: [],
+  byPeriodOrders: {}, orderIds: [],
 };
 
-export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterState }) {
+type Props = {
+  filters: AnalyticsFilterState;
+  focus: FocusState | null;
+  onDrill: (t: DrillTarget) => void;
+  drill: DrillTarget | null;
+};
+
+const NS = "units:";
+
+export default function SalesUnitsTab({ filters, focus, onDrill, drill }: Props) {
   const [period,  setPeriod]  = useState<PeriodOption>("month");
   const [data,    setData]    = useState<UnitsData>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -51,12 +69,7 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ period });
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to)   params.set("to",   filters.to);
-    if (filters.region !== "all") params.set("region", filters.region);
-
-    fetch(`/api/admin/analytics/units?${params}`)
+    fetch(`/api/admin/analytics/units?${analyticsParams(filters, focus, { period })}`)
       .then((r) => r.json())
       .then((json: UnitsData & { error?: string }) => {
         if (json.error) throw new Error(json.error);
@@ -65,9 +78,44 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
       })
       .catch(() => setError("Failed to load units data."))
       .finally(() => setLoading(false));
-  }, [filters, period]);
+  }, [filters, focus, period]);
 
   const cols = data.periods;
+
+  // Single construction site — click handlers and the reload refresh share it.
+  const targets: Record<string, DrillTarget> = {};
+  const add = (
+    key: string, idx: Idx, title: string, subtitle?: string,
+    focusDim?: string, focusVal?: string, extra?: Partial<DrillTarget>
+  ) => {
+    targets[NS + key] = {
+      ...makeTarget(
+        data.orderIds, idx, title, subtitle,
+        focusDim && focusVal ? { dim: focusDim as never, val: focusVal } : undefined
+      ),
+      key: NS + key,
+      ...extra,
+    };
+  };
+  const open = (key: string) => { const t = targets[NS + key]; if (t) onDrill(t); };
+
+  for (const s of data.skus) add(`sku:${s.name}`, s.o, s.name, `${s.total} units sold`, "sku", s.name);
+  for (const c of data.components) {
+    // A base unit also shows which products produced it.
+    add(`component:${c.id}`, c.o, c.label, `${c.total} base units`, "component", c.id, {
+      breakdownTitle: "Came from",
+      breakdown: c.sources.map((src) => ({
+        name: src.name,
+        value: src.units,
+        valueLabel: "units",
+        orders: src.orders,
+        orderIds: src.o.map((i) => data.orderIds[i]).filter(Boolean),
+      })),
+    });
+  }
+  for (const p2 of data.ballPacks) add(`pack:${p2.size}`, p2.o, p2.label, `${p2.total} packs`);
+  for (const u of data.unmapped) add(`unmapped:${u.name}`, u.o, u.name, `${u.units} unmapped unit${u.units !== 1 ? "s" : ""}`);
+  for (const col of cols) add(`period:${col.key}`, data.byPeriodOrders[col.key] ?? [], col.label, `Orders in ${col.label}`);
 
   function handleExport() {
     const headers = ["Section", "Item", ...cols.map((c) => c.label), "Total"];
@@ -105,6 +153,8 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
 
   return (
     <div className="space-y-6">
+      <DrillSync target={drill} targets={targets} onDrill={onDrill} token={data} />
+
       {/* Period selector + export */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1">
@@ -140,7 +190,14 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
           </p>
           <ul className="list-disc list-inside space-y-0.5">
             {data.unmapped.map((u) => (
-              <li key={u.name}>{u.name} — {u.units} unit{u.units !== 1 ? "s" : ""}</li>
+              <li key={u.name}>
+                <button
+                  onClick={() => open(`unmapped:${u.name}`)}
+                  className="underline decoration-amber-300 underline-offset-2 hover:text-amber-950"
+                >
+                  {u.name} — {u.units} unit{u.units !== 1 ? "s" : ""}
+                </button>
+              </li>
             ))}
           </ul>
           <p className="mt-1.5 text-amber-700">
@@ -163,13 +220,17 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
         values={Object.fromEntries(data.components.map((c) => [c.id, c.byPeriod]))}
         period={period}
         colorOrder={COMPONENT_COLOR_ORDER}
+        onDrillPeriod={(key) => open(`period:${key}`)}
       />
 
       <PivotTable
         title="Sold as"
         subtitle={`${data.orderCount} order${data.orderCount !== 1 ? "s" : ""} · what shipped as a SKU`}
         cols={cols}
-        rows={data.skus.map((s) => ({ key: s.name, label: s.name, byPeriod: s.byPeriod, total: s.total }))}
+        rows={data.skus.map((s) => ({
+          key: s.name, label: s.name, byPeriod: s.byPeriod, total: s.total,
+          onDrill: () => open(`sku:${s.name}`),
+        }))}
         emptyText="No product sales in this period."
       />
 
@@ -180,9 +241,11 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
         rows={[
           ...data.components.map((c) => ({
             key: c.id, label: c.label, byPeriod: c.byPeriod, total: c.total,
+            onDrill: () => open(`component:${c.id}`),
           })),
           ...data.ballPacks.map((p) => ({
             key: `pack-${p.size}`, label: p.label, byPeriod: p.byPeriod, total: p.total, sub: true,
+            onDrill: () => open(`pack:${p.size}`),
           })),
         ]}
         emptyText="No base units in this period."
@@ -211,9 +274,25 @@ export default function SalesUnitsTab({ filters }: { filters: AnalyticsFilterSta
   );
 }
 
+/** Hooks can't run after the early returns above, so the sync lives in a child. */
+function DrillSync({
+  target, targets, onDrill, token,
+}: {
+  target: DrillTarget | null;
+  targets: Record<string, DrillTarget>;
+  onDrill: (t: DrillTarget) => void;
+  token: unknown;
+}) {
+  useDrillSync({ target, targets, namespace: NS, onDrill, dataToken: token });
+  return null;
+}
+
 // ── Pivot table ────────────────────────────────────────────────────────────
 
-type PivotRow = { key: string; label: string; byPeriod: ByPeriod; total: number; sub?: boolean };
+type PivotRow = {
+  key: string; label: string; byPeriod: ByPeriod; total: number;
+  sub?: boolean; onDrill?: () => void;
+};
 
 function PivotTable({
   title, subtitle, cols, rows, emptyText, footer,
@@ -254,7 +333,14 @@ function PivotTable({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {rows.map((r, i) => (
-                <tr key={r.key} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}>
+                <tr
+                  key={r.key}
+                  onClick={r.onDrill}
+                  title={r.onDrill ? "View contributing orders" : undefined}
+                  className={`${r.onDrill ? "cursor-pointer hover:bg-sky-50/60 transition-colors" : ""} ${
+                    i % 2 === 0 ? "bg-white" : "bg-gray-50/40"
+                  }`}
+                >
                   <td
                     className={`px-5 py-3 sticky left-0 whitespace-nowrap ${
                       r.sub ? "text-gray-400 text-xs pl-9" : "font-medium text-gray-900"

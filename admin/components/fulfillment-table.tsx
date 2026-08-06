@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import Link                            from "next/link";
 import { useRouter }                   from "next/navigation";
 import type { ExportableOrder }        from "@/lib/order-types";
+import { getOrderNote }                from "@/lib/order-csv";
 import ShippingExportModal             from "./shipping-export-modal";
 import BulkStatusModal                 from "./bulk-status-modal";
 import TrackingImportModal             from "./tracking-import-modal";
 import StripeImportModal               from "./stripe-import-modal";
 import FulfillmentCheatSheetModal      from "./fulfillment-cheat-sheet-modal";
+import ExportOrdersModal               from "./export-orders-modal";
 
 const STATUS_OPTS = ["pending", "processing", "fulfilled", "needs-match", "cancelled", "event"] as const;
 type FulfillmentStatus = (typeof STATUS_OPTS)[number];
@@ -47,29 +49,6 @@ function fmtDate(iso: string) {
   });
 }
 
-function getOrderNote(order: ExportableOrder): string | null {
-  const data = order.order_data as { customer_selections?: { order_notes?: string | null } } | null;
-  return data?.customer_selections?.order_notes ?? null;
-}
-
-function parseSummaryColorsByName(summary: string | null): Map<string, { ballColor?: string; gripColors?: string[] }> {
-  const map = new Map<string, { ballColor?: string; gripColors?: string[] }>();
-  if (!summary) return map;
-  for (const part of summary.split(" | ")) {
-    if (part.startsWith("Total:")) continue;
-    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim().toLowerCase();
-    const out: { ballColor?: string; gripColors?: string[] } = {};
-    const ball = part.match(/\[ball:([^\]]+)\]/);
-    if (ball)  out.ballColor  = ball[1].trim();
-    const grip = part.match(/\[grips:([^\]]+)\]/);
-    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
-    map.set(name, out);
-  }
-  return map;
-}
-
 function fmtMoney(cents: number | null, currency: string) {
   if (cents == null) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -93,6 +72,7 @@ export default function FulfillmentTable({
   const [showTrackingImportModal, setShowTrackingImportModal] = useState(false);
   const [showStripeImportModal,   setShowStripeImportModal]  = useState(false);
   const [showCheatSheetModal,     setShowCheatSheetModal]    = useState(false);
+  const [showExportModal,         setShowExportModal]        = useState(false);
   const [searchDraft,             setSearchDraft]            = useState(currentSearch);
   const [successMessage,          setSuccessMessage]         = useState<string | null>(null);
   const [intlFilter,              setIntlFilter]             = useState<"all" | "domestic" | "international">("all");
@@ -215,64 +195,6 @@ export default function FulfillmentTable({
     setTimeout(() => setSuccessMessage(null), 4000);
   }
 
-  function handleExportCSV() {
-    const exportOrders = selectedIds.size > 0 ? selectedOrders : filteredOrders;
-    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
-
-    // Find the max number of items across all orders to build fixed columns
-    type RawItem = { product_name?: string | null; slug?: string | null; quantity?: number | null; customizations?: Record<string, unknown> };
-    const getOrderItems = (o: ExportableOrder): RawItem[] =>
-      ((o.order_data as { items?: RawItem[] } | null)?.items) ?? [];
-
-    const maxItems = exportOrders.reduce((m, o) => Math.max(m, getOrderItems(o).length), 0);
-
-    const itemHeaders: string[] = [];
-    for (let i = 1; i <= maxItems; i++) {
-      itemHeaders.push(`Item ${i}`, `Qty ${i}`, `Ball ${i}`, `Grips ${i}`);
-    }
-
-    const headers = ["Customer Name", "Email", "Date", "Status", "Total", "Note", ...itemHeaders];
-    const rows: string[] = [headers.join(",")];
-
-    for (const order of exportOrders) {
-      const items      = getOrderItems(order);
-      const summaryMap = parseSummaryColorsByName(order.order_summary);
-      const note       = getOrderNote(order) ?? "";
-      const total      = ((order.order_total_cents ?? 0) / 100).toFixed(2);
-      const date       = new Date(order.created_at).toLocaleDateString("en-US");
-
-      const itemCells: string[] = [];
-      for (let i = 0; i < maxItems; i++) {
-        const item = items[i];
-        if (!item) { itemCells.push("", "", "", ""); continue; }
-        const name    = (item.product_name ?? item.slug ?? "").toLowerCase();
-        const fb      = summaryMap.get(name) ?? {};
-        const ball    = (item.customizations?.ball_color  as string   | undefined) ?? fb.ballColor ?? "";
-        const grips   = (item.customizations?.grip_colors as string[] | undefined) ?? fb.gripColors ?? [];
-        itemCells.push(
-          esc(item.product_name ?? item.slug ?? ""),
-          String(item.quantity ?? 1),
-          ball,
-          esc(grips.join(", ")),
-        );
-      }
-
-      rows.push([
-        esc(order.customer_name ?? ""), esc(order.customer_email ?? ""),
-        date, order.fulfillment_status, total, esc(note),
-        ...itemCells,
-      ].join(","));
-    }
-
-    const csv  = rows.join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   async function handleResyncColors() {
     try {
@@ -415,11 +337,11 @@ export default function FulfillmentTable({
             Create Shipping Labels
           </button>
           <button
-            onClick={handleExportCSV}
+            onClick={() => setShowExportModal(true)}
             className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-600
                        rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Export CSV {selectedIds.size > 0 ? `(${selectedIds.size})` : `(${filteredOrders.length})`}
+            Export CSV…
           </button>
           {/* Rare actions: inline on desktop, tucked in a "More" menu on mobile */}
           {MORE_ACTIONS.map(({ label, accent }) => (
@@ -706,6 +628,17 @@ export default function FulfillmentTable({
       )}
 
       {/* Bulk status modal */}
+      {showExportModal && (
+        <ExportOrdersModal
+          pageOrders={filteredOrders}
+          selectedOrders={selectedOrders}
+          status={currentStatus}
+          search={currentSearch}
+          region={intlFilter}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
+
       {showBulkStatusModal && (
         <BulkStatusModal
           orderIds={Array.from(selectedIds)}

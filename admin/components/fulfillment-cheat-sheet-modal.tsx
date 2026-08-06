@@ -3,6 +3,7 @@
 import { classifyBoxSize } from "@/lib/box-size";
 import { resolveBom, BALL_PACK_SIZES, type BallPackSize } from "@/lib/product-bom";
 import type { ExportableOrder, OrderData, OrderDataItem } from "@/lib/order-types";
+import { parseSummaryColorsByName, type SummaryColors } from "@/lib/order-csv";
 
 type Props = {
   orders: ExportableOrder[];
@@ -15,30 +16,6 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
   return ((order.order_data as OrderData | null)?.items) ?? [];
 }
 
-// Parse per-item color data from order_summary when customizations are missing.
-// Format: "Qty x Name ($price) [ball:orange] | Qty x Name ($price) [grips:r,r] | Total:..."
-// Returns a Map keyed by normalized product name → colors.
-// Name-based (not index-based) so it works even when order_data.items and
-// order_summary are in different orders (Stripe line items vs original cart).
-type SummaryColors = { ballColor?: string; gripColors?: string[] };
-function parseSummaryColorsByName(summary: string | null): Map<string, SummaryColors> {
-  const map = new Map<string, SummaryColors>();
-  if (!summary) return map;
-  for (const part of summary.split(" | ")) {
-    if (part.startsWith("Total:")) continue;
-    // Extract name: everything between "Nx " and " ($"
-    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim().toLowerCase();
-    const out: SummaryColors = {};
-    const ball = part.match(/\[ball:([^\]]+)\]/);
-    if (ball)  out.ballColor  = ball[1].trim();
-    const grip = part.match(/\[grips:([^\]]+)\]/);
-    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
-    map.set(name, out);
-  }
-  return map;
-}
 
 function itemColors(item: OrderDataItem, summaryMap: Map<string, SummaryColors>): { ball?: string; grips?: string[] } {
   const fromCustom: { ball?: string; grips?: string[] } = {

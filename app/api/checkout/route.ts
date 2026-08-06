@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/server/stripe";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
+import { resolveOrigin } from "@/lib/server/requestOrigin";
 
 type ProductKind = "base" | "addon" | "bundle";
 
@@ -258,7 +259,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL;
+    // Allowlisted: the raw Origin header is attacker-controlled and would
+    // otherwise let anyone mint a real Stripe URL that redirects payers
+    // to their own site. See lib/server/requestOrigin.ts.
+    const origin = resolveOrigin(request);
     if (!origin) {
       return NextResponse.json({ error: "Missing NEXT_PUBLIC_APP_URL." }, { status: 500 });
     }

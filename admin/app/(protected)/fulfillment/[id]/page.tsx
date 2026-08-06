@@ -117,9 +117,17 @@ function CustomizationBadges({ c }: { c: Customizations }) {
 
 export default async function OrderDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: { from?: string };
 }) {
+  // Return the reader where they came from. Without this, arriving from Sales
+  // Data and pressing Back dropped them on the Fulfillment queue instead.
+  const back = searchParams?.from === "sales"
+    ? { href: "/sales", label: "← Back to Sales Data" }
+    : { href: "/fulfillment", label: "← Back to orders" };
+
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select("*")
@@ -137,10 +145,10 @@ export default async function OrderDetailPage({
     <div className="p-6 max-w-5xl mx-auto">
       {/* Back */}
       <Link
-        href="/fulfillment"
+        href={back.href}
         className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-6"
       >
-        ← Back to orders
+        {back.label}
       </Link>
 
       {/* Header row */}

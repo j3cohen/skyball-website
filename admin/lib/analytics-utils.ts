@@ -4,7 +4,19 @@
 import type { ShippingAddress, OrderData, OrderDataItem } from "./order-types";
 import { resolveBom } from "./product-bom";
 
-export type Region = "all" | "domestic" | "international" | string;
+/**
+ * The dashboard's region filter.
+ *
+ * Saved regions are a client-side idea (localStorage), so they arrive here as
+ * an explicit country list — `countries:US,CA,GB`. The server resolves exactly
+ * what the UI displayed without ever needing to know the region's name.
+ */
+export type Region =
+  | { kind: "all" }
+  | { kind: "domestic" }
+  | { kind: "international" }
+  | { kind: "country"; code: string }
+  | { kind: "countries"; codes: string[] };
 
 export type AnalyticsOrder = {
   id: string;
@@ -22,11 +34,22 @@ export type AnalyticsOrder = {
   stripe_fee_cents: number | null;
 };
 
+const COUNTRIES_PREFIX = "countries:";
+
 export function parseRegion(param: string | null): Region {
-  if (!param || param === "all") return "all";
-  if (param === "domestic") return "domestic";
-  if (param === "international") return "international";
-  return param.toUpperCase();
+  if (!param || param === "all") return { kind: "all" };
+  if (param === "domestic") return { kind: "domestic" };
+  if (param === "international") return { kind: "international" };
+  if (param.startsWith(COUNTRIES_PREFIX)) {
+    const codes = param
+      .slice(COUNTRIES_PREFIX.length)
+      .split(",")
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
+    // An empty list would silently match nothing; treat it as unfiltered.
+    return codes.length > 0 ? { kind: "countries", codes } : { kind: "all" };
+  }
+  return { kind: "country", code: param.toUpperCase() };
 }
 
 export function orderCountry(order: AnalyticsOrder): string {
@@ -36,10 +59,15 @@ export function orderCountry(order: AnalyticsOrder): string {
 
 export function matchesRegion(order: AnalyticsOrder, region: Region): boolean {
   const c = orderCountry(order);
-  if (region === "all") return true;
-  if (region === "domestic") return c === "US";
-  if (region === "international") return c !== "US";
-  return c === region;
+  switch (region.kind) {
+    case "all":           return true;
+    case "domestic":      return c === "US";
+    case "international": return c !== "US";
+    case "country":       return c === region.code;
+    // Orders with no address have an empty country; "Unknown" lets a saved
+    // region deliberately include them.
+    case "countries":     return region.codes.includes(c || "UNKNOWN");
+  }
 }
 
 export function matchesDateRange(

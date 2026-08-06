@@ -1,6 +1,12 @@
 // POST /api/admin/orders/by-ids
 // Batch-fetch full order records for the drill-down panel.
 //
+// Accepts either `{ ids }` — the orders behind a metric — or `{ email }`, which
+// returns that customer's complete order history. The email form matters
+// because a customer reached by drilling into one metric should still show
+// their real lifetime totals, not just the orders that metric happened to
+// include.
+//
 // POST rather than GET because a drilled metric can reference hundreds of
 // orders and a URL full of UUIDs would blow past length limits.
 
@@ -32,29 +38,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const ids = (body as { ids?: unknown })?.ids;
-  if (!Array.isArray(ids) || ids.some((v) => typeof v !== "string")) {
-    return NextResponse.json({ error: "ids must be an array of strings." }, { status: 400 });
-  }
-  if (ids.length === 0) return NextResponse.json({ orders: [] });
-  if (ids.length > MAX_IDS) {
-    return NextResponse.json(
-      { error: `Too many ids — ${MAX_IDS} max.` },
-      { status: 400 }
-    );
+  const { ids, email } = (body ?? {}) as { ids?: unknown; email?: unknown };
+
+  const COLUMNS =
+    "id, stripe_session_id, customer_name, customer_email, customer_phone, " +
+    "shipping_address, order_data, order_summary, order_total_cents, order_currency, " +
+    "fulfillment_status, tracking_number, tracking_numbers, internal_notes, " +
+    "shipping_label_cost, stripe_fee_cents, refund_amount_cents, refund_status, " +
+    "created_at, fulfilled_at";
+
+  let query = supabaseAdmin.from("orders").select(COLUMNS);
+
+  if (typeof email === "string" && email.trim()) {
+    // Cancelled orders stay out so lifetime totals match the dashboard's.
+    query = query.ilike("customer_email", email.trim()).neq("fulfillment_status", "cancelled");
+  } else {
+    if (!Array.isArray(ids) || ids.some((v) => typeof v !== "string")) {
+      return NextResponse.json({ error: "Provide ids (string[]) or email." }, { status: 400 });
+    }
+    if (ids.length === 0) return NextResponse.json({ orders: [] });
+    if (ids.length > MAX_IDS) {
+      return NextResponse.json({ error: `Too many ids — ${MAX_IDS} max.` }, { status: 400 });
+    }
+    query = query.in("id", ids as string[]);
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("orders")
-    .select(
-      "id, stripe_session_id, customer_name, customer_email, customer_phone, " +
-      "shipping_address, order_data, order_summary, order_total_cents, order_currency, " +
-      "fulfillment_status, tracking_number, tracking_numbers, internal_notes, " +
-      "shipping_label_cost, stripe_fee_cents, refund_amount_cents, refund_status, " +
-      "created_at, fulfilled_at"
-    )
-    .in("id", ids as string[])
-    .order("created_at", { ascending: false });
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     console.error("by-ids fetch error:", error);

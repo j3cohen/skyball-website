@@ -1,13 +1,23 @@
 "use client";
 
-import { X } from "lucide-react";
+import { useState } from "react";
+import { X, Settings2 } from "lucide-react";
+import { useRegions, encodeRegion } from "@/lib/regions";
+import RegionManagerModal from "./region-manager-modal";
 
 export type DatePreset = "7d" | "30d" | "90d" | "mtd" | "lm" | "ytd" | "all" | "custom";
 export type RegionFilter = "all" | "domestic" | "international";
 
 export type AnalyticsFilterState = {
   preset: DatePreset;
-  region: RegionFilter | string; // RegionFilter or a country code
+  /**
+   * "all" | "domestic" | "international", a country code, or a saved region
+   * encoded as "countries:US,CA". The encoded form is what reaches the API, so
+   * the server resolves a saved region without knowing it exists.
+   */
+  region: RegionFilter | string;
+  /** Display name when `region` is a saved region. */
+  regionName?: string | null;
   from: string | null;
   to: string | null;
 };
@@ -94,6 +104,8 @@ type Props = {
 };
 
 export default function AnalyticsFilters({ value, onChange, focus, onClearFocus }: Props) {
+  const { regions } = useRegions();
+  const [showRegions, setShowRegions] = useState(false);
   function setPreset(preset: DatePreset) {
     if (preset === "custom") {
       // Seed the inputs from the range currently on screen so switching to
@@ -117,8 +129,8 @@ export default function AnalyticsFilters({ value, onChange, focus, onClearFocus 
     onChange({ ...value, preset: "custom", to: new Date(`${day}T23:59:59.999`).toISOString() });
   }
 
-  function setRegion(region: string) {
-    onChange({ ...value, region });
+  function setRegion(region: string, regionName?: string | null) {
+    onChange({ ...value, region, regionName: regionName ?? null });
   }
 
   return (
@@ -166,8 +178,8 @@ export default function AnalyticsFilters({ value, onChange, focus, onClearFocus 
       {/* Divider */}
       <div className="h-5 w-px bg-gray-200" />
 
-      {/* Region selector */}
-      <div className="flex gap-1">
+      {/* Region selector — built-ins, then any saved regions */}
+      <div className="flex flex-wrap gap-1">
         {(
           [
             { value: "all",           label: "All" },
@@ -187,7 +199,39 @@ export default function AnalyticsFilters({ value, onChange, focus, onClearFocus 
             {r.label}
           </button>
         ))}
+
+        {regions.map((r) => {
+          const encoded = encodeRegion(r.countries);
+          return (
+            <button
+              key={r.id}
+              onClick={() => setRegion(encoded, r.name)}
+              title={r.countries.map((c) => c.toUpperCase()).join(", ")}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                value.region === encoded
+                  ? "bg-gray-800 text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {r.name}
+              <span className={`ml-1 ${value.region === encoded ? "text-gray-300" : "text-gray-400"}`}>
+                {r.countries.length}
+              </span>
+            </button>
+          );
+        })}
+
+        <button
+          onClick={() => setShowRegions(true)}
+          title="Create or edit saved regions"
+          className="flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-3 py-1.5
+                     text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+        >
+          <Settings2 size={12} /> Regions
+        </button>
       </div>
+
+      {showRegions && <RegionManagerModal onClose={() => setShowRegions(false)} />}
 
       {/* Active drill-down focus. Lives in the filter row rather than inside a
           card, so a narrowed dashboard can never look like the full one. */}

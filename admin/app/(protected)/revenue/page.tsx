@@ -3,8 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import AnalyticsFilters, {
   defaultFilters,
+  analyticsParams,
   type AnalyticsFilterState,
+  type FocusState,
 } from "@/components/analytics-filters";
+import DrillPanel, { makeTarget, type DrillTarget } from "@/components/drill-panel";
+import DrillRow from "@/components/drill-row";
+import { useDrillSync } from "@/lib/use-drill-sync";
 import {
   RevenueAreaChart,
   OrdersBarChart,
@@ -30,17 +35,24 @@ function DeltaBadge({ delta }: { delta: number | null | undefined }) {
 }
 
 function StatCard({
-  label, value, sub, delta,
-}: { label: string; value: string; sub?: string; delta?: number | null }) {
+  label, value, sub, delta, onDrill, count,
+}: {
+  label: string; value: string; sub?: string; delta?: number | null;
+  onDrill?: () => void; count?: number;
+}) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4">
+    <DrillRow
+      onDrill={onDrill}
+      count={count}
+      className="block bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4"
+    >
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
       <div className="flex items-baseline">
         <p className="text-2xl font-bold text-gray-900">{value}</p>
         <DeltaBadge delta={delta} />
       </div>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-    </div>
+    </DrillRow>
   );
 }
 
@@ -68,22 +80,26 @@ const COUNTRY_NAMES: Record<string, string> = {
   MX: "Mexico", BR: "Brazil",
 };
 
+/** "Unknown" is the bucket for orders that have no shipping address at all. */
+function countryLabel(code: string): string {
+  if (!code || code.toUpperCase() === "UNKNOWN") return "Unknown / no address";
+  return COUNTRY_NAMES[code] ?? code;
+}
+
 export default function RevenuePage() {
   const [filters, setFilters] = useState<AnalyticsFilterState>(defaultFilters);
   const [data, setData]       = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+  const [drill, setDrill]     = useState<DrillTarget | null>(null);
+  const [revMetric, setRevMetric] = useState<"revenue" | "avgDaily">("revenue");
+  const [focus, setFocus]     = useState<FocusState | null>(null);
 
-  const load = useCallback(async (f: AnalyticsFilterState) => {
+  const load = useCallback(async (f: AnalyticsFilterState, fo: FocusState | null) => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams();
-      if (f.from)  params.set("from",   f.from);
-      if (f.to)    params.set("to",     f.to);
-      if (f.region !== "all") params.set("region", f.region);
-
-      const res  = await fetch(`/api/admin/analytics/revenue?${params}`);
+      const res  = await fetch(`/api/admin/analytics/revenue?${analyticsParams(f, fo)}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load");
       setData(json);
@@ -94,15 +110,19 @@ export default function RevenuePage() {
     }
   }, []);
 
-  useEffect(() => { void load(filters); }, [filters, load]);
+  useEffect(() => { void load(filters, focus); }, [filters, focus, load]);
 
   const stats            = data?.stats            as Record<string, unknown> | undefined;
   const regionBreakdown  = data?.regionBreakdown  as Record<string, unknown> | undefined;
-  const countryBreakdown = data?.countryBreakdown as { country: string; cents: number; count: number }[] | undefined;
-  const timeSeries       = data?.timeSeries       as { date: string; revenue: number; orders: number }[] | undefined;
-  const productBreakdown = data?.productBreakdown as { name: string; revenue: number; units: number; pctOfTotal: number }[] | undefined;
-  const statusBreakdown  = data?.statusBreakdown  as { status: string; count: number; pct: number }[] | undefined;
-  const orderValueBuckets = data?.orderValueBuckets as { label: string; count: number }[] | undefined;
+  const countryBreakdown = data?.countryBreakdown as { country: string; cents: number; count: number; o: number[] }[] | undefined;
+  const timeSeries       = data?.timeSeries       as { date: string; revenue: number; orders: number; o: number[] }[] | undefined;
+  const productBreakdown = data?.productBreakdown as { name: string; revenue: number; units: number; pctOfTotal: number; o: number[] }[] | undefined;
+  const statusBreakdown  = data?.statusBreakdown  as { status: string; count: number; pct: number; o: number[] }[] | undefined;
+  const orderValueBuckets = data?.orderValueBuckets as { label: string; count: number; o: number[] }[] | undefined;
+  const orderIds         = (data?.orderIds as string[]) ?? [];
+  const avgDailyCents    = (stats?.avgDailyCents as number) ?? 0;
+  const rangeDays        = (stats?.rangeDays as number) ?? 0;
+  const statsO           = stats?.o as Record<string, number[]> | undefined;
   const granularity      = (data?.granularity as "day" | "week" | "month") ?? "month";
   const deltas           = stats?.deltas           as Record<string, number | null> | undefined;
   const shippingCosts    = data?.shippingCosts      as {
@@ -117,12 +137,47 @@ export default function RevenuePage() {
   const eventRevenue     = data?.eventRevenue      as {
     totalCents: number; tournamentCents: number; openPlayCents: number;
     tournamentCount: number; openPlayCount: number;
-    breakdown: { name: string; cents: number; count: number; kind: string }[];
+    breakdown: { name: string; cents: number; count: number; kind: string; o: number[] }[];
   } | undefined;
 
-  const domData = regionBreakdown?.domestic    as { cents: number; count: number } | undefined;
-  const intlData = regionBreakdown?.international as { cents: number; count: number } | undefined;
+  const domData = regionBreakdown?.domestic    as { cents: number; count: number; o: number[] } | undefined;
+  const intlData = regionBreakdown?.international as { cents: number; count: number; o: number[] } | undefined;
   const totalCents = (stats?.totalCents as number) ?? 0;
+
+  // Every drill target on this page is built here, then reused by both the
+  // click handlers and the refresh below — one construction site, no drift.
+  const targets: Record<string, DrillTarget> = {};
+  const mk = (
+    idx: number[] | undefined, title: string, subtitle?: string,
+    focusDim?: string, focusVal?: string
+  ): DrillTarget => {
+    const t: DrillTarget = {
+      ...makeTarget(
+        orderIds, idx, title, subtitle,
+        focusDim && focusVal ? { dim: focusDim as never, val: focusVal } : undefined
+      ),
+      key: `revenue:${title}`,
+    };
+    targets[t.key!] = t;
+    return t;
+  };
+  const drillTo = (
+    idx: number[] | undefined, title: string, subtitle?: string,
+    focusDim?: string, focusVal?: string
+  ) => setDrill(mk(idx, title, subtitle, focusDim, focusVal));
+
+  // Register every drillable row each render so the open panel can be refreshed.
+  mk(statsO?.all, "Total revenue", `${stats?.orderCount ?? 0} orders · ${fmtMoney((stats?.totalCents as number) ?? 0)}`);
+  mk(statsO?.product, "Product revenue", fmtMoney((stats?.productCents as number) ?? 0));
+  mk(statsO?.all, "All customers", `${stats?.uniqueCustomers ?? 0} unique buyers`);
+  mk(statsO?.all, "All orders", `AOV ${fmtMoney((stats?.avgOrderCents as number) ?? 0)}`);
+  (statusBreakdown ?? []).forEach((r) => mk(r.o, `Status: ${r.status}`, `${r.count} orders`, "status", r.status));
+  (countryBreakdown ?? []).forEach((r) => mk(r.o, countryLabel(r.country), `${r.count} orders · ${fmtMoney(r.cents)}`, "country", r.country));
+  (orderValueBuckets ?? []).forEach((b) => mk(b.o, `Order value ${b.label}`, `${b.count} orders`));
+  (productBreakdown ?? []).forEach((p) => mk(p.o, p.name, `${p.units} units · ${fmtMoney(p.revenue)}`, "sku", p.name));
+  (timeSeries ?? []).forEach((pt) => mk(pt.o, pt.date, `${pt.orders} orders · ${fmtMoney(pt.revenue)}`));
+
+  useDrillSync({ target: drill, targets, namespace: "revenue:", onDrill: setDrill, dataToken: data });
 
   return (
     <div className="p-4 md:p-8 max-w-6xl">
@@ -135,7 +190,12 @@ export default function RevenuePage() {
 
       {/* Filter bar */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 mb-6">
-        <AnalyticsFilters value={filters} onChange={(f) => { setFilters(f); }} />
+        <AnalyticsFilters
+          value={filters}
+          onChange={setFilters}
+          focus={focus}
+          onClearFocus={() => setFocus(null)}
+        />
       </div>
 
       {error && (
@@ -143,27 +203,42 @@ export default function RevenuePage() {
       )}
 
       {/* ── KPI cards ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <StatCard
           label="Total Revenue"
           value={loading ? "—" : fmtMoney((stats?.totalCents as number) ?? 0)}
           sub={loading ? undefined : `${stats?.orderCount ?? 0} orders`}
           delta={deltas?.revenue}
+          count={statsO?.all?.length}
+          onDrill={() => drillTo(statsO?.all, "Total revenue", `${stats?.orderCount ?? 0} orders · ${fmtMoney((stats?.totalCents as number) ?? 0)}`)}
         />
         <StatCard
           label="Product Revenue"
           value={loading ? "—" : fmtMoney((stats?.productCents as number) ?? 0)}
           sub={loading ? undefined : "Excl. event fees"}
+          count={statsO?.product?.length}
+          onDrill={() => drillTo(statsO?.product, "Product revenue", fmtMoney((stats?.productCents as number) ?? 0))}
         />
         <StatCard
           label="Unique Customers"
           value={loading ? "—" : String(stats?.uniqueCustomers ?? 0)}
           delta={deltas?.customers}
+          count={statsO?.all?.length}
+          onDrill={() => drillTo(statsO?.all, "All customers", `${stats?.uniqueCustomers ?? 0} unique buyers`)}
         />
         <StatCard
           label="Avg Order Value"
           value={loading ? "—" : fmtMoney((stats?.avgOrderCents as number) ?? 0)}
           delta={deltas?.avgOrder}
+          count={statsO?.all?.length}
+          onDrill={() => drillTo(statsO?.all, "All orders", `AOV ${fmtMoney((stats?.avgOrderCents as number) ?? 0)}`)}
+        />
+        <StatCard
+          label="Avg Daily Revenue"
+          value={loading ? "—" : fmtMoney(avgDailyCents)}
+          sub={loading ? undefined : `over ${rangeDays} day${rangeDays !== 1 ? "s" : ""}`}
+          count={statsO?.all?.length}
+          onDrill={() => drillTo(statsO?.all, "All orders", `${fmtMoney(avgDailyCents)} / day over ${rangeDays} days`)}
         />
       </div>
 
@@ -188,7 +263,12 @@ export default function RevenuePage() {
           {eventRevenue.breakdown.length > 0 && (
             <div className="divide-y divide-gray-50 border-t border-gray-100 mt-2">
               {eventRevenue.breakdown.map((e) => (
-                <div key={e.name} className="flex items-center justify-between py-1.5 text-xs">
+                <DrillRow
+                  key={e.name}
+                  count={e.o?.length}
+                  onDrill={() => drillTo(e.o, e.name, `${e.count} registrations · ${fmtMoney(e.cents)}`)}
+                  className="flex items-center justify-between py-1.5 text-xs rounded-lg px-2 -mx-2"
+                >
                   <span className="text-gray-700">{e.name}</span>
                   <span className="flex items-center gap-3 text-gray-500">
                     <span className={`rounded-full px-2 py-0.5 font-medium ${
@@ -198,7 +278,7 @@ export default function RevenuePage() {
                     </span>
                     {e.count}× · {fmtMoney(e.cents)}
                   </span>
-                </div>
+                </DrillRow>
               ))}
             </div>
           )}
@@ -211,10 +291,20 @@ export default function RevenuePage() {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Expenses &amp; Net Revenue</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {stripeFees && stripeFees.totalCents > 0 && (
-              <StatCard label="Stripe Fees"        value={fmtMoney(stripeFees.totalCents)}      sub={`${stripeFees.pctOfRevenue}% of revenue · avg ${fmtMoney(stripeFees.avgCents)}`} />
+              <StatCard
+                label="Stripe Fees" value={fmtMoney(stripeFees.totalCents)}
+                sub={`${stripeFees.pctOfRevenue}% of revenue · avg ${fmtMoney(stripeFees.avgCents)}`}
+                count={statsO?.withFee?.length}
+                onDrill={() => drillTo(statsO?.withFee, "Orders with Stripe fees", `${stripeFees.ordersWithFee} orders · ${fmtMoney(stripeFees.totalCents)}`)}
+              />
             )}
             {shippingCosts && shippingCosts.totalCents > 0 && (
-              <StatCard label="Shipping Labels"    value={fmtMoney(shippingCosts.totalCents)}   sub={`${shippingCosts.pctOfRevenue}% of revenue · avg ${fmtMoney(shippingCosts.avgCents)}`} />
+              <StatCard
+                label="Shipping Labels" value={fmtMoney(shippingCosts.totalCents)}
+                sub={`${shippingCosts.pctOfRevenue}% of revenue · avg ${fmtMoney(shippingCosts.avgCents)}`}
+                count={statsO?.withLabel?.length}
+                onDrill={() => drillTo(statsO?.withLabel, "Orders with shipping labels", `${shippingCosts.ordersWithLabel} labels · ${fmtMoney(shippingCosts.totalCents)}`)}
+              />
             )}
             {netRevenue && netRevenue.netCents > 0 && (
               <>
@@ -254,7 +344,12 @@ export default function RevenuePage() {
               ].map(({ label, data: d, color }) => {
                 const pct = totalCents > 0 ? Math.round(((d?.cents ?? 0) / totalCents) * 100) : 0;
                 return (
-                  <div key={label}>
+                  <DrillRow
+                    key={label}
+                    count={d?.o?.length}
+                    onDrill={() => drillTo(d?.o, label, `${d?.count ?? 0} orders · ${fmtMoney(d?.cents ?? 0)}`)}
+                    className="rounded-lg px-2 py-1.5 -mx-2"
+                  >
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-gray-600 font-medium">{label}</span>
                       <span className="text-gray-500">{d?.count ?? 0} orders · {fmtMoney(d?.cents ?? 0)}</span>
@@ -262,7 +357,7 @@ export default function RevenuePage() {
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
                     </div>
-                  </div>
+                  </DrillRow>
                 );
               })}
             </div>
@@ -271,11 +366,43 @@ export default function RevenuePage() {
 
         {/* Revenue chart */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 lg:col-span-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Revenue Over Time</p>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              {revMetric === "revenue" ? "Revenue Over Time" : "Avg Daily Revenue Over Time"}
+            </p>
+            {/* Per-day view divides each bucket by the days it covers inside the
+                range, so a part-finished month compares fairly with a full one. */}
+            <div className="flex gap-1">
+              {([
+                { v: "revenue",  label: "Total" },
+                { v: "avgDaily", label: "Avg / day" },
+              ] as const).map((m) => (
+                <button
+                  key={m.v}
+                  onClick={() => setRevMetric(m.v)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                    revMetric === m.v
+                      ? "bg-sky-600 text-white"
+                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {loading ? (
             <div className="h-[220px] animate-pulse bg-gray-100 rounded-lg" />
           ) : timeSeries && timeSeries.length > 0 ? (
-            <RevenueAreaChart data={timeSeries} granularity={granularity} />
+            <RevenueAreaChart
+              data={timeSeries}
+              granularity={granularity}
+              metric={revMetric}
+              onDrillDate={(d) => {
+                const pt = timeSeries.find((x) => x.date === d);
+                drillTo(pt?.o, d, `${pt?.orders ?? 0} orders · ${fmtMoney(pt?.revenue ?? 0)}`);
+              }}
+            />
           ) : (
             <p className="text-sm text-gray-400 text-center py-16">No data for this period.</p>
           )}
@@ -288,7 +415,13 @@ export default function RevenuePage() {
         {loading ? (
           <div className="h-[160px] animate-pulse bg-gray-100 rounded-lg" />
         ) : timeSeries && timeSeries.length > 0 ? (
-          <OrdersBarChart data={timeSeries} />
+          <OrdersBarChart
+            data={timeSeries}
+            onDrillDate={(d) => {
+              const pt = timeSeries.find((x) => x.date === d);
+              drillTo(pt?.o, d, `${pt?.orders ?? 0} orders`);
+            }}
+          />
         ) : (
           <p className="text-sm text-gray-400 text-center py-10">No data for this period.</p>
         )}
@@ -305,8 +438,13 @@ export default function RevenuePage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {(statusBreakdown ?? []).map(({ status, count, pct }) => (
-                <div key={status} className="px-5 py-2.5 flex items-center gap-3">
+              {(statusBreakdown ?? []).map(({ status, count, pct, o }) => (
+                <DrillRow
+                  key={status}
+                  count={o?.length}
+                  onDrill={() => drillTo(o, `Status: ${status}`, `${count} orders`, "status", status)}
+                  className="px-5 py-2.5 flex items-center gap-3"
+                >
                   <span className="w-20 text-xs font-medium text-gray-700 capitalize">{status}</span>
                   <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
                     <div
@@ -315,7 +453,7 @@ export default function RevenuePage() {
                     />
                   </div>
                   <span className="text-xs text-gray-500 w-16 text-right">{count} <span className="text-gray-300">({pct}%)</span></span>
-                </div>
+                </DrillRow>
               ))}
             </div>
           )}
@@ -327,7 +465,13 @@ export default function RevenuePage() {
             <div className="p-5 h-[160px] animate-pulse bg-gray-100 rounded-lg" />
           ) : orderValueBuckets ? (
             <div className="px-4 py-3">
-              <OrderValueBucketChart data={orderValueBuckets} />
+              <OrderValueBucketChart
+                data={orderValueBuckets}
+                onDrillBucket={(label) => {
+                  const b = orderValueBuckets.find((x) => x.label === label);
+                  drillTo(b?.o, `Order value ${label}`, `${b?.count ?? 0} orders`);
+                }}
+              />
             </div>
           ) : null}
         </SectionCard>
@@ -340,13 +484,18 @@ export default function RevenuePage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50 max-h-[220px] overflow-y-auto">
-              {(countryBreakdown ?? []).slice(0, 15).map(({ country, cents, count }) => (
-                <div key={country} className="px-5 py-2 flex items-center justify-between gap-2 text-xs">
+              {(countryBreakdown ?? []).slice(0, 15).map(({ country, cents, count, o }) => (
+                <DrillRow
+                  key={country}
+                  count={o?.length}
+                  onDrill={() => drillTo(o, countryLabel(country), `${count} orders · ${fmtMoney(cents)}`, "country", country)}
+                  className="px-5 py-2 flex items-center justify-between gap-2 text-xs"
+                >
                   <span className="text-gray-700 font-medium truncate">
-                    {COUNTRY_NAMES[country] ?? country}
+                    {countryLabel(country)}
                   </span>
                   <span className="text-gray-500 shrink-0">{count} · {fmtMoney(cents)}</span>
-                </div>
+                </DrillRow>
               ))}
               {(countryBreakdown ?? []).length === 0 && (
                 <p className="px-5 py-6 text-sm text-gray-400 text-center">No data</p>
@@ -376,7 +525,12 @@ export default function RevenuePage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {(productBreakdown ?? []).map((p, i) => (
-                  <tr key={p.name} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}>
+                  <tr
+                    key={p.name}
+                    onClick={() => drillTo(p.o, p.name, `${p.units} units · ${fmtMoney(p.revenue)}`, "sku", p.name)}
+                    title="View contributing orders"
+                    className={`cursor-pointer transition-colors hover:bg-sky-50/60 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                  >
                     <td className="px-5 py-3 font-medium text-gray-900">{p.name}</td>
                     <td className="px-5 py-3 text-right text-gray-700">{fmtMoney(p.revenue)}</td>
                     <td className="px-5 py-3 text-right text-gray-500">{p.pctOfTotal}%</td>
@@ -392,6 +546,14 @@ export default function RevenuePage() {
           </div>
         )}
       </SectionCard>
+
+      <DrillPanel
+        target={drill}
+        onClose={() => setDrill(null)}
+        onApplyFocus={(f, label) => setFocus({ dim: f.dim, val: f.val, label })}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
     </div>
   );
 }

@@ -131,7 +131,9 @@ export async function GET(req: Request) {
   const countryMap = new Map<string, { shippingCents: number; count: number; revCents: number; o: number[] }>();
   for (const o of filtered) {
     const addr = o.shipping_address as ShippingAddress | null;
-    const country = (addr?.country ?? "Unknown").toUpperCase();
+    // Uppercase the code, but keep the sentinel readable — Revenue spells it
+    // "Unknown" too, so both cards bucket no-address orders identically.
+    const country = (addr?.country ?? "").toUpperCase() || "Unknown";
     const cur = countryMap.get(country) ?? { shippingCents: 0, count: 0, revCents: 0, o: [] };
     if (o.shipping_label_cost != null && o.shipping_label_cost > 0) {
       cur.shippingCents += Math.round(o.shipping_label_cost * 100);
@@ -158,7 +160,7 @@ export async function GET(req: Request) {
     const addr = o.shipping_address as ShippingAddress | null;
     const country = (addr?.country ?? "").toUpperCase();
     if (country !== "US") continue;
-    const state = (addr?.state ?? "Unknown").toUpperCase();
+    const state = (addr?.state ?? "").toUpperCase() || "Unknown";
     const cur = stateMap.get(state) ?? { shippingCents: 0, count: 0, o: [] };
     cur.shippingCents += Math.round((o.shipping_label_cost ?? 0) * 100);
     cur.count += 1;

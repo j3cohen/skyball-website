@@ -12,8 +12,9 @@ import SalesOrdersTab     from "@/components/sales-orders-tab";
 import SalesProductsTab   from "@/components/sales-products-tab";
 import SalesUnitsTab      from "@/components/sales-units-tab";
 import SalesFulfillmentTab from "@/components/sales-fulfillment-tab";
+import SalesRegionsTab     from "@/components/sales-regions-tab";
 
-type Tab = "customers" | "orders" | "products" | "units" | "fulfillment";
+type Tab = "customers" | "orders" | "products" | "units" | "fulfillment" | "regions";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "customers",   label: "Customers" },
@@ -21,6 +22,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "products",    label: "Products" },
   { key: "units",       label: "Units Sold" },
   { key: "fulfillment", label: "Fulfillment" },
+  { key: "regions",     label: "Regions" },
 ];
 
 export default function SalesPage() {
@@ -31,7 +33,9 @@ export default function SalesPage() {
   const [drill, setDrill] = useState<DrillTarget | null>(null);
   const [focus, setFocus] = useState<FocusState | null>(null);
 
-  const tabProps = { filters, focus, onDrill: setDrill };
+  // `drill` goes down too: each tab refreshes the open panel from its own
+  // freshly-loaded data when the date range changes.
+  const tabProps = { filters, focus, onDrill: setDrill, drill };
 
   return (
     <div className="p-4 md:p-8 max-w-6xl">
@@ -71,15 +75,23 @@ export default function SalesPage() {
 
       {/* Tab content */}
       {tab === "customers"   && <SalesCustomersTab   {...tabProps} />}
-      {tab === "orders"      && <SalesOrdersTab      filters={filters} />}
+      {tab === "orders"      && <SalesOrdersTab      {...tabProps} />}
       {tab === "products"    && <SalesProductsTab    {...tabProps} />}
       {tab === "units"       && <SalesUnitsTab       {...tabProps} />}
       {tab === "fulfillment" && <SalesFulfillmentTab {...tabProps} />}
+      {tab === "regions"     && (
+        <SalesRegionsTab
+          {...tabProps}
+          onSelectRegion={(region, regionName) => setFilters((f) => ({ ...f, region, regionName }))}
+        />
+      )}
 
       <DrillPanel
         target={drill}
         onClose={() => setDrill(null)}
         onApplyFocus={(f, label) => setFocus({ dim: f.dim, val: f.val, label })}
+        filters={filters}
+        onFiltersChange={setFilters}
       />
     </div>
   );

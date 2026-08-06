@@ -12,8 +12,13 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  // ws://localhost in dev for the HMR socket
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isProd ? "" : " ws://localhost:* http://localhost:*"}`,
+  // Dev also allows the HMR socket and a LOCAL Supabase stack. Both
+  // localhost and 127.0.0.1 are listed: CSP matches hosts literally, so
+  // `http://localhost:*` does NOT cover `http://127.0.0.1:54341` and the
+  // browser would block auth/REST calls with an opaque "Load failed".
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${
+    isProd ? "" : " ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*"
+  }`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

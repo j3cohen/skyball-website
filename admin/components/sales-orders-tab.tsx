@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
-import type { AnalyticsFilterState } from "./analytics-filters";
+import { analyticsParams, type AnalyticsFilterState, type FocusState } from "./analytics-filters";
+import type { DrillTarget } from "./drill-panel";
 
 function fmtMoney(cents: number | null) {
   if (cents == null) return "—";
@@ -33,7 +33,16 @@ type OrderRow = {
 
 const PAGE_SIZE = 50;
 
-export default function SalesOrdersTab({ filters }: { filters: AnalyticsFilterState }) {
+type Props = {
+  filters: AnalyticsFilterState;
+  focus: FocusState | null;
+  onDrill: (t: DrillTarget) => void;
+  /** Accepted for a uniform tab signature; an order's own record doesn't
+   *  change with the dashboard's date range, so there's nothing to refresh. */
+  drill?: DrillTarget | null;
+};
+
+export default function SalesOrdersTab({ filters, focus, onDrill }: Props) {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [total,  setTotal]  = useState(0);
   const [page,   setPage]   = useState(0);
@@ -47,10 +56,7 @@ export default function SalesOrdersTab({ filters }: { filters: AnalyticsFilterSt
 
   const load = useCallback(async (pg: number) => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to)   params.set("to",   filters.to);
-    if (filters.region !== "all") params.set("region", filters.region);
+    const params = analyticsParams(filters, focus);
     if (status) params.set("status", status);
     if (q.trim()) params.set("q", q.trim());
     if (minVal) params.set("min", minVal);
@@ -66,9 +72,9 @@ export default function SalesOrdersTab({ filters }: { filters: AnalyticsFilterSt
     } finally {
       setLoading(false);
     }
-  }, [filters, status, q, minVal, maxVal]);
+  }, [filters, focus, status, q, minVal, maxVal]);
 
-  useEffect(() => { setPage(0); void load(0); }, [filters, status, minVal, maxVal, load]);
+  useEffect(() => { setPage(0); void load(0); }, [filters, focus, status, minVal, maxVal, load]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -155,14 +161,24 @@ export default function SalesOrdersTab({ filters }: { filters: AnalyticsFilterSt
             <table className="min-w-full text-sm divide-y divide-gray-100">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Date", "Customer", "Country", "Items", "Total", "Status", ""].map((h) => (
+                  {["Date", "Customer", "Country", "Items", "Total", "Status"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {orders.map((o, i) => (
-                  <tr key={o.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}>
+                  <tr
+                    key={o.id}
+                    onClick={() => onDrill({
+                      key: `order:${o.id}`,
+                      title: o.customer_name ?? o.customer_email ?? "Order",
+                      orderIds: [o.id],
+                      openOrderId: o.id,
+                    })}
+                    title="Open this order"
+                    className={`cursor-pointer transition-colors hover:bg-sky-50/60 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                  >
                     <td className="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">{fmtDate(o.created_at)}</td>
                     <td className="px-4 py-2.5">
                       <p className="font-medium text-gray-900 truncate max-w-[140px]">{o.customer_name ?? "—"}</p>
@@ -178,15 +194,10 @@ export default function SalesOrdersTab({ filters }: { filters: AnalyticsFilterSt
                         {o.fulfillment_status}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5">
-                      <Link href={`/fulfillment/${o.id}`} className="text-xs text-sky-600 hover:underline whitespace-nowrap">
-                        View →
-                      </Link>
-                    </td>
                   </tr>
                 ))}
                 {orders.length === 0 && (
-                  <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-gray-400">No orders match your filters.</td></tr>
+                  <tr><td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">No orders match your filters.</td></tr>
                 )}
               </tbody>
             </table>

@@ -110,6 +110,10 @@ export async function GET(req: Request) {
   const ballPacks  = new Map<BallPackSize, Row>();
   const unmapped   = new Map<string, Row>();
   const inferred   = new Map<string, number>();
+  const byPeriodOrders = new Map<string, number[]>();
+  // component → source SKU → { units, orders }. Answers "these 1,118 Pro
+  // rackets came from which products?" without a second pass over the data.
+  const compSources = new Map<ComponentId, Map<string, { units: number; o: Set<number> }>>();
   const contributing: AnalyticsOrder[] = [];
 
   for (const order of scoped) {
@@ -119,6 +123,8 @@ export async function GET(req: Request) {
 
     const oi = index.idx(order.id);
     contributing.push(order);
+    // Lets a chart bar drill into just that period's orders.
+    byPeriodOrders.set(pKey, [...(byPeriodOrders.get(pKey) ?? []), oi]);
 
     for (const item of items) {
       const qty  = item.quantity ?? 1;
@@ -142,7 +148,16 @@ export async function GET(req: Request) {
       }
 
       for (const [id, n] of Object.entries(bom.components)) {
-        bump(components, id as ComponentId, pKey, (n ?? 0) * qty, oi);
+        const cid = id as ComponentId;
+        bump(components, cid, pKey, (n ?? 0) * qty, oi);
+
+        // Attribute these base units back to the SKU that produced them.
+        if (!compSources.has(cid)) compSources.set(cid, new Map());
+        const srcMap = compSources.get(cid)!;
+        const src = srcMap.get(skuName) ?? { units: 0, o: new Set<number>() };
+        src.units += (n ?? 0) * qty;
+        src.o.add(oi);
+        srcMap.set(skuName, src);
       }
       for (const [size, n] of Object.entries(bom.ballPacks ?? {})) {
         bump(ballPacks, Number(size) as BallPackSize, pKey, (n ?? 0) * qty, oi);
@@ -184,6 +199,10 @@ export async function GET(req: Request) {
         total:    components.get(id)!.total,
         byPeriod: toObject(components.get(id)),
         o:        [...components.get(id)!.o],
+        // Which products these base units came from.
+        sources: [...(compSources.get(id) ?? new Map()).entries()]
+          .map(([name, v]) => ({ name, units: v.units, orders: v.o.size, o: [...v.o] }))
+          .sort((a, b) => b.units - a.units),
       })),
 
     ballPacks: BALL_PACK_SIZES
@@ -204,6 +223,7 @@ export async function GET(req: Request) {
       .map(([name, units]) => ({ name, units }))
       .sort((a, b) => b.units - a.units),
 
+    byPeriodOrders: Object.fromEntries(byPeriodOrders),
     orderIds: index.ids(),
   });
 }

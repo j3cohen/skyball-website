@@ -48,7 +48,8 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: "Failed to fetch orders." }, { status: 500 });
 
   const now = new Date();
-  const all = (data ?? []) as AnalyticsOrder[];
+  // Cast through unknown: tracking_numbers post-dates the generated types.
+  const all = (data ?? []) as unknown as AnalyticsOrder[];
 
   const filtered = all.filter(
     (o) =>

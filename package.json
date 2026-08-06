@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "admin": "npm run dev --workspace=admin"
+    "admin": "npm run dev --workspace=admin",
+    "test": "vitest run tests/unit",
+    "test:integration": "LOCAL_SUPABASE=1 vitest run tests/integration",
+    "test:all": "LOCAL_SUPABASE=1 vitest run"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.2.3",
@@ -45,12 +48,13 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10",
     "eslint": "^8",
     "eslint-config-next": "14.2.16",
-    "autoprefixer": "^10",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   },
   "overrides": {
     "react-style-singleton": "2.2.1"
@@ -59,4 +63,3 @@
     "admin"
   ]
 }
-
