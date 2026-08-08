@@ -1,12 +1,18 @@
 // app/api/certification/certificate/route.ts
-// POST { fullName } — issue the certificate once the enrollment is
-// completed (idempotent: one certificate per enrollment).
+// POST { fullName } — issue the certificate once every section is passed
+// (idempotent: one certificate per enrollment). Completion is derived from
+// attempts, never read off enrollment.status — see the note in POST.
 // GET — fetch the learner's own certificate.
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import { getCertLearner } from "@/lib/server/certLearnerAuth";
-import { findActiveEnrollment, loadProgramContent } from "@/lib/server/certCourse";
+import {
+  allSectionsPassed,
+  findActiveEnrollment,
+  loadAttempts,
+  loadProgramContent,
+} from "@/lib/server/certCourse";
 import { generateVerifyCode } from "@/lib/server/certCodes";
 import { rateLimitResponse } from "@/lib/server/rateLimiter";
 
@@ -67,12 +73,6 @@ export async function POST(request: Request) {
     if (!enrollment) {
       return NextResponse.json({ error: "No enrollment found." }, { status: 404 });
     }
-    if (enrollment.status !== "completed") {
-      return NextResponse.json(
-        { error: "Finish every section before claiming your certificate." },
-        { status: 400 }
-      );
-    }
 
     // Idempotent: return the existing certificate if one was issued.
     const { data: existing } = await supabaseAdmin
@@ -85,6 +85,24 @@ export async function POST(request: Request) {
     const content = await loadProgramContent(enrollment.program_id);
     if (!content) {
       return NextResponse.json({ error: "Course content unavailable." }, { status: 500 });
+    }
+
+    // Completion is DERIVED from attempts, not read off enrollment.status.
+    // quiz-submit is the only writer of that column, so a program whose
+    // sections have no questions (all auto-pass) would never flip it and the
+    // learner could never claim a certificate.
+    const attempts = await loadAttempts(enrollment.id);
+    if (!allSectionsPassed(content.sections, content.questions, attempts)) {
+      return NextResponse.json(
+        { error: "Finish every section before claiming your certificate." },
+        { status: 400 }
+      );
+    }
+    if (enrollment.status !== "completed") {
+      await supabaseAdmin
+        .from("cert_enrollments")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", enrollment.id);
     }
 
     const issuedAt = new Date();

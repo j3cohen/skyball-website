@@ -3,7 +3,9 @@
 import { describe, expect, it } from "vitest";
 import {
   extractYouTubeId,
+  hasQuiz,
   requiredCorrect,
+  stepsFor,
 } from "@/lib/certification/types";
 import { cooldownUntil, type AttemptRow } from "@/lib/server/certCourse";
 import { generateClaimToken, generateVerifyCode } from "@/lib/server/certCodes";
@@ -100,27 +102,85 @@ describe("code generation", () => {
 });
 
 describe("mockGradeQuiz (fixture consistency)", () => {
-  const section = FIXTURE_COURSE.sections[0];
+  // The fixture course is three video-only sections then one standalone
+  // quiz section, so the only gradable section is the last one.
+  const section = FIXTURE_COURSE.sections[FIXTURE_COURSE.sections.length - 1];
+  // Answer key from fixtures: 1a→1 1b→2 1c→0 2a→3 2b→1 2c→0 3a→2 3b→1 3c→3
+  const perfect = [
+    { questionId: "q-1a", choiceIndex: 1 },
+    { questionId: "q-1b", choiceIndex: 2 },
+    { questionId: "q-1c", choiceIndex: 0 },
+    { questionId: "q-2a", choiceIndex: 3 },
+    { questionId: "q-2b", choiceIndex: 1 },
+    { questionId: "q-2c", choiceIndex: 0 },
+    { questionId: "q-3a", choiceIndex: 2 },
+    { questionId: "q-3b", choiceIndex: 1 },
+    { questionId: "q-3c", choiceIndex: 3 },
+  ];
+
   it("grades a perfect run as passed", () => {
-    // Answer key from fixtures: q-1a→1, q-1b→2, q-1c→0
-    const result = mockGradeQuiz(FIXTURE_COURSE, section.id, [
-      { questionId: "q-1a", choiceIndex: 1 },
-      { questionId: "q-1b", choiceIndex: 2 },
-      { questionId: "q-1c", choiceIndex: 0 },
-    ]);
+    const result = mockGradeQuiz(FIXTURE_COURSE, section.id, perfect);
     expect(result.passed).toBe(true);
-    expect(result.correctCount).toBe(3);
+    expect(result.correctCount).toBe(9);
     expect(result.retryAt).toBeNull();
   });
+
+  it("completes the enrollment — the video-only sections already auto-pass", () => {
+    const result = mockGradeQuiz(FIXTURE_COURSE, section.id, perfect);
+    expect(result.enrollmentCompleted).toBe(true);
+  });
+
   it("fails below the threshold and sets retryAt when cooldown > 0", () => {
-    const result = mockGradeQuiz(FIXTURE_COURSE, section.id, [
-      { questionId: "q-1a", choiceIndex: 0 },
-      { questionId: "q-1b", choiceIndex: 0 },
-      { questionId: "q-1c", choiceIndex: 1 },
-    ]);
+    const allWrong = perfect.map((a) => ({
+      ...a,
+      choiceIndex: a.choiceIndex === 0 ? 1 : 0,
+    }));
+    const result = mockGradeQuiz(FIXTURE_COURSE, section.id, allWrong);
     expect(result.passed).toBe(false);
+    expect(result.correctCount).toBe(0);
     expect(result.retryAt).not.toBeNull();
     // Full reveal: every result carries the correct index.
     for (const r of result.results) expect(r.correctIndex).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("stepsFor", () => {
+  const base = { introEnabled: false, youtubeId: null as string | null, questions: [] as unknown[] };
+  const q = [{ id: "q1" }];
+
+  it("returns the steps a section actually has, in learner order", () => {
+    expect(stepsFor({ ...base, introEnabled: true, youtubeId: "abc", questions: q })).toEqual([
+      "intro",
+      "video",
+      "quiz",
+    ]);
+  });
+
+  it("handles a video-only section", () => {
+    expect(stepsFor({ ...base, youtubeId: "abc" })).toEqual(["video"]);
+  });
+
+  it("handles a standalone quiz section", () => {
+    expect(stepsFor({ ...base, questions: q })).toEqual(["quiz"]);
+  });
+
+  it("handles an intro + quiz section with no video", () => {
+    expect(stepsFor({ ...base, introEnabled: true, questions: q })).toEqual(["intro", "quiz"]);
+  });
+
+  it("handles intro + video with no quiz", () => {
+    expect(stepsFor({ ...base, introEnabled: true, youtubeId: "abc" })).toEqual([
+      "intro",
+      "video",
+    ]);
+  });
+
+  it("returns an empty list for a section with no content", () => {
+    expect(stepsFor(base)).toEqual([]);
+  });
+
+  it("agrees with hasQuiz", () => {
+    expect(hasQuiz({ questions: q })).toBe(true);
+    expect(hasQuiz({ questions: [] })).toBe(false);
   });
 });

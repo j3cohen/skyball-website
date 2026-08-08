@@ -11,15 +11,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+  hasQuiz,
   requiredCorrect,
+  stepsFor,
   type CourseCertificate,
   type CourseOutline,
   type CourseSection,
   type QuizAnswer,
   type QuizSubmitResult,
+  type SectionStep,
 } from "@/lib/certification/types";
 
-type SectionStep = "intro" | "video" | "quiz" | "results";
+/**
+ * "results" is player-local: it exists only after a quiz submission, so it is
+ * never part of a section's content steps.
+ */
+type PlayerStep = SectionStep | "results";
+
+const VISITED_KEY = "skyball_cert_visited_v1";
 
 export type CourseShellProps = {
   course: CourseOutline;
@@ -31,10 +40,37 @@ export type CourseShellProps = {
   defaultFullName?: string;
 };
 
-function firstStep(section: CourseSection): SectionStep {
-  if (section.introEnabled) return "intro";
-  if (section.youtubeId) return "video";
-  return "quiz";
+/** "Video · Quiz (12 questions)" — so a module layout reads at a glance. */
+function sectionSummary(section: CourseSection): string {
+  const parts: string[] = [];
+  if (section.introEnabled) parts.push("Intro");
+  if (section.youtubeId) parts.push("Video");
+  if (section.questions.length > 0) {
+    parts.push(
+      `Quiz (${section.questions.length} question${section.questions.length === 1 ? "" : "s"})`
+    );
+  }
+  return parts.join(" · ");
+}
+
+function readVisited(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(VISITED_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? (parsed as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function persistVisited(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(VISITED_KEY, JSON.stringify([...ids]));
+  } catch {
+    // Private browsing / quota — visited marks are cosmetic, so ignore.
+  }
 }
 
 /** "3:42" countdown text until an ISO timestamp; null when elapsed. */
@@ -65,35 +101,71 @@ export default function CourseShell({
 }: CourseShellProps) {
   const [course, setCourse] = useState(initialCourse);
 
-  const firstIncomplete = useMemo(
-    () => course.sections.findIndex((s) => !s.passed),
+  const allPassed = useMemo(
+    () => course.sections.every((s) => s.passed),
     [course.sections]
   );
-  const allPassed = firstIncomplete === -1;
 
+  // Always start at the first section — video-only sections auto-pass, so
+  // "first unpassed" would skip straight past them to the quiz. A learner who
+  // has already finished everything lands on the final screen instead.
   // null activeIndex = final results screen
   const [activeIndex, setActiveIndex] = useState<number | null>(
-    allPassed ? null : Math.max(firstIncomplete, 0)
+    allPassed ? null : 0
   );
   const active = activeIndex === null ? null : course.sections[activeIndex];
 
-  const [step, setStep] = useState<SectionStep>(active ? firstStep(active) : "quiz");
+  const [step, setStep] = useState<PlayerStep>(() => {
+    const first = course.sections[0];
+    return first ? stepsFor(first)[0] ?? "intro" : "intro";
+  });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<QuizSubmitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Read after mount: localStorage is unavailable during SSR and reading it
+  // in render would produce a hydration mismatch.
+  const [visited, setVisited] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const stored = readVisited();
+    const first = course.sections[0];
+    if (first && !stored.has(first.id)) stored.add(first.id);
+    setVisited(stored);
+    persistVisited(stored);
+    // Only on mount: later visits go through markVisited().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function markVisited(sectionId: string) {
+    setVisited((prev) => {
+      if (prev.has(sectionId)) return prev;
+      const next = new Set(prev).add(sectionId);
+      persistVisited(next);
+      return next;
+    });
+  }
+
   const cooldownText = useCountdown(
     result?.retryAt ?? active?.cooldownUntil ?? null
   );
 
+  /** Content steps of the active section, in learner order. */
+  const activeSteps = useMemo(() => (active ? stepsFor(active) : []), [active]);
+  const stepIndex = activeSteps.indexOf(step as SectionStep);
+  const isLastStep = stepIndex === activeSteps.length - 1;
+  const isLastSection = activeIndex === course.sections.length - 1;
+
   function openSection(index: number) {
     const section = course.sections[index];
     setActiveIndex(index);
-    setStep(section.passed ? "results" : firstStep(section));
+    // Always start at the section's first content step so the video is
+    // reachable again, even once the section is passed.
+    setStep(stepsFor(section)[0] ?? "intro");
     setAnswers({});
     setResult(null);
     setError(null);
+    markVisited(section.id);
   }
 
   function openFinal() {
@@ -101,6 +173,32 @@ export default function CourseShell({
     setResult(null);
     setError(null);
   }
+
+  function goNextSection() {
+    const next = (activeIndex ?? -1) + 1;
+    if (next < course.sections.length) openSection(next);
+    else openFinal();
+  }
+
+  /** Advance within the section, or on to the next one when it's the last step. */
+  function goForward() {
+    if (stepIndex >= 0 && stepIndex < activeSteps.length - 1) {
+      setStep(activeSteps[stepIndex + 1]);
+    } else {
+      goNextSection();
+    }
+  }
+
+  function goBack() {
+    if (stepIndex > 0) setStep(activeSteps[stepIndex - 1]);
+  }
+
+  /** Label for the single forward button on a content step. */
+  const forwardLabel = !isLastStep
+    ? "Continue"
+    : isLastSection
+      ? "See your results"
+      : "Next section →";
 
   /** A section is reachable when every earlier section is passed. */
   function unlocked(index: number) {
@@ -152,6 +250,12 @@ export default function CourseShell({
           {course.sections.map((s, i) => {
             const isActive = activeIndex === i;
             const canOpen = unlocked(i);
+            const quizzed = hasQuiz(s);
+            // Green ✓ means a quiz was genuinely passed. A video/intro section
+            // auto-passes on enrollment, so it gets a muted ✓ once opened —
+            // the two must not look the same.
+            const quizPassed = quizzed && s.passed;
+            const watched = !quizzed && visited.has(s.id);
             return (
               <li key={s.id} className="min-w-[12rem] lg:min-w-0">
                 <button
@@ -170,25 +274,28 @@ export default function CourseShell({
                     <span
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                        s.passed
+                        quizPassed
                           ? "bg-green-600 text-white"
-                          : isActive
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-gray-200 text-gray-600"
+                          : watched
+                            ? "bg-gray-300 text-gray-700"
+                            : isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-gray-200 text-gray-600"
                       )}
                     >
-                      {s.passed ? "✓" : i + 1}
+                      {quizPassed || watched ? "✓" : i + 1}
                     </span>
                     <span className="text-sm font-medium text-gray-900 truncate">
                       {s.title}
                     </span>
                   </div>
-                  {s.attemptCount > 0 && (
-                    <p className="mt-1 pl-8 text-xs text-gray-500">
-                      Best: {s.bestCorrectCount ?? 0}/{s.questions.length}
-                      {s.passed ? " · Passed" : ""}
-                    </p>
-                  )}
+                  <p className="mt-1 pl-8 text-xs text-gray-500">
+                    {quizzed && s.attemptCount > 0
+                      ? `Best: ${s.bestCorrectCount ?? 0}/${s.questions.length}${
+                          s.passed ? " · Passed" : ""
+                        }`
+                      : sectionSummary(s)}
+                  </p>
                 </button>
               </li>
             );
@@ -240,55 +347,88 @@ export default function CourseShell({
             </p>
             <h2 className="mt-1 text-2xl font-bold text-gray-900">{active.title}</h2>
 
+            {/* A section with no intro, no video and no quiz — nothing to do
+                but move on. Without this it fell through to an empty quiz. */}
+            {activeSteps.length === 0 && (
+              <div className="mt-6">
+                <p className="text-gray-600">There&apos;s no content in this section yet.</p>
+                <div className="mt-8">
+                  <Button onClick={goNextSection}>
+                    {isLastSection ? "See your results" : "Next section →"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Intro slide */}
-            {step === "intro" && (
+            {step === "intro" && activeSteps.includes("intro") && (
               <div className="mt-6">
                 {active.introTitle && (
                   <h3 className="text-lg font-semibold text-gray-900">{active.introTitle}</h3>
                 )}
                 <p className="mt-3 whitespace-pre-line text-gray-700">{active.introBody}</p>
                 <div className="mt-8">
-                  <Button onClick={() => setStep(active.youtubeId ? "video" : "quiz")}>
-                    Continue
-                  </Button>
+                  <Button onClick={goForward}>{forwardLabel}</Button>
                 </div>
               </div>
             )}
 
             {/* Video */}
-            {step === "video" && (
+            {step === "video" && activeSteps.includes("video") && (
               <div className="mt-6">
-                {active.youtubeId ? (
-                  <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ paddingTop: "56.25%" }}>
-                    <iframe
-                      className="absolute inset-0 h-full w-full"
-                      src={`https://www.youtube-nocookie.com/embed/${active.youtubeId}?rel=0&modestbranding=1`}
-                      title={active.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No video for this section.</p>
-                )}
+                <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ paddingTop: "56.25%" }}>
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src={`https://www.youtube-nocookie.com/embed/${active.youtubeId}?rel=0&modestbranding=1`}
+                    title={active.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
                 <div className="mt-6 flex items-center gap-3">
-                  {active.introEnabled && (
-                    <Button variant="outline" onClick={() => setStep("intro")}>
+                  {stepIndex > 0 && (
+                    <Button variant="outline" onClick={goBack}>
                       Back
                     </Button>
                   )}
-                  <Button onClick={() => setStep("quiz")}>
-                    Continue to quiz
-                    {active.questions.length > 0 && ` (${active.questions.length} questions)`}
+                  <Button onClick={goForward}>
+                    {isLastStep
+                      ? forwardLabel
+                      : `Continue to quiz (${active.questions.length} question${
+                          active.questions.length === 1 ? "" : "s"
+                        })`}
                   </Button>
                 </div>
               </div>
             )}
 
             {/* Quiz */}
-            {step === "quiz" && (
+            {step === "quiz" && activeSteps.includes("quiz") && (
               <div className="mt-6">
-                {cooldownText ? (
+                {active.passed ? (
+                  // Re-reachable now that passed sections open at their first
+                  // step. Resubmitting would 409 server-side, so no form here.
+                  <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                    <p className="font-semibold text-green-800">
+                      You&apos;ve already passed this section
+                    </p>
+                    {active.bestCorrectCount !== null && (
+                      <p className="mt-0.5 text-sm text-green-700">
+                        Best score: {active.bestCorrectCount} of {active.questions.length}.
+                      </p>
+                    )}
+                    <div className="mt-4 flex items-center gap-3">
+                      {active.youtubeId && (
+                        <Button variant="outline" onClick={() => setStep("video")}>
+                          Rewatch video
+                        </Button>
+                      )}
+                      <Button onClick={goNextSection}>
+                        {isLastSection ? "See your results" : "Next section →"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : cooldownText ? (
                   <CooldownNotice text={cooldownText} />
                 ) : (
                   <>
@@ -365,12 +505,9 @@ export default function CourseShell({
                   setResult(null);
                   setStep("quiz");
                 }}
-                onNext={() => {
-                  const next = activeIndex! + 1;
-                  if (next < course.sections.length) openSection(next);
-                  else openFinal();
-                }}
-                isLast={activeIndex === course.sections.length - 1}
+                onRewatch={() => setStep("video")}
+                onNext={goNextSection}
+                isLast={isLastSection}
               />
             )}
           </div>
@@ -398,6 +535,7 @@ function SectionResults({
   result,
   cooldownText,
   onRetake,
+  onRewatch,
   onNext,
   isLast,
 }: {
@@ -405,6 +543,7 @@ function SectionResults({
   result: QuizSubmitResult | null;
   cooldownText: string | null;
   onRetake: () => void;
+  onRewatch: () => void;
   onNext: () => void;
   isLast: boolean;
 }) {
@@ -470,8 +609,13 @@ function SectionResults({
       )}
 
       <div className="mt-6 flex items-center gap-3">
+        {section.youtubeId && (
+          <Button variant="outline" onClick={onRewatch}>
+            Rewatch video
+          </Button>
+        )}
         {passed ? (
-          <Button onClick={onNext}>{isLast ? "See your results" : "Next section"}</Button>
+          <Button onClick={onNext}>{isLast ? "See your results" : "Next section →"}</Button>
         ) : cooldownText ? (
           <CooldownNotice text={cooldownText} />
         ) : (
@@ -534,7 +678,7 @@ function FinalScreen({
               {i + 1}. {s.title}
             </span>
             <span className="text-sm text-green-700 font-medium">
-              {s.bestCorrectCount ?? s.questions.length}/{s.questions.length} ✓
+              {hasQuiz(s) ? `${s.bestCorrectCount ?? s.questions.length}/${s.questions.length} ✓` : "✓"}
             </span>
           </li>
         ))}

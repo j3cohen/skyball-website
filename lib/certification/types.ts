@@ -90,6 +90,30 @@ export function extractYouTubeId(url: string): string | null {
   return null;
 }
 
+/**
+ * The content steps a section actually has, in learner order. A section may
+ * carry any combination of intro slide, video, and quiz — including none of
+ * them — so the player walks this list rather than assuming intro→video→quiz.
+ */
+export type SectionStep = "intro" | "video" | "quiz";
+
+export function stepsFor(section: {
+  introEnabled: boolean;
+  youtubeId: string | null;
+  questions: unknown[];
+}): SectionStep[] {
+  const steps: SectionStep[] = [];
+  if (section.introEnabled) steps.push("intro");
+  if (section.youtubeId) steps.push("video");
+  if (section.questions.length > 0) steps.push("quiz");
+  return steps;
+}
+
+/** True when the section has a quiz to take (vs. video/intro only). */
+export function hasQuiz(section: { questions: unknown[] }): boolean {
+  return section.questions.length > 0;
+}
+
 /** Number correct required to pass, given a threshold and question count. */
 export function requiredCorrect(
   type: PassThresholdType,

@@ -37,7 +37,13 @@ vi.mock("@/lib/server/stripe", () => ({
 // Imported dynamically AFTER mocks so module graphs pick them up.
 const { handleSessionCompleted } = await import("@/lib/server/stripeWebhookHandler");
 const { fulfillCertificationPurchase } = await import("@/lib/server/certFulfill");
-const { buildCourseOutline, findActiveEnrollment } = await import("@/lib/server/certCourse");
+const {
+  allSectionsPassed,
+  buildCourseOutline,
+  findActiveEnrollment,
+  loadAttempts,
+  loadProgramContent,
+} = await import("@/lib/server/certCourse");
 
 const service = createClient(LOCAL_API_URL, LOCAL_SERVICE_KEY, {
   auth: { persistSession: false },
@@ -317,5 +323,108 @@ d("claim and course outline", () => {
     await service.from("cert_seats").update({ status: "revoked" }).eq("id", seatId);
     const enrollment = await findActiveEnrollment(userId);
     expect(enrollment).toBeNull();
+  });
+});
+
+// ── Video-only programs ─────────────────────────────────────────
+//
+// A program whose sections carry no questions used to be a dead end: every
+// section auto-passes, but enrollment.status is only ever flipped to
+// "completed" by quiz-submit, so the certificate route (which gated on that
+// column) refused forever. The gate is now derived — these tests lock that in.
+
+d("quizless program completion", () => {
+  // Fresh ids per run: none of these tables cascade from cert_programs, so a
+  // suite that aborts mid-setup would otherwise leave rows that collide next run.
+  const programId = crypto.randomUUID();
+  const sectionId = crypto.randomUUID();
+  const enrollmentId = crypto.randomUUID();
+  const seatIdQ = crypto.randomUUID();
+  const purchaseIdQ = crypto.randomUUID();
+  const userIdQ = crypto.randomUUID();
+
+  beforeAll(async () => {
+    if (!RUN) return;
+    // Insert errors are returned, not thrown — surface them or the tests
+    // fail later with a confusing "null" instead of the real constraint.
+    const steps = [
+      await service.from("cert_programs").insert({
+        id: programId,
+        title: "Video Only Program",
+        slug: `video-only-${Date.now()}`,
+        status: "published",
+      }),
+      await service.from("cert_sections").insert({
+        id: sectionId,
+        program_id: programId,
+        title: "Watch this",
+        position: 0,
+        video_url: "https://youtu.be/dQw4w9WgXcQ",
+      }),
+      await service.from("cert_purchases").insert({
+        id: purchaseIdQ,
+        program_id: programId,
+        stripe_session_id: `${PREFIX}_quizless`,
+        seat_count: 1,
+        amount_total_cents: 0,
+        currency: "usd",
+      }),
+      await service.from("cert_seats").insert({
+        id: seatIdQ,
+        purchase_id: purchaseIdQ,
+        program_id: programId,
+        claim_token: `tok_quizless_${Date.now()}`,
+        status: "claimed",
+        claimed_by_user_id: userIdQ,
+      }),
+      await service.from("cert_enrollments").insert({
+        id: enrollmentId,
+        seat_id: seatIdQ,
+        program_id: programId,
+        user_id: userIdQ,
+      }),
+    ];
+    const failed = steps.find((s) => s.error);
+    if (failed) throw new Error(`quizless setup failed: ${failed.error!.message}`);
+  });
+
+  afterAll(async () => {
+    if (!RUN) return;
+    // Only sections/offers/questions cascade from the program — purchases,
+    // seats and enrollments must come down by hand, deepest first.
+    await service.from("cert_enrollments").delete().eq("id", enrollmentId);
+    await service.from("cert_seats").delete().eq("id", seatIdQ);
+    await service.from("cert_purchases").delete().eq("id", purchaseIdQ);
+    await service.from("cert_programs").delete().eq("id", programId);
+  });
+
+  it("counts as complete with zero attempts, while status is still in_progress", async () => {
+    const content = await loadProgramContent(programId);
+    expect(content).not.toBeNull();
+    expect(content!.questions).toHaveLength(0);
+
+    const attempts = await loadAttempts(enrollmentId);
+    expect(attempts).toHaveLength(0);
+
+    // The regression: the stored column never flips without a quiz submission…
+    const { data: enrollment } = await service
+      .from("cert_enrollments")
+      .select("status")
+      .eq("id", enrollmentId)
+      .single();
+    expect(enrollment!.status).toBe("in_progress");
+
+    // …but derived completion is what the certificate route now gates on.
+    expect(allSectionsPassed(content!.sections, content!.questions, attempts)).toBe(true);
+  });
+
+  it("marks the video-only section passed in the course outline", async () => {
+    const enrollment = await findActiveEnrollment(userIdQ);
+    expect(enrollment).not.toBeNull();
+    const outline = await buildCourseOutline(enrollment!);
+    expect(outline!.sections).toHaveLength(1);
+    expect(outline!.sections[0].passed).toBe(true);
+    expect(outline!.sections[0].questions).toHaveLength(0);
+    expect(outline!.sections[0].youtubeId).toBe("dQw4w9WgXcQ");
   });
 });
