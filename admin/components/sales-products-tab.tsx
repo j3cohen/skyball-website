@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AnalyticsFilterState } from "./analytics-filters";
+import { analyticsParams, type AnalyticsFilterState, type FocusState } from "./analytics-filters";
+import { makeTarget, type DrillTarget } from "./drill-panel";
+import { useDrillSync } from "@/lib/use-drill-sync";
 
 function fmtMoney(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -15,12 +17,23 @@ type Product = {
   uniqueBuyers: number;
   revPerUnit: number;
   pctOfTotal: number;
+  o: number[];
 };
 
 type SortKey = "revenue" | "units" | "orders" | "revPerUnit";
 
-export default function SalesProductsTab({ filters }: { filters: AnalyticsFilterState }) {
+type Props = {
+  filters: AnalyticsFilterState;
+  focus: FocusState | null;
+  onDrill: (t: DrillTarget) => void;
+  drill: DrillTarget | null;
+};
+
+const NS = "products:";
+
+export default function SalesProductsTab({ filters, focus, onDrill, drill }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orderIds, setOrderIds] = useState<string[]>([]);
   const [total,    setTotal]    = useState(0);
   const [sort,     setSort]     = useState<SortKey>("revenue");
   const [loading,  setLoading]  = useState(true);
@@ -28,21 +41,31 @@ export default function SalesProductsTab({ filters }: { filters: AnalyticsFilter
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ sort });
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to)   params.set("to",   filters.to);
-    if (filters.region !== "all") params.set("region", filters.region);
-
-    fetch(`/api/admin/analytics/products?${params}`)
+    fetch(`/api/admin/analytics/products?${analyticsParams(filters, focus, { sort })}`)
       .then((r) => r.json())
       .then((json) => {
         setProducts(json.products ?? []);
+        setOrderIds(json.orderIds ?? []);
         setTotal(json.totalRevenue ?? 0);
         setError(null);
       })
       .catch(() => setError("Failed to load product data."))
       .finally(() => setLoading(false));
-  }, [filters, sort]);
+  }, [filters, focus, sort]);
+
+  // Single construction site — click handlers and the reload refresh share it.
+  const targets: Record<string, DrillTarget> = {};
+  for (const p of products) {
+    targets[`${NS}sku:${p.name}`] = {
+      ...makeTarget(
+        orderIds, p.o, p.name,
+        `${p.units} units · ${p.orders} orders · ${fmtMoney(p.revenue)}`,
+        { dim: "sku", val: p.name }
+      ),
+      key: `${NS}sku:${p.name}`,
+    };
+  }
+  const open = (key: string) => { const t = targets[NS + key]; if (t) onDrill(t); };
 
   const sortCols: { key: SortKey; label: string }[] = [
     { key: "revenue",   label: "Revenue" },
@@ -52,6 +75,8 @@ export default function SalesProductsTab({ filters }: { filters: AnalyticsFilter
   ];
 
   return (
+    <>
+    <DrillSyncProducts target={drill} targets={targets} onDrill={onDrill} token={products} />
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-4">
         <h2 className="text-sm font-semibold text-gray-700">
@@ -98,7 +123,12 @@ export default function SalesProductsTab({ filters }: { filters: AnalyticsFilter
             </thead>
             <tbody className="divide-y divide-gray-100">
               {products.map((p, i) => (
-                <tr key={p.name} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}>
+                <tr
+                  key={p.name}
+                  onClick={() => open(`sku:${p.name}`)}
+                  title="View contributing orders"
+                  className={`cursor-pointer transition-colors hover:bg-sky-50/60 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                >
                   <td className="px-5 py-3 font-medium text-gray-900">{p.name}</td>
                   <td className="px-5 py-3 text-right text-gray-700">{fmtMoney(p.revenue)}</td>
                   <td className="px-5 py-3 text-right">
@@ -123,5 +153,19 @@ export default function SalesProductsTab({ filters }: { filters: AnalyticsFilter
         </div>
       )}
     </div>
+    </>
   );
+}
+
+/** Hooks can't run after the early returns above, so the sync lives in a child. */
+function DrillSyncProducts({
+  target, targets, onDrill, token,
+}: {
+  target: DrillTarget | null;
+  targets: Record<string, DrillTarget>;
+  onDrill: (t: DrillTarget) => void;
+  token: unknown;
+}) {
+  useDrillSync({ target, targets, namespace: NS, onDrill, dataToken: token });
+  return null;
 }

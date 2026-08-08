@@ -268,7 +268,6 @@ const GRIP_SWATCHES = [
   { color: "#ffffff", label: "White" },
   { color: "#3b82f6", label: "Blue" },
   { color: "#f97316", label: "Orange" },
-  { color: "#facc15", label: "Yellow" },
   { color: "#f472b6", label: "Pink" },
 ];
 

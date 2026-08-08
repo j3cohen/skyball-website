@@ -1,6 +1,10 @@
 // GET /api/admin/analytics/customers
 // Returns repeat-customer KPIs, leaderboard, item breakdown, segments.
-// Query params: from, to, region
+//
+// Every row carries `o` — indices into the top-level `orderIds` table — so any
+// figure can be drilled back to the orders that produced it.
+//
+// Query params: from, to, region, focusDim, focusVal
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
@@ -8,7 +12,9 @@ import { requireAdminSession } from "@/lib/server/adminAuth";
 import { rateLimit } from "@/lib/server/rateLimiter";
 import {
   parseRegion, matchesRegion, matchesDateRange, parseDateParams,
-  getOrderItems, fmtPct, type AnalyticsOrder,
+  getOrderItems, fmtPct, normalizeProductName,
+  createOrderIndex, parseFocus, orderMatchesFocus,
+  type AnalyticsOrder,
 } from "@/lib/analytics-utils";
 import type { ShippingAddress } from "@/lib/order-types";
 
@@ -28,30 +34,36 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const region = parseRegion(searchParams.get("region"));
   const { from, to } = parseDateParams(searchParams.get("from"), searchParams.get("to"));
+  const focus = parseFocus(searchParams.get("focusDim"), searchParams.get("focusVal"));
 
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_email, customer_name, order_total_cents, created_at, shipping_address, order_data"
+      "id, customer_email, customer_name, order_total_cents, created_at, " +
+      "shipping_address, order_data, fulfillment_status, tracking_numbers"
     )
     .neq("fulfillment_status", "cancelled")
     .order("created_at", { ascending: true });
 
   if (error) return NextResponse.json({ error: "Failed to fetch orders." }, { status: 500 });
 
-  const all = (data ?? []) as AnalyticsOrder[];
+  const now = new Date();
+  // Cast through unknown: tracking_numbers post-dates the generated types.
+  const all = (data ?? []) as unknown as AnalyticsOrder[];
 
-  // Apply region + date filters
   const filtered = all.filter(
-    (o) => matchesRegion(o, region) && matchesDateRange(o.created_at, from, to)
+    (o) =>
+      matchesRegion(o, region) &&
+      matchesDateRange(o.created_at, from, to) &&
+      orderMatchesFocus(o, focus, now)
   );
 
+  const index = createOrderIndex();
+  const idxOf = (o: AnalyticsOrder) => index.idx(o.id);
+  const idxAll = (orders: AnalyticsOrder[]) => orders.map(idxOf);
+
   // Group by email
-  type CustomerRecord = {
-    email: string;
-    name: string | null;
-    orders: AnalyticsOrder[];
-  };
+  type CustomerRecord = { email: string; name: string | null; orders: AnalyticsOrder[] };
 
   const byEmail = new Map<string, CustomerRecord>();
   for (const o of filtered) {
@@ -79,29 +91,35 @@ export async function GET(req: Request) {
   const avgDaysBetweenOrders = gapCount > 0 ? Math.round(totalGapDays / gapCount) : null;
 
   // Same vs different shipping address (repeat customers only)
-  let sameCount = 0;
-  let diffCount = 0;
+  const sameAddr: CustomerRecord[] = [];
+  const diffAddr: CustomerRecord[] = [];
   for (const c of repeatCustomers) {
     const keys = new Set(c.orders.map((o) => addrKey(o.shipping_address)));
-    if (keys.size === 1) sameCount++;
-    else diffCount++;
+    (keys.size === 1 ? sameAddr : diffAddr).push(c);
   }
   const repeatTotal = repeatCustomers.length;
-  const sameAddressPct  = repeatTotal > 0 ? fmtPct(sameCount, repeatTotal) : null;
-  const diffAddressPct  = repeatTotal > 0 ? fmtPct(diffCount, repeatTotal) : null;
+  const sameAddressPct = repeatTotal > 0 ? fmtPct(sameAddr.length, repeatTotal) : null;
+  const diffAddressPct = repeatTotal > 0 ? fmtPct(diffAddr.length, repeatTotal) : null;
+  const flatten = (cs: CustomerRecord[]) => idxAll(cs.flatMap((c) => c.orders));
 
-  // Items purchased by repeat customers
+  // Items purchased by repeat customers.
+  // Names are normalised so this card groups the same way the Products and
+  // Units tabs do — otherwise "SkyBall Essentials – Pro Kit" and its historical
+  // spellings would appear as separate products here only.
   const repeatEmails = new Set(repeatCustomers.map((c) => c.email));
   const repeatOrders = filtered.filter((o) => repeatEmails.has((o.customer_email ?? "").toLowerCase()));
-  const itemCounts = new Map<string, number>();
+  const itemCounts = new Map<string, { purchases: number; o: Set<number> }>();
   for (const o of repeatOrders) {
     for (const item of getOrderItems(o)) {
-      const name = item.product_name ?? "Unknown";
-      itemCounts.set(name, (itemCounts.get(name) ?? 0) + (item.quantity ?? 1));
+      const name = normalizeProductName(item.product_name ?? "Unknown");
+      const cur = itemCounts.get(name) ?? { purchases: 0, o: new Set<number>() };
+      cur.purchases += item.quantity ?? 1;
+      cur.o.add(idxOf(o));
+      itemCounts.set(name, cur);
     }
   }
   const repeatItemBreakdown = [...itemCounts.entries()]
-    .map(([name, purchases]) => ({ name, purchases }))
+    .map(([name, v]) => ({ name, purchases: v.purchases, o: [...v.o] }))
     .sort((a, b) => b.purchases - a.purchases);
 
   // Customer leaderboard (all customers, sorted by order count desc)
@@ -113,16 +131,21 @@ export async function GET(req: Request) {
       totalSpentCents: c.orders.reduce((s, o) => s + (o.order_total_cents ?? 0), 0),
       firstOrder: c.orders[0].created_at,
       lastOrder:  c.orders[c.orders.length - 1].created_at,
+      o: idxAll(c.orders),
     }))
     .sort((a, b) => b.orderCount - a.orderCount || b.totalSpentCents - a.totalSpentCents);
 
   // Segments
-  const segments = [
-    { label: "1 order",     count: oneTimeCustomers.length },
-    { label: "2–3 orders",  count: customers.filter((c) => c.orders.length >= 2 && c.orders.length <= 3).length },
-    { label: "4–9 orders",  count: customers.filter((c) => c.orders.length >= 4 && c.orders.length <= 9).length },
-    { label: "10+ orders",  count: customers.filter((c) => c.orders.length >= 10).length },
+  const segmentDefs: { label: string; test: (n: number) => boolean }[] = [
+    { label: "1 order",    test: (n) => n === 1 },
+    { label: "2–3 orders", test: (n) => n >= 2 && n <= 3 },
+    { label: "4–9 orders", test: (n) => n >= 4 && n <= 9 },
+    { label: "10+ orders", test: (n) => n >= 10 },
   ];
+  const segments = segmentDefs.map(({ label, test }) => {
+    const members = customers.filter((c) => test(c.orders.length));
+    return { label, count: members.length, o: flatten(members) };
+  });
 
   // Avg spend: repeat vs one-time
   const repeatAvgSpend = repeatCustomers.length > 0
@@ -142,9 +165,17 @@ export async function GET(req: Request) {
       diffAddressPct,
       repeatAvgSpendCents: repeatAvgSpend,
       oneTimeAvgSpendCents: oneTimeAvgSpend,
+      o: {
+        allCustomers: idxAll(filtered),
+        repeat:       flatten(repeatCustomers),
+        oneTime:      flatten(oneTimeCustomers),
+        sameAddress:  flatten(sameAddr),
+        diffAddress:  flatten(diffAddr),
+      },
     },
     leaderboard,
     repeatItemBreakdown,
     segments,
+    orderIds: index.ids(),
   });
 }

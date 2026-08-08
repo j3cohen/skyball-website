@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/server/stripe";
 import { getMobileSupabase } from "@/lib/server/supabaseMobile";
+import { resolveOrigin } from "@/lib/server/requestOrigin";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing tournamentId." }, { status: 400 });
     }
 
-    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL;
+    // Allowlisted — see lib/server/requestOrigin.ts.
+    const origin = resolveOrigin(request);
     if (!origin) {
       return NextResponse.json({ error: "Missing NEXT_PUBLIC_APP_URL." }, { status: 500 });
     }

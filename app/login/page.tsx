@@ -1,54 +1,85 @@
 // app/login/page.tsx
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import { AuthCompact } from "@/components/auth-compact"
-import Link from "next/link"
+import LoginForm from "@/components/login-form"
 import type { Metadata } from "next"
 import { pageMetadata } from "@/lib/seo"
 
 export const metadata: Metadata = pageMetadata({
-  title: "Login",
+  title: "Sign In",
   description: "Sign in to your SkyBall account.",
   path: "/login",
   index: false,
 })
+
+/**
+ * Only allow same-site relative paths as the post-login destination —
+ * an attacker-supplied `?from=https://evil.tld` must never become a
+ * redirect target.
+ */
+function safeReturnPath(from: string | undefined): string {
+  if (!from) return "/"
+  if (!from.startsWith("/") || from.startsWith("//")) return "/"
+  return from
+}
+
+/** The page explains why sign-in is needed, based on where they came from. */
+function contextCopy(from: string): { heading: string; sub: string } {
+  if (from.startsWith("/coaching/claim")) {
+    return {
+      heading: "Sign in to claim your seat",
+      sub: "Your coaching certification is tied to your SkyBall account, so we know who earned it.",
+    }
+  }
+  if (from.startsWith("/coaching")) {
+    return {
+      heading: "Sign in to continue your course",
+      sub: "Your progress and certificate are saved to your SkyBall account.",
+    }
+  }
+  if (from.startsWith("/dashboard")) {
+    return {
+      heading: "Sign in to your dashboard",
+      sub: "View your registrations, results, and account details.",
+    }
+  }
+  if (from.startsWith("/play") || from.startsWith("/tournaments")) {
+    return {
+      heading: "Sign in to register",
+      sub: "You need to be signed in to register for events.",
+    }
+  }
+  return {
+    heading: "Sign in to SkyBall",
+    sub: "Access your registrations, courses, and account.",
+  }
+}
 
 export default function LoginPage({
   searchParams,
 }: {
   searchParams: { from?: string }
 }) {
-  const from = searchParams.from ?? "/"
+  const from = safeReturnPath(searchParams.from)
+  const { heading, sub } = contextCopy(from)
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* fixed navbar */}
       <Navbar />
 
-      {/* page content */}
-      <main className="flex-grow pt-24">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-6">Sign In to SkyBall</h1>
-          <p className="mb-4">You need to be signed in to register for events.</p>
+      <main className="flex-grow pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-md text-center">
+            <h1 className="text-3xl md:text-4xl font-bold">{heading}</h1>
+            <p className="mt-3 text-gray-600">{sub}</p>
+          </div>
 
-          <AuthCompact />
-
-          {from && (
-            <p className="mt-6 text-sm text-gray-600">
-              After signing in,{" "}
-              <Link
-                href={from}
-                className="underline text-sky-600 hover:text-sky-800"
-              >
-                go back to what you were doing
-              </Link>
-              .
-            </p>
-          )}
+          <div className="mt-8">
+            <LoginForm from={from} />
+          </div>
         </div>
       </main>
 
-      {/* sticky footer at bottom */}
       <Footer />
     </div>
   )

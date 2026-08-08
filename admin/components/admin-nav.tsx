@@ -105,6 +105,7 @@ function NavLinks({
       <NavLink href="/fulfillment" label="Fulfillment" badge={pendingCount} mobile={mobile} />
       <NavLink href="/revenue" label="Revenue" mobile={mobile} />
       <NavLink href="/sales" label="Sales Data" mobile={mobile} />
+      <NavLink href="/certification" label="Certification" mobile={mobile} />
     </nav>
   );
 }

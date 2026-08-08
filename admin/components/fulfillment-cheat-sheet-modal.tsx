@@ -1,7 +1,9 @@
 "use client";
 
 import { classifyBoxSize } from "@/lib/box-size";
+import { resolveBom, BALL_PACK_SIZES, type BallPackSize } from "@/lib/product-bom";
 import type { ExportableOrder, OrderData, OrderDataItem } from "@/lib/order-types";
+import { parseSummaryColorsByName, type SummaryColors } from "@/lib/order-csv";
 
 type Props = {
   orders: ExportableOrder[];
@@ -14,30 +16,6 @@ function getItems(order: ExportableOrder): OrderDataItem[] {
   return ((order.order_data as OrderData | null)?.items) ?? [];
 }
 
-// Parse per-item color data from order_summary when customizations are missing.
-// Format: "Qty x Name ($price) [ball:orange] | Qty x Name ($price) [grips:r,r] | Total:..."
-// Returns a Map keyed by normalized product name → colors.
-// Name-based (not index-based) so it works even when order_data.items and
-// order_summary are in different orders (Stripe line items vs original cart).
-type SummaryColors = { ballColor?: string; gripColors?: string[] };
-function parseSummaryColorsByName(summary: string | null): Map<string, SummaryColors> {
-  const map = new Map<string, SummaryColors>();
-  if (!summary) return map;
-  for (const part of summary.split(" | ")) {
-    if (part.startsWith("Total:")) continue;
-    // Extract name: everything between "Nx " and " ($"
-    const nameMatch = part.match(/^\d+x (.+?) \(\$/);
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim().toLowerCase();
-    const out: SummaryColors = {};
-    const ball = part.match(/\[ball:([^\]]+)\]/);
-    if (ball)  out.ballColor  = ball[1].trim();
-    const grip = part.match(/\[grips:([^\]]+)\]/);
-    if (grip)  out.gripColors = grip[1].split(",").map(s => s.trim());
-    map.set(name, out);
-  }
-  return map;
-}
 
 function itemColors(item: OrderDataItem, summaryMap: Map<string, SummaryColors>): { ball?: string; grips?: string[] } {
   const fromCustom: { ball?: string; grips?: string[] } = {
@@ -80,130 +58,110 @@ function ColorTag({ label }: { label: string }) {
 }
 
 // ── Inventory bucket ───────────────────────────────────────────────────────
+//
+// Quantities come from the shared BOM (`lib/product-bom.ts`); the colour split
+// is layered on here from each line's customizations.
 
 type Inv = {
-  proRackets:    number;
-  starterRackets: number;
-  nets:          number;
-  packs3Blue:    number;
-  packs3Orange:  number;
-  packs12Blue:   number;
-  packs12Orange: number;
-  packs50Blue:   number;
-  packs50Orange: number;
-  gripColors:    Map<string, number>; // color → individual grip count
-  other:         Map<string, number>; // display name → qty
+  racketPro:      number;
+  racketStarter:  number;
+  racketOriginal: number;
+  nets:           number;
+  covers:         number;
+  crewnecks:      number;
+  packs:          Map<string, number>; // "3|blue" → pack count
+  looseBalls:     number;              // balls with no pack provenance
+  gripColors:     Map<string, number>; // color → individual grip count
+  other:          Map<string, number>; // couldn't decompose → pack by hand
 };
 
 function makeInv(): Inv {
   return {
-    proRackets: 0, starterRackets: 0, nets: 0,
-    packs3Blue: 0, packs3Orange: 0,
-    packs12Blue: 0, packs12Orange: 0,
-    packs50Blue: 0, packs50Orange: 0,
+    racketPro: 0, racketStarter: 0, racketOriginal: 0,
+    nets: 0, covers: 0, crewnecks: 0,
+    packs: new Map(),
+    looseBalls: 0,
     gripColors: new Map(),
     other: new Map(),
   };
 }
 
-function addPack(inv: Inv, size: 3 | 12 | 50, color: string | undefined, n: number) {
+const UNKNOWN_COLOR = "unknown color";
+
+function addPack(inv: Inv, size: BallPackSize, color: string | undefined, n: number) {
   const c = (color ?? "").toLowerCase();
-  if (size === 3) {
-    if (c === "blue")   { inv.packs3Blue   += n; return; }
-    if (c === "orange") { inv.packs3Orange  += n; return; }
-  } else if (size === 12) {
-    if (c === "blue")   { inv.packs12Blue  += n; return; }
-    if (c === "orange") { inv.packs12Orange += n; return; }
-  } else {
-    if (c === "blue")   { inv.packs50Blue  += n; return; }
-    if (c === "orange") { inv.packs50Orange += n; return; }
-  }
-  // unknown color
-  const key = `${size}-Pack (${color ?? "unknown color"})`;
-  inv.other.set(key, (inv.other.get(key) ?? 0) + n);
+  const key = `${size}|${c === "blue" || c === "orange" ? c : UNKNOWN_COLOR}`;
+  inv.packs.set(key, (inv.packs.get(key) ?? 0) + n);
 }
 
 function addItemToInv(inv: Inv, item: OrderDataItem, ball: string | undefined, grips: string[] | undefined) {
-  const name        = (item.product_name ?? item.slug ?? "").toLowerCase();
   const displayName = item.product_name ?? item.slug ?? "Unknown";
   const qty         = item.quantity ?? 1;
-  const isPro       = !name.includes("starter"); // default to pro unless "starter" is explicit
+  const { bom, source } = resolveBom(item);
 
-  // ── Kits (check most-specific first) ────────────────────────────────────
-  if (name.includes("anywhere")) {
-    // Anywhere Kit: 4 rackets + 2×3-packs + 1 net
-    if (isPro) inv.proRackets     += 4 * qty;
-    else       inv.starterRackets += 4 * qty;
-    inv.nets += 1 * qty;
-    addPack(inv, 3, ball, 2 * qty);
-    return;
-  }
-  if (name.includes("partners")) {
-    // Partners Pack: 4 rackets + 1×3-pack
-    if (isPro) inv.proRackets     += 4 * qty;
-    else       inv.starterRackets += 4 * qty;
-    addPack(inv, 3, ball, 1 * qty);
-    return;
-  }
-  if (name.includes("essentials")) {
-    // Essentials Kit: 2 rackets + 1×3-pack
-    if (isPro) inv.proRackets     += 2 * qty;
-    else       inv.starterRackets += 2 * qty;
-    addPack(inv, 3, ball, 1 * qty);
+  if (source === "non_goods") return;
+  if (source === "unmapped") {
+    inv.other.set(displayName, (inv.other.get(displayName) ?? 0) + qty);
     return;
   }
 
-  // ── Individual rackets ───────────────────────────────────────────────────
-  if (name.includes("racket") && !name.includes("bag") && !name.includes("cover")) {
-    if (isPro) inv.proRackets     += qty;
-    else       inv.starterRackets += qty;
-    return;
-  }
+  inv.racketPro      += (bom.components.racket_pro      ?? 0) * qty;
+  inv.racketStarter  += (bom.components.racket_starter  ?? 0) * qty;
+  inv.racketOriginal += (bom.components.racket_original ?? 0) * qty;
+  inv.nets           += (bom.components.net             ?? 0) * qty;
+  inv.covers         += (bom.components.racket_cover    ?? 0) * qty;
+  inv.crewnecks      += (bom.components.crewneck        ?? 0) * qty;
 
-  // ── Standalone nets ──────────────────────────────────────────────────────
-  if (name.includes("net")) {
-    inv.nets += qty;
-    return;
-  }
-
-  // ── Grips (before ball packs — "SkyBall" in grip names contains "ball") ──
-  if (name.includes("grip")) {
-    const colors = grips ?? [];
-    if (colors.length > 0) {
-      for (const c of colors) inv.gripColors.set(c, (inv.gripColors.get(c) ?? 0) + 1);
-    } else {
-      inv.gripColors.set("?", (inv.gripColors.get("?") ?? 0) + qty);
+  // Balls: prefer pack provenance so the picker knows which tubes to grab.
+  // Custom orders parsed from free text only give a raw ball count.
+  const packs = bom.ballPacks ?? {};
+  let packedBalls = 0;
+  for (const size of BALL_PACK_SIZES) {
+    const n = packs[size] ?? 0;
+    if (n > 0) {
+      addPack(inv, size, ball, n * qty);
+      packedBalls += size * n * qty;
     }
-    return;
   }
+  inv.looseBalls += Math.max(0, (bom.components.ball ?? 0) * qty - packedBalls);
 
-  // ── Ball packs (largest first to avoid partial matches) ──────────────────
-  if (name.includes("50-pack") || name.includes("50 pack")) {
-    addPack(inv, 50, ball, qty); return;
+  // Grips: assign the colors the customer picked, and park any remainder under
+  // "?" so the color rows always sum to the real grip count.
+  const gripCount = (bom.components.grip ?? 0) * qty;
+  if (gripCount > 0) {
+    const chosen = (grips ?? []).slice(0, gripCount);
+    for (const c of chosen) inv.gripColors.set(c, (inv.gripColors.get(c) ?? 0) + 1);
+    const rest = gripCount - chosen.length;
+    if (rest > 0) inv.gripColors.set("?", (inv.gripColors.get("?") ?? 0) + rest);
   }
-  if (name.includes("12-pack") || name.includes("12 pack")) {
-    addPack(inv, 12, ball, qty); return;
-  }
-  if (name.includes("3-pack") || name.includes("3 pack") || name.includes("ball")) {
-    addPack(inv, 3, ball, qty); return;
-  }
-
-  // ── Everything else ──────────────────────────────────────────────────────
-  inv.other.set(displayName, (inv.other.get(displayName) ?? 0) + qty);
 }
 
-// Fixed display order for the inventory rows
-const INV_ROWS: { label: string; key: keyof Omit<Inv, "gripColors" | "other"> }[] = [
-  { label: "Pro Rackets",    key: "proRackets"    },
-  { label: "Starter Rackets",key: "starterRackets" },
-  { label: "Nets",           key: "nets"           },
-  { label: "3-Packs Blue",   key: "packs3Blue"     },
-  { label: "3-Packs Orange", key: "packs3Orange"   },
-  { label: "12-Packs Blue",  key: "packs12Blue"    },
-  { label: "12-Packs Orange",key: "packs12Orange"  },
-  { label: "50-Packs Blue",  key: "packs50Blue"    },
-  { label: "50-Packs Orange",key: "packs50Orange"  },
-];
+// Fixed display order for the inventory rows: rackets, nets, ball packs
+// (smallest first, blue before orange), then accessories.
+function buildInvRows(inv: Inv): { label: string; qty: number }[] {
+  const rows: { label: string; qty: number }[] = [
+    { label: "Pro Rackets",       qty: inv.racketPro      },
+    { label: "Starter Rackets",   qty: inv.racketStarter  },
+    { label: "Rackets (Original)",qty: inv.racketOriginal },
+    { label: "Nets",              qty: inv.nets           },
+  ];
+
+  for (const size of BALL_PACK_SIZES) {
+    for (const color of ["blue", "orange", UNKNOWN_COLOR]) {
+      const qty = inv.packs.get(`${size}|${color}`) ?? 0;
+      const suffix = color === UNKNOWN_COLOR ? `(${UNKNOWN_COLOR})` : color[0].toUpperCase() + color.slice(1);
+      rows.push({ label: `${size}-Packs ${suffix}`, qty });
+    }
+  }
+
+  rows.push(
+    { label: "Loose Balls",   qty: inv.looseBalls },
+    { label: "Racket Covers", qty: inv.covers     },
+    { label: "Crewnecks",     qty: inv.crewnecks  },
+  );
+
+  return rows.filter((r) => r.qty > 0);
+}
 
 // ── Component ──────────────────────────────────────────────────────────────
 
@@ -218,20 +176,20 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
     }
   }
 
+  const invRowsData      = buildInvRows(inv);
   const gripTotal        = Array.from(inv.gripColors.values()).reduce((s, n) => s + n, 0);
   const sortedGripColors = Array.from(inv.gripColors.entries()).sort((a, b) => b[1] - a[1]);
   const sortedOther      = Array.from(inv.other.entries()).sort((a, b) => b[1] - a[1]);
 
-  // Find orders contributing to unknown colors — items that should have a ball
-  // color (kits, ball packs) but have neither customizations nor summary fallback.
+  // Find orders contributing to unknown colors — any line that ships ball packs
+  // but has neither customizations nor a summary fallback.
   const unknownColorOrders: string[] = [];
   for (const order of orders) {
     const summaryFallbacks = parseSummaryColorsByName(order.order_summary);
     for (const item of getItems(order)) {
-      const name = (item.product_name ?? item.slug ?? "").toLowerCase();
-      const needsBall = (name.includes("kit") || name.includes("pack") || name.includes("anywhere"))
-                        && !name.includes("grip") && !name.includes("bag") && !name.includes("crewneck");
-      if (!needsBall) continue;
+      const { bom } = resolveBom(item);
+      const shipsPacks = BALL_PACK_SIZES.some((s) => (bom.ballPacks?.[s] ?? 0) > 0);
+      if (!shipsPacks) continue;
       const { ball } = itemColors(item, summaryFallbacks);
       if (!ball) {
         unknownColorOrders.push(`${order.customer_name ?? order.id} — ${item.product_name ?? "?"}`);
@@ -258,9 +216,8 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
     });
 
     const invRows = [
-      ...INV_ROWS
-        .filter(r => inv[r.key] > 0)
-        .map(r => `<tr><td class="qty">${inv[r.key]}×</td><td>${escHtml(r.label)}</td></tr>`),
+      ...invRowsData
+        .map(r => `<tr><td class="qty">${r.qty}×</td><td>${escHtml(r.label)}</td></tr>`),
       ...(gripTotal > 0 ? [
         `<tr><td class="qty">${gripTotal}×</td><td>Professional Over Grips</td></tr>`,
         ...sortedGripColors.map(([c, n]) =>
@@ -395,9 +352,9 @@ export default function FulfillmentCheatSheetModal({ orders, onClose }: Props) {
             </h3>
             <table className="w-full">
               <tbody>
-                {INV_ROWS.filter(r => inv[r.key] > 0).map(r => (
-                  <tr key={r.key}>
-                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{inv[r.key]}×</td>
+                {invRowsData.map(r => (
+                  <tr key={r.label}>
+                    <td className="font-bold text-gray-900 w-10 text-right pr-3 py-0.5">{r.qty}×</td>
                     <td className="text-gray-700 py-0.5">{r.label}</td>
                   </tr>
                 ))}

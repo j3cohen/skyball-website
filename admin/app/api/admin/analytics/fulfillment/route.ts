@@ -1,6 +1,12 @@
 // GET /api/admin/analytics/fulfillment
 // Returns fulfillment speed, unfulfilled aging, shipping cost breakdowns.
-// Query params: from, to, region
+//
+// Every row carries `o` — indices into the top-level `orderIds` table naming the
+// orders behind that number. The indices are collected inside the same loops
+// that compute the aggregates, so a drill-down can never disagree with the
+// figure it was opened from.
+//
+// Query params: from, to, region, focusDim, focusVal
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
@@ -8,28 +14,18 @@ import { requireAdminSession } from "@/lib/server/adminAuth";
 import { rateLimit } from "@/lib/server/rateLimiter";
 import {
   parseRegion, matchesRegion, matchesDateRange, parseDateParams,
-  type AnalyticsOrder,
+  createOrderIndex, inferCarrier, AGE_BUCKETS, orderAgeDays,
+  parseFocus, orderMatchesFocus,
+  type AnalyticsOrder, type TrackingEntry,
 } from "@/lib/analytics-utils";
 import type { ShippingAddress } from "@/lib/order-types";
 
 export const dynamic = "force-dynamic";
 
-type TrackingEntry = { number: string; tracking_status: string; added_at: string };
-
 type FullOrder = AnalyticsOrder & {
   tracking_numbers?: TrackingEntry[] | null;
   stripe_fee_cents?: number | null;
 };
-
-function inferCarrier(trackingNumbers: TrackingEntry[] | null | undefined): string {
-  const tn = trackingNumbers?.[0]?.number ?? "";
-  if (tn.startsWith("1Z"))                              return "UPS";
-  if (/^9[2-4]\d{18,20}$/.test(tn))                    return "USPS";
-  if (/^(\d{12,14}|\d{15,22})$/.test(tn) && !tn.startsWith("1Z")) return "USPS";
-  if (/^[37]\d{11}$/.test(tn))                          return "FedEx";
-  if (tn.length > 0)                                    return "Other";
-  return "No label";
-}
 
 function sumCents(orders: FullOrder[]): number {
   return Math.round(orders.reduce((s, o) => s + (o.shipping_label_cost ?? 0) * 100, 0));
@@ -44,6 +40,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const region = parseRegion(searchParams.get("region"));
   const { from, to } = parseDateParams(searchParams.get("from"), searchParams.get("to"));
+  const focus = parseFocus(searchParams.get("focusDim"), searchParams.get("focusVal"));
 
   const { data, error } = await supabaseAdmin
     .from("orders")
@@ -56,12 +53,17 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: "Failed to fetch orders." }, { status: 500 });
 
+  const now = new Date();
   const all = (data ?? []) as unknown as FullOrder[];
   const filtered = all.filter(
-    (o) => matchesRegion(o, region) && matchesDateRange(o.created_at, from, to)
+    (o) =>
+      matchesRegion(o, region) &&
+      matchesDateRange(o.created_at, from, to) &&
+      orderMatchesFocus(o, focus, now)
   );
 
-  const now = new Date();
+  const index = createOrderIndex();
+  const idxOf = (o: FullOrder) => index.idx(o.id);
 
   // ── Fulfillment speed ───────────────────────────────────────────────────────
   const fulfilled = filtered.filter((o) => o.fulfillment_status === "fulfilled" && o.fulfilled_at);
@@ -76,27 +78,22 @@ export async function GET(req: Request) {
   const unfulfilled = filtered.filter(
     (o) => o.fulfillment_status === "pending" || o.fulfillment_status === "processing"
   );
-  const ageBuckets = [
-    { label: "< 3 days",  min: 0,  max: 2  },
-    { label: "3–7 days",  min: 3,  max: 7  },
-    { label: "8–14 days", min: 8,  max: 14 },
-    { label: "15+ days",  min: 15, max: Infinity },
-  ];
-  const unfulfilledByAge = ageBuckets.map((b) => ({
-    label: b.label,
-    count: unfulfilled.filter((o) => {
-      const age = (now.getTime() - new Date(o.created_at).getTime()) / 864e5;
+  const unfulfilledByAge = AGE_BUCKETS.map((b) => {
+    const inBucket = unfulfilled.filter((o) => {
+      const age = orderAgeDays(o, now);
       return age >= b.min && age <= b.max;
-    }).length,
-  }));
+    });
+    return { label: b.label, count: inBucket.length, o: inBucket.map(idxOf) };
+  });
 
   // ── Status breakdown ────────────────────────────────────────────────────────
-  const statusCounts = { pending: 0, processing: 0, fulfilled: 0 };
-  for (const o of filtered) {
-    if (o.fulfillment_status in statusCounts) {
-      statusCounts[o.fulfillment_status as keyof typeof statusCounts]++;
-    }
-  }
+  const STATUSES = ["pending", "processing", "fulfilled"] as const;
+  const statusCounts = Object.fromEntries(
+    STATUSES.map((s) => {
+      const rows = filtered.filter((o) => o.fulfillment_status === s);
+      return [s, { count: rows.length, o: rows.map(idxOf) }];
+    })
+  ) as Record<(typeof STATUSES)[number], { count: number; o: number[] }>;
 
   // ── Shipping cost helpers ────────────────────────────────────────────────────
   const labeled    = filtered.filter((o) => o.shipping_label_cost != null && o.shipping_label_cost > 0);
@@ -109,12 +106,13 @@ export async function GET(req: Request) {
   const shippingPctOfRev   = totalRevCents > 0 ? Math.round((totalShippingCents / totalRevCents) * 1000) / 10 : null;
 
   // ── Per-carrier breakdown ───────────────────────────────────────────────────
-  const carrierMap = new Map<string, { shippingCents: number; count: number }>();
+  const carrierMap = new Map<string, { shippingCents: number; count: number; o: number[] }>();
   for (const o of labeled) {
     const carrier = inferCarrier(o.tracking_numbers);
-    const cur = carrierMap.get(carrier) ?? { shippingCents: 0, count: 0 };
+    const cur = carrierMap.get(carrier) ?? { shippingCents: 0, count: 0, o: [] };
     cur.shippingCents += Math.round((o.shipping_label_cost ?? 0) * 100);
     cur.count += 1;
+    cur.o.push(idxOf(o));
     carrierMap.set(carrier, cur);
   }
   const byCarrier = [...carrierMap.entries()]
@@ -123,20 +121,26 @@ export async function GET(req: Request) {
       shippingCents: v.shippingCents,
       count:         v.count,
       avgCents:      Math.round(v.shippingCents / v.count),
+      o:             v.o,
     }))
     .sort((a, b) => b.shippingCents - a.shippingCents);
 
   // ── Per-country breakdown ───────────────────────────────────────────────────
-  const countryMap = new Map<string, { shippingCents: number; count: number; revCents: number }>();
+  // `count` counts labelled orders only (it pairs with shippingCents), but the
+  // drill set is every order to that country — that's what the row represents.
+  const countryMap = new Map<string, { shippingCents: number; count: number; revCents: number; o: number[] }>();
   for (const o of filtered) {
     const addr = o.shipping_address as ShippingAddress | null;
-    const country = (addr?.country ?? "Unknown").toUpperCase();
-    const cur = countryMap.get(country) ?? { shippingCents: 0, count: 0, revCents: 0 };
+    // Uppercase the code, but keep the sentinel readable — Revenue spells it
+    // "Unknown" too, so both cards bucket no-address orders identically.
+    const country = (addr?.country ?? "").toUpperCase() || "Unknown";
+    const cur = countryMap.get(country) ?? { shippingCents: 0, count: 0, revCents: 0, o: [] };
     if (o.shipping_label_cost != null && o.shipping_label_cost > 0) {
       cur.shippingCents += Math.round(o.shipping_label_cost * 100);
       cur.count += 1;
     }
     cur.revCents += o.order_total_cents ?? 0;
+    cur.o.push(idxOf(o));
     countryMap.set(country, cur);
   }
   const byCountry = [...countryMap.entries()]
@@ -146,19 +150,21 @@ export async function GET(req: Request) {
       count:         v.count,
       avgCents:      v.count > 0 ? Math.round(v.shippingCents / v.count) : 0,
       revCents:      v.revCents,
+      o:             v.o,
     }))
     .sort((a, b) => b.shippingCents - a.shippingCents);
 
   // ── Per-state breakdown (US only) ───────────────────────────────────────────
-  const stateMap = new Map<string, { shippingCents: number; count: number }>();
+  const stateMap = new Map<string, { shippingCents: number; count: number; o: number[] }>();
   for (const o of labeled) {
     const addr = o.shipping_address as ShippingAddress | null;
     const country = (addr?.country ?? "").toUpperCase();
     if (country !== "US") continue;
-    const state = (addr?.state ?? "Unknown").toUpperCase();
-    const cur = stateMap.get(state) ?? { shippingCents: 0, count: 0 };
+    const state = (addr?.state ?? "").toUpperCase() || "Unknown";
+    const cur = stateMap.get(state) ?? { shippingCents: 0, count: 0, o: [] };
     cur.shippingCents += Math.round((o.shipping_label_cost ?? 0) * 100);
     cur.count += 1;
+    cur.o.push(idxOf(o));
     stateMap.set(state, cur);
   }
   const byState = [...stateMap.entries()]
@@ -167,6 +173,7 @@ export async function GET(req: Request) {
       shippingCents: v.shippingCents,
       count:         v.count,
       avgCents:      Math.round(v.shippingCents / v.count),
+      o:             v.o,
     }))
     .sort((a, b) => b.avgCents - a.avgCents);
 
@@ -183,11 +190,20 @@ export async function GET(req: Request) {
       totalFeeCents,
       avgFeeCents,
       ordersWithFee:    withFees.length,
+      // Drill sets for the KPI cards
+      o: {
+        totalOrders:      filtered.map(idxOf),
+        fulfilled:        fulfilled.map(idxOf),
+        unfulfilled:      unfulfilled.map(idxOf),
+        labeled:          labeled.map(idxOf),
+        withFees:         withFees.map(idxOf),
+      },
     },
     unfulfilledByAge,
     statusCounts,
     byCarrier,
     byCountry,
     byState,
+    orderIds: index.ids(),
   });
 }

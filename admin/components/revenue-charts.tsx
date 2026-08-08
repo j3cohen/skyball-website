@@ -21,25 +21,46 @@ function fmtDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-type TimePoint = { date: string; revenue: number; orders: number };
+type TimePoint = {
+  date: string; revenue: number; orders: number;
+  days?: number; avgDaily?: number;
+};
 
 type RevenueChartProps = {
   data: TimePoint[];
   granularity: "day" | "week" | "month";
+  /** Click a point/bar to drill into that bucket's orders. */
+  onDrillDate?: (date: string) => void;
+  /** Plot bucket totals, or revenue per day inside each bucket. */
+  metric?: "revenue" | "avgDaily";
 };
 
-export function RevenueAreaChart({ data }: RevenueChartProps) {
+/** Shared click handler — recharts hands back the category under the pointer. */
+function drillHandler(onDrillDate?: (date: string) => void) {
+  if (!onDrillDate) return undefined;
+  return (e: { activeLabel?: string | number }) => {
+    if (e?.activeLabel != null) onDrillDate(String(e.activeLabel));
+  };
+}
+
+export function RevenueAreaChart({ data, onDrillDate, metric = "revenue" }: RevenueChartProps) {
   const tickCount = data.length > 60 ? 8 : data.length > 30 ? 10 : undefined;
+  const isAvg = metric === "avgDaily";
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+      <AreaChart
+        data={data}
+        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+        onClick={drillHandler(onDrillDate)}
+        style={onDrillDate ? { cursor: "pointer" } : undefined}
+      >
         <defs>
           <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%"  stopColor="#0284c7" stopOpacity={0.18} />
             <stop offset="95%" stopColor="#0284c7" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <CartesianGrid stroke="#f0f0f0" />
         <XAxis
           dataKey="date"
           tickFormatter={fmtDate}
@@ -54,30 +75,44 @@ export function RevenueAreaChart({ data }: RevenueChartProps) {
         />
         <Tooltip
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={(val: any) => [`$${(Number(val) / 100).toFixed(2)}`, "Revenue"]}
+          formatter={(val: any, _n: any, item: any) => {
+            const d = item?.payload?.days;
+            return [
+              `$${(Number(val) / 100).toFixed(2)}`,
+              isAvg ? `Avg / day${d ? ` (${d} days)` : ""}` : "Revenue",
+            ];
+          }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           labelFormatter={(label: any) => fmtDate(String(label))}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
         <Area
           type="monotone"
-          dataKey="revenue"
+          dataKey={isAvg ? "avgDaily" : "revenue"}
           stroke="#0284c7"
           strokeWidth={2}
           fill="url(#revenueGrad)"
           dot={false}
           activeDot={{ r: 4 }}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
-export function OrdersBarChart({ data }: { data: TimePoint[] }) {
+export function OrdersBarChart({
+  data, onDrillDate,
+}: { data: TimePoint[]; onDrillDate?: (date: string) => void }) {
   return (
     <ResponsiveContainer width="100%" height={160}>
-      <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+      <BarChart
+        data={data}
+        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+        onClick={drillHandler(onDrillDate)}
+        style={onDrillDate ? { cursor: "pointer" } : undefined}
+      >
+        <CartesianGrid stroke="#f0f0f0" vertical={false} />
         <XAxis
           dataKey="date"
           tickFormatter={fmtDate}
@@ -92,7 +127,7 @@ export function OrdersBarChart({ data }: { data: TimePoint[] }) {
           labelFormatter={(label: any) => fmtDate(String(label))}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
-        <Bar dataKey="orders" fill="#0ea5e9" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="orders" fill="#0ea5e9" radius={[3, 3, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -100,11 +135,18 @@ export function OrdersBarChart({ data }: { data: TimePoint[] }) {
 
 type BucketPoint = { label: string; count: number };
 
-export function OrderValueBucketChart({ data }: { data: BucketPoint[] }) {
+export function OrderValueBucketChart({
+  data, onDrillBucket,
+}: { data: BucketPoint[]; onDrillBucket?: (label: string) => void }) {
   return (
     <ResponsiveContainer width="100%" height={160}>
-      <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+      <BarChart
+        data={data}
+        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+        onClick={drillHandler(onDrillBucket)}
+        style={onDrillBucket ? { cursor: "pointer" } : undefined}
+      >
+        <CartesianGrid stroke="#f0f0f0" vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} />
         <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} width={30} allowDecimals={false} />
         <Tooltip
@@ -112,7 +154,7 @@ export function OrderValueBucketChart({ data }: { data: BucketPoint[] }) {
           formatter={(val: any) => [Number(val), "Orders"]}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
-        <Bar dataKey="count" fill="#6366f1" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="count" fill="#6366f1" radius={[3, 3, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );

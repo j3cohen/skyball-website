@@ -27,6 +27,11 @@ function esc(val: string | number | null | undefined): string {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** Generic CSV builder for report exports (arbitrary headers and columns). */
+export function buildCsv(headers: string[], rows: (string | number)[][]): string {
+  return [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+}
+
 export function buildCsvString(rows: CsvOrderRow[]): string {
   const lines = [HEADERS.join(",")];
   for (const r of rows) {

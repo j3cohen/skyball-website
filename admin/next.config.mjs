@@ -4,11 +4,21 @@ const isProd = process.env.NODE_ENV === "production";
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // 'unsafe-eval' only in dev — Next compiles client chunks with eval() for HMR
+  // and source maps, so without it NO client JS runs locally: React never
+  // hydrates, forms fall back to native submits, and charts render blank.
+  // Production builds contain no eval, so the prod policy stays strict.
+  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  // Dev also allows the HMR socket and a LOCAL Supabase stack. Both
+  // localhost and 127.0.0.1 are listed: CSP matches hosts literally, so
+  // `http://localhost:*` does NOT cover `http://127.0.0.1:54341` and the
+  // browser would block auth/REST calls with an opaque "Load failed".
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${
+    isProd ? "" : " ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*"
+  }`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -1,8 +1,11 @@
 // Box size classification for Pirate Ship CSV export.
-// Uses product slug (preferred) or product_name (fallback) to determine
-// the correct box dimensions for each order.
+//
+// Item contents come from the shared BOM in `product-bom.ts` (slug first, then
+// product name), so box sizing and the fulfillment cheat sheet can never
+// disagree about what's inside a kit.
 
 import type { OrderDataItem } from "./order-types";
+import { itemUnitCounts, resolveBom, RACKET_COMPONENTS } from "./product-bom";
 
 export type BoxDimensions = {
   length: number;
@@ -37,47 +40,30 @@ function matchItem(item: OrderDataItem, s: string): boolean {
   return slug.includes(s) || name.includes(s);
 }
 
-function getItemCounts(item: OrderDataItem): { rackets: number; balls: number } {
-  const qty = item.quantity ?? 1;
-  const match = (s: string) => matchItem(item, s);
-
-  // Kits (contain both rackets and balls)
-  if (match("partners"))   return { rackets: 4 * qty, balls: 3 * qty };
-  if (match("essentials")) return { rackets: 2 * qty, balls: 3 * qty };
-
-  // Single racket (exclude covers/bags)
-  if (match("racket") && !match("bag")) return { rackets: qty, balls: 0 };
-
-  // Ball packs — check largest first to avoid partial matches
-  if (match("50-pack") || match("50 pack")) return { rackets: 0, balls: 50 * qty };
-  if (match("12-pack") || match("12 pack")) return { rackets: 0, balls: 12 * qty };
-  if (match("3-pack")  || match("3 pack"))  return { rackets: 0, balls: 3  * qty };
-
-  // Accessories (grips, covers, crewnecks) — don't contribute to size logic
-  return { rackets: 0, balls: 0 };
-}
-
 // Anywhere Kit or Anywhere Pro — both contain a net and ship in ANYWHERE_BOX
 function isAnywhereKit(item: OrderDataItem): boolean {
   return matchItem(item, "anywhere");
 }
 
 function hasOtherNet(item: OrderDataItem): boolean {
-  return matchItem(item, "net") && !isAnywhereKit(item);
+  return itemUnitCounts(item).nets > 0 && !isAnywhereKit(item);
 }
 
 function isEssentialsKit(item: OrderDataItem): boolean {
   return matchItem(item, "essentials");
 }
 
+// A bare tube of 3 — not a kit that happens to contain one.
 function isThreePack(item: OrderDataItem): boolean {
-  return matchItem(item, "3-pack") || matchItem(item, "3 pack");
+  const { bom } = resolveBom(item);
+  const hasRackets = RACKET_COMPONENTS.some((id) => (bom.components[id] ?? 0) > 0);
+  return (bom.ballPacks?.[3] ?? 0) > 0 && !hasRackets;
 }
 
 // Grips, covers, bags, crewnecks, etc. — items that don't affect box choice
 function isSizeNeutralAccessory(item: OrderDataItem): boolean {
-  const { rackets, balls } = getItemCounts(item);
-  return rackets === 0 && balls === 0 && !matchItem(item, "net");
+  const { rackets, balls, nets } = itemUnitCounts(item);
+  return rackets === 0 && balls === 0 && nets === 0;
 }
 
 /**
@@ -109,7 +95,7 @@ export function classifyBoxSize(items: OrderDataItem[]): BoxResult {
   let totalBalls   = 0;
 
   for (const item of items) {
-    const { rackets, balls } = getItemCounts(item);
+    const { rackets, balls } = itemUnitCounts(item);
     totalRackets += rackets;
     totalBalls   += balls;
   }

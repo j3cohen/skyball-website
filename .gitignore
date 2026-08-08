@@ -57,3 +57,6 @@ CLAUDE.md
 /pass-holders-query.md
 /preview-testing-plan.md
 /outstanding-items.md
+
+# env backups written by scripts/local-db/env-mode.sh (contain real keys)
+.env.local.bak-*

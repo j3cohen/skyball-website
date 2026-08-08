@@ -30,6 +30,15 @@ declare global {
 // Replace with your actual Google Analytics ID
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
 
+/**
+ * Safe JS string literal for embedding in an inline <script>.
+ * JSON.stringify handles quotes/backslashes/newlines; `<` is additionally
+ * escaped so a value can never introduce a `</script>` sequence.
+ */
+function jsLiteral(value: string): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c')
+}
+
 export default function GoogleAnalytics() {
   const pathname = usePathname() // Use pathname instead of searchParams
 
@@ -60,13 +69,19 @@ export default function GoogleAnalytics() {
         id="google-analytics"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
+          // SECURITY: never interpolate the pathname into this inline
+          // script as a raw quoted literal. Browsers leave apostrophes
+          // unencoded in location.pathname, so `/x';alert(1)//` would
+          // break out of the string and execute (reflected XSS on every
+          // route, including 404s). JSON.stringify emits a properly
+          // escaped literal; the id is escaped for symmetry.
           __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}', {
-              page_path: '${pathname}',
+            gtag('config', ${jsLiteral(GA_MEASUREMENT_ID ?? '')}, {
+              page_path: ${jsLiteral(pathname ?? '/')},
             });
           `,
         }}
