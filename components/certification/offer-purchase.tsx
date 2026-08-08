@@ -18,6 +18,15 @@ export type SalesOffer = {
   equipmentItems: { label: string; qty: number }[];
 };
 
+// Column count follows the number of offers so 3 offers don't leave a hole in a
+// 4-wide grid. Classes are spelled out (not interpolated) so Tailwind sees them.
+const GRID_COLS: Record<number, string> = {
+  1: "sm:grid-cols-1 max-w-sm",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 lg:grid-cols-3",
+  4: "sm:grid-cols-2 lg:grid-cols-4",
+};
+
 export default function OfferPurchase({ offers }: { offers: SalesOffer[] }) {
   const [selected, setSelected] = useState(offers[0]?.id ?? "");
   const [qty, setQty] = useState(1);
@@ -49,20 +58,30 @@ export default function OfferPurchase({ offers }: { offers: SalesOffer[] }) {
 
   return (
     <div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div
+        className={cn(
+          "grid gap-4",
+          GRID_COLS[offers.length] ?? "sm:grid-cols-2 lg:grid-cols-4"
+        )}
+      >
         {offers.map((o) => (
           <button
             key={o.id}
             type="button"
             onClick={() => setSelected(o.id)}
+            aria-pressed={selected === o.id}
             className={cn(
-              "rounded-xl border-2 bg-white p-5 text-left transition-colors",
+              // flex-col: a <button> centers its content vertically by default,
+              // which staggers the titles across cards of unequal height.
+              "flex h-full flex-col items-start rounded-xl border-2 bg-white p-4 text-left transition-colors sm:p-5",
               selected === o.id
                 ? "border-primary shadow-md"
                 : "border-gray-200 hover:border-gray-300"
             )}
           >
-            <p className="font-semibold text-gray-900">{o.name}</p>
+            {/* Two-line reservation keeps the prices on one baseline when a
+                longer offer name wraps in the narrow 4-up columns. */}
+            <p className="font-semibold leading-snug text-gray-900 lg:min-h-[3rem]">{o.name}</p>
             <p className="mt-1 text-2xl font-bold text-gray-900">
               ${(o.priceCents / 100).toFixed(o.priceCents % 100 === 0 ? 0 : 2)}
             </p>

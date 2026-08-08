@@ -8,6 +8,10 @@ vitest suite.
 **Status:** feature-complete on `dev`; both apps build clean. Not yet launched — see
 [Before launch](#before-launch--open-items).
 
+> The certificate is designed as a **digital badge**, not a print piece — dark navy card, brand
+> logo, and a QR to the public verification page. See
+> [The certificate](#the-certificate) below.
+
 ---
 
 ## Try it without a database
@@ -143,6 +147,27 @@ quiz section** ("Module 1 Quiz" — questions, no video).
   **grey ✓** means a video/intro section has been opened in this browser (tracked in
   localStorage under `skyball_cert_visited_v1`, cosmetic only).
 - An **unpassed quiz still gates** everything after it — that's the module boundary.
+
+## The certificate
+
+`components/certification/certificate-view.tsx`, shared by `/coaching/certificate/[code]` and
+`/coaching/certificate/preview` so the real and sample versions can't drift. Designed as a
+**digital badge** — it's shared as a link or screenshot far more than it's printed.
+
+- **Palette is sampled from the logo file**: navy `#02004A`, cyan `#27C3F2`. The logo
+  (`SkyBall+logo_B.jpg` on S3) has its navy field baked in, so matching `BRAND_NAVY` exactly is
+  what lets it sit on the card with no visible seam. ⚠️ **Anything that lightens the canvas
+  behind the logo brings that rectangle back** — this is why the cyan glows are pinned to the
+  lower corners. Verify on a narrow viewport after touching them.
+- **QR code** is generated server-side with `qrcode` into inline SVG — no extra request, no
+  client JS, and it survives the page being screenshotted. It encodes
+  `${SITE_URL}/coaching/verify/<code>`, so it follows a domain change automatically.
+- `CertificateView` is an **async server component** (it awaits QR generation). Both pages that
+  render it are server components; keep it that way.
+- **Long names** step down through `nameSizeClass()` — real names run past 40 characters. The
+  API caps at 120.
+- `components/certification/share-certificate.tsx` puts *Copy share link* first and print
+  second, matching how these actually get used.
 
 ## Money path
 

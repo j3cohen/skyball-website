@@ -1,9 +1,8 @@
 // app/coaching/certificate/[code]/page.tsx
-// Print-friendly certificate page. Reachable by certificate code (the
-// code is the credential — it only appears on the holder's results
-// screen and certificate). Print → browser's Save as PDF covers the
-// "save/mail" cases; the verify URL printed on the certificate lets
-// anyone confirm validity.
+// The holder's certificate page. Reachable by certificate code (the code is
+// the credential — it only appears on the holder's results screen and
+// certificate). Treated as a digital badge: the primary action is sharing the
+// link, which anyone can then verify at /coaching/verify/<code>.
 //
 // The certificate artwork lives in components/certification/
 // certificate-view.tsx, shared with /coaching/certificate/preview.
@@ -11,9 +10,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/seo";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import CertificateView from "@/components/certification/certificate-view";
-import PrintButton from "@/components/certification/print-button";
+import ShareCertificate from "@/components/certification/share-certificate";
 
 export const dynamic = "force-dynamic";
 
@@ -52,11 +52,13 @@ export default async function CertificatePage({
     <main className="min-h-screen bg-gray-100 py-10 print:bg-white print:py-0">
       <div className="mx-auto max-w-3xl px-4 print:max-w-none print:px-0">
         {/* Screen-only controls */}
-        <div className="mb-6 flex items-center justify-between print:hidden">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 print:hidden">
           <Link href="/coaching/course" className="text-sm font-medium text-primary underline">
             ← Back to course
           </Link>
-          <PrintButton />
+          <ShareCertificate
+            verifyUrl={`${SITE_URL}/coaching/verify/${cert.verify_code}`}
+          />
         </div>
 
         <CertificateView
@@ -68,8 +70,8 @@ export default async function CertificatePage({
         />
 
         <p className="mt-6 text-center text-sm text-gray-500 print:hidden">
-          Tip: use your browser&apos;s print dialog and choose &ldquo;Save as PDF&rdquo; to keep
-          a digital copy, or email the PDF to anyone who needs it.
+          Share the link and anyone can confirm it&apos;s genuine — no account needed. The QR
+          code goes to the same verification page.
         </p>
       </div>
     </main>

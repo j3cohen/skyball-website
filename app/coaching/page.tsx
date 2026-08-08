@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const metadata = pageMetadata({
   title: "SkyBall Coaching Certification",
   description:
-    "Become a certified SkyBall coach: a self-paced video course with section quizzes and an official certificate. Individual seats and club packs available.",
+    "Become a certified SkyBall coach: a self-paced video course with a final exam and an official certificate. Individual seats and club packs available.",
   path: "/coaching",
 });
 
@@ -85,12 +85,12 @@ export default async function CoachingPage() {
             </h1>
             <p className="mt-4 max-w-2xl text-lg text-gray-300">
               {program?.description ??
-                "Become a certified SkyBall coach with our self-paced video course. Watch, learn, pass the quizzes, and earn your official certificate."}
+                "Become a certified SkyBall coach with our self-paced video course. Watch, learn, pass the final exam, and earn your official certificate."}
             </p>
           </div>
         </section>
 
-        <section className="container mx-auto px-4 max-w-4xl py-12">
+        <section className="container mx-auto px-4 max-w-5xl py-12">
           {!program ? (
             <div className="bg-white rounded-xl shadow p-8 text-center">
               <h2 className="text-xl font-semibold text-gray-900">
@@ -106,7 +106,7 @@ export default async function CoachingPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
                   ["1. Watch", "Short video lessons for each section, at your own pace."],
-                  ["2. Pass", "A quick quiz after each section — instant results as you go."],
+                  ["2. Pass", "One final exam after you finish all the sections — instant results."],
                   ["3. Get certified", "Print, save, or share your official SkyBall coaching certificate."],
                 ].map(([t, d]) => (
                   <div key={t} className="bg-white rounded-xl shadow p-5">
