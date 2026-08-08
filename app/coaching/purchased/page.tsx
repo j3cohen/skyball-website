@@ -136,7 +136,9 @@ export default function CoachingPurchasedPage({
                     Send each person their own link
                   </span>{" "}
                   — they&apos;ll sign in (or create a free SkyBall account) to start the course.
-                  Taking it yourself? Just open your link.
+                  Taking it yourself? Hit <span className="font-medium text-gray-900">Start
+                  this seat</span> to claim one now — it opens in a new tab so you keep this
+                  page.
                 </p>
 
                 <ul className="mt-6 space-y-2">
@@ -154,9 +156,21 @@ export default function CoachingPurchasedPage({
                       {s.status === "claimed" ? (
                         <span className="text-xs font-medium text-green-700">Claimed ✓</span>
                       ) : (
-                        <Button size="sm" variant="outline" onClick={() => copy(s.claimToken)}>
-                          {copied === s.claimToken ? "Copied!" : "Copy link"}
-                        </Button>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => copy(s.claimToken)}>
+                            {copied === s.claimToken ? "Copied!" : "Copy link"}
+                          </Button>
+                          {/* For the common case where the buyer is also a
+                              learner — new tab so this page (the only route
+                              back to the other links) isn't navigated away. */}
+                          <a
+                            href={`/coaching/claim/${s.claimToken}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button size="sm">Start this seat</Button>
+                          </a>
+                        </div>
                       )}
                     </li>
                   ))}

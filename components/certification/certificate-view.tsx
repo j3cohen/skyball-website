@@ -67,8 +67,15 @@ export default async function CertificateView({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl shadow-2xl print:rounded-none print:shadow-none"
-      style={{ backgroundColor: BRAND_NAVY }}
+      // cert-card: print rules hook — see certificate-print-styles.tsx. The
+      // printed version deliberately keeps the rounded card and its colours so
+      // the PDF matches what's on screen.
+      className="cert-card relative w-full overflow-hidden rounded-2xl shadow-2xl print:shadow-none"
+      style={{
+        backgroundColor: BRAND_NAVY,
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      }}
     >
       {/* Cyan edge + soft glow: reads as "credential" without gold-foil cliché */}
       <div
