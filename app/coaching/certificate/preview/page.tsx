@@ -7,6 +7,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import CertificateView from "@/components/certification/certificate-view";
+import CertificatePrintStyles from "@/components/certification/certificate-print-styles";
 import PrintButton from "@/components/certification/print-button";
 
 export const metadata: Metadata = {
@@ -20,8 +21,9 @@ export default function CertificatePreviewPage() {
   expiresAt.setMonth(expiresAt.getMonth() + 24);
 
   return (
-    <main className="min-h-screen bg-gray-100 py-10 print:bg-white print:py-0">
-      <div className="mx-auto max-w-3xl px-4 print:max-w-none print:px-0">
+    <main className="min-h-screen bg-gray-100 py-10 print:flex print:h-[7.7in] print:min-h-0 print:items-center print:bg-white print:py-0">
+      <CertificatePrintStyles />
+      <div className="mx-auto max-w-3xl px-4 print:w-full print:max-w-[9.6in] print:px-0">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <Link href="/coaching" className="text-sm font-medium text-primary underline">
             ← Back to Coaching

@@ -116,20 +116,26 @@ export default async function CoachingPage() {
                 ))}
               </div>
 
-              {/* Curriculum */}
+              {/* Curriculum — a grid, not a stack: with 8+ sections a
+                  full-width list is mostly empty space. */}
               {sections.length > 0 && (
-                <div className="mt-10">
+                <div className="mt-12">
                   <h2 className="text-2xl font-bold text-gray-900">What you&apos;ll learn</h2>
-                  <ol className="mt-4 space-y-2">
+                  <p className="mt-1 text-gray-600">
+                    {sections.length} sections, in order.
+                  </p>
+                  <ol className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {sections.map((s, i) => (
                       <li
                         key={s.id}
-                        className="flex items-center gap-3 bg-white rounded-lg shadow-sm px-4 py-3"
+                        className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm transition-shadow hover:shadow-md"
                       >
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
                           {i + 1}
                         </span>
-                        <span className="font-medium text-gray-900">{s.title}</span>
+                        <span className="text-sm font-medium leading-snug text-gray-900">
+                          {s.title}
+                        </span>
                       </li>
                     ))}
                   </ol>

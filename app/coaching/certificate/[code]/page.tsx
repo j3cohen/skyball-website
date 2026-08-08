@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/seo";
 import { supabaseAdmin } from "@/lib/server/supabaseAdmin";
 import CertificateView from "@/components/certification/certificate-view";
+import CertificatePrintStyles from "@/components/certification/certificate-print-styles";
 import ShareCertificate from "@/components/certification/share-certificate";
 
 export const dynamic = "force-dynamic";
@@ -49,8 +50,11 @@ export default async function CertificatePage({
     .single<{ title: string }>();
 
   return (
-    <main className="min-h-screen bg-gray-100 py-10 print:bg-white print:py-0">
-      <div className="mx-auto max-w-3xl px-4 print:max-w-none print:px-0">
+    <main className="min-h-screen bg-gray-100 py-10 print:flex print:h-[7.7in] print:min-h-0 print:items-center print:bg-white print:py-0">
+      <CertificatePrintStyles />
+      {/* Print width is sized to a landscape Letter page minus margins, so the
+          PDF keeps the same proportions as the on-screen card. */}
+      <div className="mx-auto max-w-3xl px-4 print:w-full print:max-w-[9.6in] print:px-0">
         {/* Screen-only controls */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 print:hidden">
           <Link href="/coaching/course" className="text-sm font-medium text-primary underline">
@@ -58,6 +62,9 @@ export default async function CertificatePage({
           </Link>
           <ShareCertificate
             verifyUrl={`${SITE_URL}/coaching/verify/${cert.verify_code}`}
+            fullName={cert.full_name}
+            programTitle={program?.title ?? "SkyBall Coaching Certification"}
+            verifyCode={cert.verify_code}
           />
         </div>
 

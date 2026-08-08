@@ -79,6 +79,9 @@ export default function Footer() {
                   <Link href="/community-guidelines">Community Guidelines</Link>
                 </li> */}
                 <li>
+                  <Link href="/coaching">Become a Coach</Link>
+                </li>
+                <li>
                   <Link href="/become-a-host">Become a Host</Link>
                 </li>
                 <li>
