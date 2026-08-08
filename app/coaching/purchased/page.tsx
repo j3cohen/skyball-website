@@ -28,6 +28,7 @@ export default function CoachingPurchasedPage({
   const [info, setInfo] = useState<PurchaseInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [mailedState, setMailedState] = useState<"idle" | "opened" | "copied">("idle");
   const attempts = useRef(0);
 
   const load = useCallback(async () => {
@@ -61,6 +62,39 @@ export default function CoachingPurchasedPage({
     await navigator.clipboard.writeText(url);
     setCopied(token);
     setTimeout(() => setCopied((c) => (c === token ? null : c)), 1500);
+  }
+
+  // Opens the buyer's own mail client with the seat links pre-filled — we
+  // don't send anything server-side, so nothing leaves the browser.
+  function emailLinks() {
+    if (!info) return;
+    const origin = window.location.origin;
+    const lines = info.seats.map(
+      (s, i) =>
+        `Seat ${i + 1}: ${origin}/coaching/claim/${s.claimToken}` +
+        (s.status === "claimed" ? " (already claimed)" : "")
+    );
+    const subject = `Your SkyBall coaching certification seat links`;
+    const body = [
+      `${info.offerName} — ${info.programTitle}`,
+      "",
+      ...lines,
+      "",
+      "Send each person their own link. They'll sign in (or create a free SkyBall account) to start the course.",
+    ].join("\r\n");
+    const href = `mailto:${encodeURIComponent(
+      info.purchaserEmail ?? ""
+    )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Mail clients silently truncate very long mailto URLs, which would drop
+    // seat links. Past that point, fall back to the clipboard.
+    if (href.length > 1800) {
+      void navigator.clipboard.writeText(lines.join("\n"));
+      setMailedState("copied");
+      return;
+    }
+    window.location.href = href;
+    setMailedState("opened");
   }
 
   return (
@@ -128,12 +162,35 @@ export default function CoachingPurchasedPage({
                   ))}
                 </ul>
 
+                <div className="mt-4">
+                  <Button onClick={emailLinks} variant="outline">
+                    Email these links to me
+                  </Button>
+                  {mailedState === "opened" && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Opening your email app with the links filled in — just hit send.
+                    </p>
+                  )}
+                  {mailedState === "copied" && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Too many links for an email draft — all {info.seats.length} links were
+                      copied to your clipboard instead. Paste them somewhere safe.
+                    </p>
+                  )}
+                </div>
+
                 <div className="mt-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
                   <p className="text-sm text-amber-900">
-                    <span className="font-semibold">Save this page&apos;s address</span> — it&apos;s
-                    your seat dashboard. A Stripe receipt was emailed to{" "}
-                    {info.purchaserEmail ?? "you"}; the receipt link brings you back here
-                    anytime.
+                    <span className="font-semibold">
+                      Copy your seat links now, email them to yourself, or bookmark this page.
+                    </span>{" "}
+                    This page is the only way back to them — the Stripe receipt emailed to{" "}
+                    {info.purchaserEmail ?? "you"} confirms payment but doesn&apos;t link back
+                    here. Lost them? Email{" "}
+                    <a href="mailto:info@skyball.us" className="font-medium underline">
+                      info@skyball.us
+                    </a>{" "}
+                    and we&apos;ll resend your seat links.
                   </p>
                 </div>
 
