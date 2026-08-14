@@ -143,6 +143,15 @@ export default function Contact() {
 
               {showForm && (
                 <form className="space-y-6" onSubmit={handleSubscriptionSubmit}>
+                  {/* Honeypot — hidden from humans, irresistible to bots. */}
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="hidden"
+                  />
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                       Full Name
@@ -157,9 +166,16 @@ export default function Contact() {
                   </div>
                   <div>
                     <label htmlFor="zip" className="block text-sm font-medium text-gray-700">
-                      Zip Code (Optional)
+                      City or ZIP
                     </label>
-                    <Input type="text" id="zip" name="zip" className="mt-1" />
+                    <Input
+                      type="text"
+                      id="zip"
+                      name="zip"
+                      required
+                      placeholder="Brooklyn, NY or 11201"
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Button type="submit" className="w-full" disabled={isSubmitting}>

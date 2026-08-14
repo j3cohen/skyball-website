@@ -83,6 +83,16 @@ export function ContactFormDialog() {
           </DialogClose>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot — hidden from humans, irresistible to bots. */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+            />
+
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input id="name" name="name" required />
@@ -102,8 +112,11 @@ export function ContactFormDialog() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location (optional)</Label>
-              <Input id="location" name="location" />
+              <Label htmlFor="location">City or ZIP</Label>
+              <Input id="location" name="location" required placeholder="Brooklyn, NY or 11201" />
+              {response?.fieldErrors?.location && (
+                <p className="text-sm text-red-500">{response.fieldErrors.location[0]}</p>
+              )}
             </div>
 
             <div className="space-y-2">

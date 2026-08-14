@@ -9,6 +9,7 @@
 #   3. repo migrations (IF NOT EXISTS-guarded)
 #   4. SCHEMA-DIFF GUARD around 20260805_certifications.sql:
 #      asserts the cert migration adds ONLY cert_* objects
+#   4b. site intake tables (20260814_site_intake.sql), applied once
 #   5. seed catalog + synthetic orders + fixture cert program
 #   6. local admin auth user (admin@local.test / localadmin)
 #
@@ -104,6 +105,19 @@ if [ -n "$BAD" ]; then
   exit 1
 fi
 echo "   ✅ guard passed: migration adds only cert_* objects"
+
+# Site intake tables (notification_signups / site_inquiries / upsert RPC).
+# Kept out of the guard lists above on purpose — that guard exists to prove
+# the *cert* migration is additive and must keep its current inputs.
+# The migration is deliberately verbatim-from-prod (no IF NOT EXISTS), so
+# guard the apply here instead of editing the tracked SQL.
+echo "── 4b/6 site intake migration ──"
+if [ -z "$("${PSQL[@]}" -At -c "select to_regclass('public.notification_signups')")" ]; then
+  "${PSQL[@]}" -v ON_ERROR_STOP=1 < supabase/migrations/20260814_site_intake.sql > /dev/null
+  echo "   applied 20260814_site_intake.sql"
+else
+  echo "   already present — skipping"
+fi
 
 echo "── 5/6 seeding ──"
 "${PSQL[@]}" -v ON_ERROR_STOP=1 < scripts/local-db/seed-catalog.sql > /dev/null

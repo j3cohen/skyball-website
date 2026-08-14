@@ -36,10 +36,20 @@ export const nameSchema = z
   .min(2, "Name must be at least 2 characters")
   .max(100, "Name must be less than 100 characters")
 
+// Locality is a single free-text field ("City or ZIP"). Stored raw — never
+// parsed, split, or validated against a list. It is what makes the subscriber
+// list usable for regional announcements, so it is required.
+export const localitySchema = z
+  .string()
+  .trim()
+  .min(1, "City or ZIP is required")
+  .max(120, "City or ZIP must be less than 120 characters")
+
 // Define the shape of our notification data
 interface NotificationData {
   name: string
-  email?: string
+  email: string
+  locality: string
   phone?: string
   notifyOpenPlay?: boolean
   notifyTournaments?: boolean
@@ -48,20 +58,18 @@ interface NotificationData {
 }
 
 // Notification signup schema - create the schema first, then apply refinements
+// Email is required (not "email or phone"): notification_signups.email is
+// NOT NULL, and a signup we cannot store is a lead we lose.
 export const notificationSignupSchema = z
   .object({
     name: nameSchema,
-    email: emailSchema,
+    email: z.string().email("Please enter a valid email address"),
     phone: phoneSchema,
+    locality: localitySchema,
     notifyOpenPlay: z.boolean().optional().default(false),
     notifyTournaments: z.boolean().optional().default(false),
     notifyPopUps: z.boolean().optional().default(false),
     notifySpecialEvents: z.boolean().optional().default(false),
-  })
-  // Add refinement for contact validation
-  .refine((data: NotificationData) => data.email || data.phone, {
-    message: "Either email or phone is required",
-    path: ["contact"],
   })
   // Add refinement for notification preferences
   .refine(

@@ -118,6 +118,16 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
           )}
 
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot — hidden from humans, irresistible to bots. */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+            />
+
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Name *
@@ -153,9 +163,12 @@ export default function InfoRequestForm({ subject, onClose, additionalFields }: 
 
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                City, State
+                City or ZIP *
               </label>
-              <Input id="location" name="location" placeholder="e.g., Brooklyn, NY" />
+              <Input id="location" name="location" required placeholder="Brooklyn, NY or 11201" />
+              {response?.fieldErrors?.location && (
+                <p className="mt-1 text-sm text-red-600">{response.fieldErrors.location[0]}</p>
+              )}
             </div>
 
             {additionalFields}
