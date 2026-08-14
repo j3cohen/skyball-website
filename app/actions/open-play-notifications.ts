@@ -7,6 +7,25 @@ import {
   formatPhoneNumber,
   type NotificationSignupData,
 } from "@/lib/validations"
+import {
+  isHoneypotTripped,
+  isIntakeThrottled,
+  recordNotificationSignup,
+  THROTTLED_MESSAGE,
+  type NotificationType,
+} from "@/lib/server/siteIntake"
+
+const SUCCESS_MESSAGE = "You've been signed up for SkyBall notifications!"
+
+/** Checkbox -> the notification_types values the schema allows. */
+function selectedTypes(data: NotificationSignupData): NotificationType[] {
+  const types: NotificationType[] = []
+  if (data.notifyOpenPlay) types.push("open_play")
+  if (data.notifyTournaments) types.push("tournaments")
+  if (data.notifyPopUps) types.push("pop_ups")
+  if (data.notifySpecialEvents) types.push("special_events")
+  return types
+}
 
 // Add environment variables debug logging
 console.log("Environment variables check for open-play-notifications:", {
@@ -19,11 +38,21 @@ console.log("Environment variables check for open-play-notifications:", {
 
 export async function subscribeToOpenPlayNotifications(formData: FormData) {
   try {
+    // Bots fill the honeypot; humans never see it. Look successful, store nothing.
+    if (isHoneypotTripped(formData)) {
+      return { success: true, message: SUCCESS_MESSAGE }
+    }
+
+    if (isIntakeThrottled("signup")) {
+      return { success: false, message: THROTTLED_MESSAGE, errorCode: "RATE_LIMITED" }
+    }
+
     // Extract data from the form
     const data = {
       name: (formData.get("name") as string) || "",
       email: (formData.get("email") as string) || "",
       phone: (formData.get("phone") as string) || "",
+      locality: (formData.get("locality") as string) || "",
       notifyOpenPlay: parseBoolean(formData.get("notifyOpenPlay")),
       notifyTournaments: parseBoolean(formData.get("notifyTournaments")),
       notifyPopUps: parseBoolean(formData.get("notifyPopUps")),
@@ -36,24 +65,38 @@ export async function subscribeToOpenPlayNotifications(formData: FormData) {
     try {
       const validatedData = notificationSignupSchema.parse(data)
 
-      // Send Telegram notification
-      console.log("Sending Telegram notification for Open Play signup...")
-      const success = await sendTelegramNotification(validatedData)
-
-      if (success) {
-        console.log("Telegram notification sent successfully")
+      // Database first — a DB failure fails the request so the user can retry.
+      try {
+        await recordNotificationSignup({
+          name: validatedData.name,
+          email: validatedData.email,
+          locality: validatedData.locality,
+          phone: validatedData.phone,
+          types: selectedTypes(validatedData),
+          source: "notification_form",
+        })
+      } catch (dbError) {
+        console.error("Failed to persist notification signup:", dbError)
         return {
-          success: true,
-          message: "You've been signed up for SkyBall notifications!",
-        }
-      } else {
-        // If Telegram notification fails, log error but still return success to user
-        console.error("Failed to send Telegram notification")
-        return {
-          success: true, // Still return success to user
-          message: "You've been signed up for SkyBall notifications!",
+          success: false,
+          message: "We couldn't save your signup. Please try again in a moment.",
+          errorCode: "DB_WRITE_FAILED",
         }
       }
+
+      // Telegram is best-effort — it must never fail the request.
+      try {
+        const success = await sendTelegramNotification(validatedData)
+        if (success) {
+          console.log("Telegram notification sent successfully")
+        } else {
+          console.error("Failed to send Telegram notification")
+        }
+      } catch (telegramError) {
+        console.error("Error in Telegram notification:", telegramError)
+      }
+
+      return { success: true, message: SUCCESS_MESSAGE }
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         const fieldErrors = validationError.errors.reduce(

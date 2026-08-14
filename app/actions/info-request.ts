@@ -1,6 +1,14 @@
 "use server"
 
 import { z } from "zod"
+import {
+  isHoneypotTripped,
+  isIntakeThrottled,
+  recordSiteInquiry,
+  THROTTLED_MESSAGE,
+  type InquiryKind,
+} from "@/lib/server/siteIntake"
+import { localitySchema } from "@/lib/validations"
 
 // Define validation schema for form data
 const infoRequestSchema = z
@@ -10,7 +18,11 @@ const infoRequestSchema = z
     phone: z.string().optional(),
     message: z.string().optional(),
     subject: z.string(),
-    location: z.string().optional(),
+    // Required on every inquiry form. The column is nullable, so this is a
+    // product rule, not a schema one — relax it here to make it optional
+    // again. Enforced server-side because the HTML `required` attribute is
+    // trivially removed in devtools.
+    location: localitySchema,
     schoolInfo: z.string().optional(),
   })
   .refine((data) => data.email || data.phone, {
@@ -20,6 +32,17 @@ const infoRequestSchema = z
 
 type InfoRequestData = z.infer<typeof infoRequestSchema>
 
+// Map the form's free-form `subject` onto site_inquiries.kind, which is a
+// CHECK-constrained enum. Anything unmapped (today: "Product Inquiry" from
+// /shop) falls back to "general" with the original subject kept in `details`,
+// so an unlisted subject can never fail the insert.
+const subjectKinds: Record<string, InquiryKind> = {
+  "School Information Request": "school",
+  "Host Information Request": "host",
+  "Where can I play?": "where_to_play",
+  "General Information Request": "general",
+}
+
 // Map of subject types to emojis for Telegram messages
 const subjectEmojis: Record<string, string> = {
   "School Information Request": "🏫",
@@ -28,8 +51,19 @@ const subjectEmojis: Record<string, string> = {
   "General Information Request": "ℹ️",
 }
 
+const SUCCESS_MESSAGE = "Thank you for your interest! We'll be in touch with you soon."
+
 export async function submitInfoRequest(formData: FormData) {
   try {
+    // Bots fill the honeypot; humans never see it. Look successful, store nothing.
+    if (isHoneypotTripped(formData)) {
+      return { success: true, message: SUCCESS_MESSAGE }
+    }
+
+    if (isIntakeThrottled("inquiry")) {
+      return { success: false, message: THROTTLED_MESSAGE }
+    }
+
     // Extract data from the form
     const data = {
       name: (formData.get("name") as string) || "",
@@ -47,7 +81,30 @@ export async function submitInfoRequest(formData: FormData) {
     try {
       const validatedData = infoRequestSchema.parse(data)
 
-      // Send Telegram notification
+      // Database first — a DB failure fails the request so the user can retry.
+      try {
+        const details: Record<string, unknown> = { subject: validatedData.subject }
+        if (validatedData.schoolInfo) details.schoolInfo = validatedData.schoolInfo
+
+        await recordSiteInquiry({
+          kind: subjectKinds[validatedData.subject] ?? "general",
+          name: validatedData.name,
+          email: validatedData.email,
+          phone: validatedData.phone,
+          message: validatedData.message,
+          locality: validatedData.location,
+          details,
+        })
+      } catch (dbError) {
+        console.error("Failed to persist site inquiry:", dbError)
+        return {
+          success: false,
+          message: "We couldn't save your request. Please try again in a moment.",
+        }
+      }
+
+      // Telegram is best-effort — the lead is stored, so it must never fail
+      // the request. The failure alert still fires so an admin knows to look.
       console.log("Sending Telegram notification...")
       let success = false
 
@@ -60,12 +117,7 @@ export async function submitInfoRequest(formData: FormData) {
 
       if (success) {
         console.log("Telegram notification sent successfully")
-        return {
-          success: true,
-          message: "Thank you for your interest! We'll be in touch with you soon.",
-        }
       } else {
-        // If Telegram notification fails, try to send a failure notification
         console.error("Failed to send Telegram notification")
         try {
           await sendFailureNotification(validatedData)
@@ -73,12 +125,9 @@ export async function submitInfoRequest(formData: FormData) {
           console.error("Error sending failure notification:", failureError)
           // Continue with the flow, don't throw
         }
-
-        return {
-          success: false,
-          message: "We're experiencing technical difficulties. Please email info@skyball.us or try again later.",
-        }
       }
+
+      return { success: true, message: SUCCESS_MESSAGE }
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         const fieldErrors = validationError.errors.reduce(

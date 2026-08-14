@@ -536,6 +536,8 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [locality, setLocality] = useState("")
+  const [honeypot, setHoneypot] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -557,8 +559,10 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
       // Create a FormData object to send to the server
       const formData = new FormData()
       formData.append("name", name)
-      if (email) formData.append("email", email)
+      formData.append("email", email)
       if (phone) formData.append("phone", phone)
+      formData.append("locality", locality)
+      formData.append("website", honeypot)
 
       // Add notification preferences
       formData.append("notifyOpenPlay", notifyOpenPlay.toString())
@@ -574,6 +578,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
         setName("")
         setEmail("")
         setPhone("")
+        setLocality("")
 
         // Reset success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000)
@@ -608,6 +613,18 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">{error}</div>}
 
+          {/* Honeypot — hidden from humans, irresistible to bots. */}
+          <input
+            type="text"
+            name="website"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="hidden"
+          />
+
           <div>
             <Label htmlFor="notification-name" className="text-sm">
               Name
@@ -615,6 +632,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
             <input
               id="notification-name"
               type="text"
+              required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
@@ -627,11 +645,12 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
 
           <div>
             <Label htmlFor="notification-email" className="text-sm">
-              Email (optional if phone provided)
+              Email
             </Label>
             <input
               id="notification-email"
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
@@ -644,7 +663,7 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
 
           <div>
             <Label htmlFor="notification-phone" className="text-sm">
-              Phone (optional if email provided)
+              Phone (optional)
             </Label>
             <input
               id="notification-phone"
@@ -659,7 +678,23 @@ function NotificationSignup({ defaultType = "all" }: { defaultType?: "all" | "op
             {fieldErrors.phone && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone[0]}</p>}
           </div>
 
-          {fieldErrors.contact && <p className="text-red-500 text-xs mt-1">{fieldErrors.contact[0]}</p>}
+          <div>
+            <Label htmlFor="notification-locality" className="text-sm">
+              City or ZIP
+            </Label>
+            <input
+              id="notification-locality"
+              type="text"
+              required
+              value={locality}
+              onChange={(e) => setLocality(e.target.value)}
+              placeholder="Brooklyn, NY or 11201"
+              className={`w-full mt-1 px-3 py-2 border rounded-md text-sm ${
+                fieldErrors.locality ? "border-red-300 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            {fieldErrors.locality && <p className="text-red-500 text-xs mt-1">{fieldErrors.locality[0]}</p>}
+          </div>
 
           <div className="space-y-1">
             <Label className="text-sm font-medium">Notification Preferences</Label>
