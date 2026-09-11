@@ -230,7 +230,14 @@ export default function CourtFinder({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="relative h-[55dvh] overflow-hidden rounded-lg border border-gray-200 bg-white lg:h-auto lg:min-h-[60vh]">
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-lg border border-gray-200 bg-white lg:min-h-[60vh]",
+            // The fixed mobile height is for the map canvas; the keyless
+            // fallback card sizes to its content instead of floating in a band.
+            browserKey && "h-[55dvh] lg:h-auto",
+          )}
+        >
           <CourtMap courts={filtered} selectedId={selectedId} browserKey={browserKey} onSelect={setSelectedId} />
         </div>
         <aside
@@ -534,19 +541,24 @@ function CourtMap({
 
   if (!browserKey || status === "error") {
     return (
-      <div className="flex h-full min-h-[inherit] items-center justify-center p-4">
-        <div className="flex max-w-md flex-col items-center rounded-lg border border-gray-200 bg-white px-6 py-10 text-center shadow-sm">
+      <div className="flex justify-center p-4 lg:min-h-[inherit] lg:items-center">
+        <div className="flex w-full max-w-md flex-col items-center rounded-lg border border-gray-200 bg-white px-6 py-10 text-center shadow-sm">
           <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sky-600">
             <MapPin className="h-6 w-6" aria-hidden />
           </span>
           <p className="text-lg font-semibold text-[#01014c]">
-            {browserKey ? "Map couldn't load" : "Map key not configured"}
+            {browserKey ? "Map couldn't load" : "Map view is on its way"}
           </p>
           <p className="mt-2 text-sm text-gray-600">
             {browserKey
               ? "Google Maps didn't respond. Refresh in a moment, or use the list to get directions."
-              : "Set NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY to show courts on a map. The list still works — pick a court for directions."}
+              : "Pick a court from the list for directions."}
           </p>
+          {!browserKey && process.env.NODE_ENV !== "production" && (
+            <p className="mt-2 break-all text-xs text-gray-400">
+              Dev: set NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY in .env.local to show the map.
+            </p>
+          )}
         </div>
       </div>
     )
