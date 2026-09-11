@@ -7,12 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "courts:fetch": "node --env-file=.env.local scripts/fetch-courts.js",
     "admin": "npm run dev --workspace=admin",
     "test": "vitest run tests/unit",
     "test:integration": "LOCAL_SUPABASE=1 vitest run tests/integration",
     "test:all": "LOCAL_SUPABASE=1 vitest run"
   },
   "dependencies": {
+    "@googlemaps/markerclusterer": "^2.6.2",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.13",
     "@radix-ui/react-dropdown-menu": "^2.1.14",
@@ -46,6 +48,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/google.maps": "^3.66.2",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18",

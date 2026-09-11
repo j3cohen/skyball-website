@@ -60,7 +60,9 @@ export default function Footer() {
                 <li>
                   <Link href="/play">Play</Link>
                 </li>
-                
+                <li>
+                  <Link href="/courts">Courts</Link>
+                </li>
                 <li>
                   <Link href="/shop">Shop</Link>
                 </li>
