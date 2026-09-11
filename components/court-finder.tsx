@@ -95,38 +95,55 @@ function pinIcon(kind: CourtKind, setting: CourtSetting, selected: boolean): goo
 // ---- Maps JS loader (once per page, no wrapper dependency) ----------------
 type MapsStatus = "idle" | "loading" | "ready" | "error"
 const SCRIPT_ID = "skyball-google-maps"
+const READY_CALLBACK = "__skyballMapsReady"
+const LOAD_TIMEOUT_MS = 15000
 let loadPromise: Promise<void> | null = null
 
 function loadMaps(key: string): Promise<void> {
   if (loadPromise) return loadPromise
   loadPromise = new Promise<void>((resolve, reject) => {
-    const finish = async () => {
-      try {
-        await google.maps.importLibrary("maps")
-        await google.maps.importLibrary("marker")
-        resolve()
-      } catch (err) {
-        reject(err)
-      }
-    }
+    // Already fully initialised — e.g. a client-side nav back to this page.
     if (typeof google !== "undefined" && typeof google.maps?.importLibrary === "function") {
-      void finish()
+      resolve()
       return
     }
-    const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
-    const script = existing ?? document.createElement("script")
+    // `loading=async` serves a lightweight bootstrap, so `google.maps` can
+    // exist before `importLibrary` does and the script's own load event fires
+    // too early to use. The callback is the only reliable "API is ready"
+    // signal; waiting on load instead throws "importLibrary is not a function".
+    const timer = setTimeout(
+      () => reject(new Error(`Google Maps did not become ready within ${LOAD_TIMEOUT_MS}ms`)),
+      LOAD_TIMEOUT_MS,
+    )
+    ;(window as unknown as Record<string, unknown>)[READY_CALLBACK] = () => {
+      clearTimeout(timer)
+      resolve()
+    }
+    const existing = document.getElementById(SCRIPT_ID)
     if (!existing) {
+      const script = document.createElement("script")
       script.id = SCRIPT_ID
       script.async = true
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&libraries=marker`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&libraries=marker&callback=${READY_CALLBACK}`
+      script.addEventListener(
+        "error",
+        () => {
+          clearTimeout(timer)
+          reject(new Error("Maps script failed to load"))
+        },
+        { once: true },
+      )
       document.head.appendChild(script)
     }
-    script.addEventListener("load", () => void finish(), { once: true })
-    script.addEventListener("error", () => reject(new Error("Maps script failed to load")), { once: true })
-  }).catch((err) => {
-    loadPromise = null
-    throw err
   })
+    .then(async () => {
+      await google.maps.importLibrary("maps")
+      await google.maps.importLibrary("marker")
+    })
+    .catch((err) => {
+      loadPromise = null
+      throw err
+    })
   return loadPromise
 }
 
@@ -137,7 +154,12 @@ function useGoogleMaps(key: string | null): MapsStatus {
     let cancelled = false
     loadMaps(key).then(
       () => !cancelled && setStatus("ready"),
-      () => !cancelled && setStatus("error"),
+      (err) => {
+        // Swallowing this leaves "Map couldn't load" with no way to tell an
+        // unenabled API from a bad key from a network failure.
+        console.error("[court-finder] Google Maps failed to load:", err)
+        if (!cancelled) setStatus("error")
+      },
     )
     return () => {
       cancelled = true
@@ -403,8 +425,8 @@ export default function CourtFinder({
       </div>
 
       <p className="text-xs text-gray-500">
-        Courts come from Google Places, refreshed periodically (not live). Coverage is strong for named
-        facilities and clubs; some smaller park courts may not be listed yet.
+        Courts come from Google Places, refreshed periodically. SkyBall plays on any pickleball court
+        (44&prime; × 20&prime;) — including ones not listed here.
         {snapshotSource === "placeholder" && (
           <> This list is a starter set — the full Places snapshot lands with the next refresh.</>
         )}
