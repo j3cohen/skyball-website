@@ -60,3 +60,6 @@ CLAUDE.md
 
 # env backups written by scripts/local-db/env-mode.sh (contain real keys)
 .env.local.bak-*
+
+# court finder fetch checkpoint (resume file for scripts/fetch-courts.js)
+public/data/.courts-*.checkpoint.json
