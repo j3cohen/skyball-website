@@ -12,8 +12,7 @@ export const revalidate = 0
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { PlayEvents } from "@/components/play-events"
-import CourtFinder, { type Court, type CourtsFile } from "@/components/court-finder"
-import courtsFile from "@/public/data/courts-US.json"
+import CourtFinder from "@/components/court-finder"
 import { getAllTournaments } from "@/lib/tournaments"
 import type { Metadata } from "next"
 import { pageMetadata } from "@/lib/seo"
@@ -28,8 +27,6 @@ export const metadata: Metadata = pageMetadata({
 
 export default async function PlayPage() {
   const tournaments = await getAllTournaments()
-  const file = courtsFile as CourtsFile
-  const courts: Court[] = file.courts
   const browserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? null
 
   return (
@@ -54,7 +51,7 @@ export default async function PlayPage() {
               <p className="mx-auto mb-6 max-w-2xl text-center text-gray-600">
                 Search public pickleball courts across the US, then get directions.
               </p>
-              <CourtFinder courts={courts} browserKey={browserKey} snapshotSource={file.source} />
+              <CourtFinder courtsUrl="/data/courts-US.json" browserKey={browserKey} />
             </section>
 
             <section aria-labelledby="upcoming-events">

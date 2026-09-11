@@ -12,7 +12,7 @@
  * clubs; smaller park courts can be missing. Add cities below for denser
  * coverage anywhere.
  */
-const { mkdir, writeFile } = require("node:fs/promises")
+const { mkdir, readFile, rm, writeFile } = require("node:fs/promises")
 const path = require("node:path")
 
 // Major US cities/metro centers, roughly covering every state. This is a
@@ -25,26 +25,93 @@ const CITIES = [
 
 const CITIES_BY_COUNTRY = { US: CITIES }
 const COUNTRY_NAMES = { US: ["USA", "United States"] }
+// Places text search answers "pickleball courts near X" with anything it thinks
+// is related, which drags in shops that sell paddles, bars that host leagues,
+// and town offices. These primary types are never the court itself. Widening or
+// narrowing this list is the main lever on result quality.
+const BLOCKED_PLACE_TYPES = new Set([
+  // retail and food
+  "sporting_goods_store", "sportswear_store", "clothing_store", "store", "shopping_mall",
+  "market", "restaurant", "american_restaurant", "barbecue_restaurant", "food_court",
+  "bar", "sports_bar", "bar_and_grill", "beer_garden", "cafe",
+  // trade and offices
+  "general_contractor", "manufacturer", "supplier", "wholesaler", "corporate_office",
+  "business_center", "travel_agency", "real_estate_agency", "insurance_agency",
+  "local_government_office", "government_office", "city_hall", "courthouse",
+  // civic and transit
+  "library", "church", "zoo", "botanical_garden", "garden", "historical_landmark",
+  "visitor_center", "tourist_information_center", "bus_stop", "parking_lot",
+  "medical_center", "medical_clinic",
+  // residential
+  "mobile_home_park", "apartment_complex", "condominium_complex",
+])
+
+// Border-city searches pull in the other side of the border. Puerto Rico is a
+// US territory and stays.
+const ALLOWED_COUNTRY_TAILS = { US: new Set(["USA", "United States", "Puerto Rico"]) }
+const STATE_ALIASES = { "Puerto Rico": "PR" }
+
 const DEFAULT_RADIUS_M = 40000
 const ENDPOINT = "https://places.googleapis.com/v1/places:searchText"
 const FIELD_MASK =
   "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.types,places.businessStatus,places.googleMapsUri,places.websiteUri,places.nationalPhoneNumber,nextPageToken"
 
+const MAX_ATTEMPTS = 4
+const RETRY_BASE_MS = 1000
+
 let requestCount = 0
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// A full run is ~150 cities of billed requests. A single transient Google 5xx
+// must not throw all of that away, so retry with backoff. 401/403 are config
+// problems (key or API not enabled) — those abort immediately, since retrying
+// only burns time and money.
+async function placesRequest(apiKey, body, label) {
+  let lastErr
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    requestCount++
+    let res
+    try {
+      res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": FIELD_MASK,
+        },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      lastErr = err
+      if (attempt === MAX_ATTEMPTS) throw lastErr
+      await sleep(RETRY_BASE_MS * 2 ** (attempt - 1))
+      continue
+    }
+    if (res.ok) return res.json()
+
+    const text = await res.text()
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error(`Places auth/config error (${res.status}) for ${label}: ${text}`)
+      err.fatal = true
+      throw err
+    }
+    lastErr = new Error(`Places request failed (${res.status}) for ${label}: ${text}`)
+    if (attempt === MAX_ATTEMPTS || !(res.status === 429 || res.status >= 500)) throw lastErr
+    const wait = RETRY_BASE_MS * 2 ** (attempt - 1)
+    console.log(`  ${label}: ${res.status} from Places, retrying in ${wait}ms (attempt ${attempt}/${MAX_ATTEMPTS})`)
+    await sleep(wait)
+  }
+  throw lastErr
+}
 
 async function searchCity(apiKey, cc, city) {
   const out = []
   let pageToken
   do {
-    requestCount++
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": FIELD_MASK,
-      },
-      body: JSON.stringify({
+    const json = await placesRequest(
+      apiKey,
+      {
         textQuery: `pickleball courts near ${city.name}, ${city.state}`,
         regionCode: cc,
         pageSize: 20,
@@ -52,13 +119,12 @@ async function searchCity(apiKey, cc, city) {
           circle: { center: { latitude: city.lat, longitude: city.lon }, radius: city.radius ?? DEFAULT_RADIUS_M },
         },
         ...(pageToken ? { pageToken } : {}),
-      }),
-    })
-    if (!res.ok) throw new Error(`Places request failed (${res.status}) for ${city.name}: ${await res.text()}`)
-    const json = await res.json()
+      },
+      `${city.name}, ${city.state}`,
+    )
     out.push(...(json.places ?? []))
     pageToken = json.nextPageToken
-    if (pageToken) await new Promise((r) => setTimeout(r, 1500))
+    if (pageToken) await sleep(1500)
   } while (pageToken)
   return out
 }
@@ -97,18 +163,29 @@ function cityState(address, cc, fallback) {
 function toCourt(place, cc, city) {
   if (!place.id || !place.location || !place.displayName?.text || !place.formattedAddress) return null
   if (place.businessStatus && place.businessStatus !== "OPERATIONAL") return null
+  const primaryType = place.primaryType ?? place.types?.[0] ?? "unknown"
+  if (BLOCKED_PLACE_TYPES.has(primaryType)) return null
+  const tail = place.formattedAddress.split(",").pop().trim()
+  const allowed = ALLOWED_COUNTRY_TAILS[cc]
+  // A purely alphabetic tail is usually a country name ("Canada"); "TX 75001"
+  // is a US state+zip. A bare two-letter code is a state, not a country —
+  // Google drops the zip on some addresses ("New Orleans City Park, ..., LA").
+  const isStateCode = /^[A-Z]{2}$/.test(tail)
+  if (allowed && !isStateCode && /^[A-Za-z .]+$/.test(tail) && !allowed.has(tail)) return null
   const loc = cityState(place.formattedAddress, cc, city)
   const court = {
     id: place.id,
     name: place.displayName.text,
     address: place.formattedAddress,
-    lat: place.location.latitude,
-    lng: place.location.longitude,
+    // 5dp is ~1m — plenty for a pin, and full float precision is a large slice
+    // of a 6k-court payload.
+    lat: Math.round(place.location.latitude * 1e5) / 1e5,
+    lng: Math.round(place.location.longitude * 1e5) / 1e5,
     city: loc.city,
-    state: loc.state,
+    state: STATE_ALIASES[loc.state] ?? loc.state,
     kind: classifyKind(place),
     setting: classifySetting(place),
-    placeType: place.primaryType ?? place.types?.[0] ?? "unknown",
+    placeType: primaryType,
     googleMapsUri:
       place.googleMapsUri ??
       `https://www.google.com/maps/search/?api=1&query=${place.location.latitude},${place.location.longitude}`,
@@ -119,12 +196,60 @@ function toCourt(place, cc, city) {
   return court
 }
 
+// Progress is checkpointed after every city so an interrupted run resumes
+// instead of re-paying for cities it already fetched. Deleted on success.
+async function loadCheckpoint(checkpointPath) {
+  try {
+    const raw = JSON.parse(await readFile(checkpointPath, "utf8"))
+    return { done: new Set(raw.done ?? []), byId: new Map(Object.entries(raw.courts ?? {})) }
+  } catch {
+    return { done: new Set(), byId: new Map() }
+  }
+}
+
 async function fetchCountry(apiKey, cc, outDir) {
-  const cities = CITIES_BY_COUNTRY[cc]
-  if (!cities) throw new Error(`No city list for ${cc} — add one to CITIES_BY_COUNTRY`)
-  const byId = new Map()
+  const all = CITIES_BY_COUNTRY[cc]
+  if (!all) throw new Error(`No city list for ${cc} — add one to CITIES_BY_COUNTRY`)
+  await mkdir(outDir, { recursive: true })
+  const outPath = path.join(outDir, `courts-${cc}.json`)
+
+  // ONLY="New Orleans,Austin" limits the run to those cities; combine with
+  // MERGE=1 to fold the results into the existing file rather than replacing it.
+  const only = (process.env.ONLY ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+  const cities = only.length ? all.filter((c) => only.includes(c.name)) : all
+  if (only.length && !cities.length) throw new Error(`ONLY=${process.env.ONLY} matched no city in CITIES`)
+  if (only.length) console.log(`limiting run to ${cities.length} city/cities: ${cities.map((c) => c.name).join(", ")}`)
+
+  // A partial run must never share the full run's checkpoint.
+  const checkpointPath = path.join(outDir, `.courts-${cc}${only.length ? ".partial" : ""}.checkpoint.json`)
+
+  const { done, byId } = await loadCheckpoint(checkpointPath)
+  if (process.env.MERGE === "1") {
+    try {
+      const existing = JSON.parse(await readFile(outPath, "utf8"))
+      let seeded = 0
+      for (const c of existing.courts ?? []) if (!byId.has(c.id)) { byId.set(c.id, c); seeded++ }
+      console.log(`merging into ${existing.courts?.length ?? 0} existing courts (${seeded} seeded)`)
+    } catch {
+      console.log("MERGE=1 but no existing file to merge into — writing fresh")
+    }
+  }
+  if (done.size) console.log(`resuming ${cc}: ${done.size} cities already fetched, ${byId.size} courts so far`)
+
+  const failed = []
   for (const city of cities) {
-    const places = await searchCity(apiKey, cc, city)
+    const cityKey = `${city.name}, ${city.state}`
+    if (done.has(cityKey)) continue
+    let places
+    try {
+      places = await searchCity(apiKey, cc, city)
+    } catch (err) {
+      if (err.fatal) throw err
+      // One stubborn city is not worth losing the run over — note it and move on.
+      console.warn(`${cc} ${cityKey}: SKIPPED after ${MAX_ATTEMPTS} attempts — ${err.message.split("\n")[0]}`)
+      failed.push(cityKey)
+      continue
+    }
     let added = 0
     for (const p of places) {
       const court = toCourt(p, cc, city)
@@ -133,14 +258,29 @@ async function fetchCountry(apiKey, cc, outDir) {
         added++
       }
     }
-    console.log(`${cc} ${city.name}, ${city.state}: ${places.length} results, ${added} new`)
+    done.add(cityKey)
+    console.log(`${cc} ${cityKey}: ${places.length} results, ${added} new`)
+    await writeFile(
+      checkpointPath,
+      JSON.stringify({ done: [...done], courts: Object.fromEntries(byId) }),
+    )
   }
-  const courts = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+
+  // Google names start with quotes, emoji and stray punctuation often enough
+  // that a raw sort buries the ordinary courts under them.
+  const sortKey = (n) => n.replace(/^[^\p{L}\p{N}]+/u, "").toLowerCase()
+  const courts = [...byId.values()].sort(
+    (a, b) => sortKey(a.name).localeCompare(sortKey(b.name)) || a.name.localeCompare(b.name),
+  )
   const file = { generatedAt: new Date().toISOString(), source: "google-places", count: courts.length, courts }
-  await mkdir(outDir, { recursive: true })
-  const outPath = path.join(outDir, `courts-${cc}.json`)
   await writeFile(outPath, JSON.stringify(file, null, 2) + "\n")
   console.log(`wrote ${outPath} (${courts.length} courts)`)
+  if (failed.length) {
+    console.warn(`${failed.length} city/cities failed and were skipped: ${failed.join("; ")}`)
+    console.warn(`re-run to retry just those — the rest is checkpointed.`)
+  } else {
+    await rm(checkpointPath, { force: true })
+  }
 }
 
 async function main() {

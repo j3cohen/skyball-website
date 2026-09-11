@@ -227,14 +227,14 @@ function distanceMiles(a: LatLng, b: LatLng): number {
 const formatMiles = (mi: number) => (mi < 10 ? `${mi.toFixed(1)} mi` : `${Math.round(mi)} mi`)
 
 // ---- Component ------------------------------------------------------------
+const NO_COURTS: Court[] = []
+
 export default function CourtFinder({
-  courts,
+  courtsUrl,
   browserKey,
-  snapshotSource,
 }: {
-  courts: Court[]
+  courtsUrl: string
   browserKey: string | null
-  snapshotSource: "google-places" | "placeholder"
 }) {
   const [query, setQuery] = useState("")
   const [kinds, setKinds] = useState<Set<CourtKind>>(() => new Set(KINDS))
@@ -242,6 +242,32 @@ export default function CourtFinder({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const isDesktop = useIsDesktop()
   const { coords, status: geoStatus, locate } = useUserLocation()
+
+  // The snapshot is a few thousand courts — far too much to inline into the
+  // page HTML, so it loads as a static asset the CDN can compress and cache.
+  const [file, setFile] = useState<CourtsFile | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    fetch(courtsUrl)
+      .then((r) => {
+        if (!r.ok) throw new Error(`courts ${r.status}`)
+        return r.json()
+      })
+      .then((f: CourtsFile) => {
+        if (!cancelled) setFile(f)
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [courtsUrl])
+
+  const courts = file?.courts ?? NO_COURTS
+  const snapshotSource = file?.source ?? "google-places"
+  const loading = !file && !loadFailed
 
   // Only offer a kind filter the data can actually satisfy — with no partner
   // facilities in the snapshot, a "SkyBall facility" chip is a dead control.
@@ -302,9 +328,13 @@ export default function CourtFinder({
           </button>
         )}
         <p className="text-sm text-gray-600" aria-live="polite">
-          {filtered.length === courts.length
-            ? `${courts.length} courts loaded`
-            : `${filtered.length} of ${courts.length} courts`}
+          {loading
+            ? "Loading courts…"
+            : loadFailed
+              ? "Couldn't load the court list — please refresh."
+              : filtered.length === courts.length
+                ? `${courts.length.toLocaleString()} courts loaded`
+                : `${filtered.length.toLocaleString()} of ${courts.length.toLocaleString()} courts`}
           {coords && filtered.length > 0 && <span className="text-gray-400"> · nearest first</span>}
         </p>
       </div>
@@ -351,13 +381,25 @@ export default function CourtFinder({
           aria-label={selected ? "Court details" : "Court list"}
         >
           {detail ?? (
-            <CourtList courts={filtered} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} />
+            <CourtList
+              courts={filtered}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              userLocation={coords}
+              loading={loading}
+            />
           )}
         </aside>
       </div>
 
       <div className="overflow-hidden rounded-lg bg-[#01014c] text-white lg:hidden">
-        <CourtList courts={filtered} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} />
+        <CourtList
+          courts={filtered}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          userLocation={coords}
+          loading={loading}
+        />
       </div>
 
       <p className="text-xs text-gray-500">
@@ -425,12 +467,17 @@ function CourtList({
   selectedId,
   onSelect,
   userLocation,
+  loading,
 }: {
   courts: Court[]
   selectedId: string | null
   onSelect: (id: string) => void
   userLocation: LatLng | null
+  loading: boolean
 }) {
+  if (loading) {
+    return <div className="p-6 text-sm text-white/70">Loading courts…</div>
+  }
   if (courts.length === 0) {
     return <div className="p-6 text-sm text-white/70">No courts match — try a different search or turn a filter back on.</div>
   }
