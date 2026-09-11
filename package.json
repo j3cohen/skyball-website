@@ -9,6 +9,8 @@
     "lint": "next lint",
     "admin": "npm run dev --workspace=admin",
     "courts:fetch": "node --env-file=.env.local scripts/fetch-courts.js",
+    "courts:fetch:osm": "node scripts/fetch-courts-osm.js",
+    "courts:build": "node scripts/build-courts.js",
     "test": "vitest run tests/unit",
     "test:integration": "LOCAL_SUPABASE=1 vitest run tests/integration",
     "test:all": "LOCAL_SUPABASE=1 vitest run"

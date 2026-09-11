@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Court finder data fetch (legacy site) — regenerates public/data/courts-US.json
- * from Google Places API (New) text search. Plain-JS copy of the new site's
+ * Court finder data fetch (legacy site) — regenerates
+ * public/data/courts-places-US.json from Google Places API (New) text search.
+ * Run `npm run courts:build` afterwards to merge it with the OSM source into
+ * the courts-US.json the site actually serves. Plain-JS copy of the new site's
  * apps/site/scripts/fetch-courts.ts.
  *
  * Run:   npm run courts:fetch            (reads .env.local via --env-file)
@@ -211,7 +213,7 @@ async function fetchCountry(apiKey, cc, outDir) {
   const all = CITIES_BY_COUNTRY[cc]
   if (!all) throw new Error(`No city list for ${cc} — add one to CITIES_BY_COUNTRY`)
   await mkdir(outDir, { recursive: true })
-  const outPath = path.join(outDir, `courts-${cc}.json`)
+  const outPath = path.join(outDir, `courts-places-${cc}.json`)
 
   // ONLY="New Orleans,Austin" limits the run to those cities; combine with
   // MERGE=1 to fold the results into the existing file rather than replacing it.
