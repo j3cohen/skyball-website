@@ -55,6 +55,9 @@ function tryParseJson<T>(raw: string | undefined | null, fallback: T): T {
 export async function handleSessionCompleted(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
   const meta = session.metadata ?? {};
+    // Sessions created by skyballglobal.com (shared live account until the cutover)
+    // belong to the new site's webhook; never upsert an order for them here.
+    if (meta.origin === "skyballglobal") return;
 
   // Certification purchases bypass the default orders upsert entirely:
   // cert-only packs write NO orders row (revenue lives in cert_purchases),

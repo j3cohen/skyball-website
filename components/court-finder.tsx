@@ -17,11 +17,12 @@ export type CourtSetting = "indoor" | "outdoor" | "unknown"
 export type Court = {
   id: string
   name: string
-  address: string
+  /** Absent on many OSM park courts — the build strips empty values. */
+  address?: string
   lat: number
   lng: number
-  city: string
-  state: string
+  city?: string
+  state?: string
   kind: CourtKind
   setting: CourtSetting
   placeType: string
@@ -29,6 +30,8 @@ export type Court = {
   website?: string
   phone?: string
   source: string
+  /** How many individual courts the venue holds, when the source knows. */
+  courtCount?: number
 }
 
 export type CourtsFile = {
@@ -41,6 +44,11 @@ export type CourtsFile = {
 const NAVY = "#01014c"
 const CLUSTER_THRESHOLD = 200
 const NEARBY_FIT_COUNT = 5
+// ~15k courts nationally. Building a marker for every one locks the tab up, and
+// no one can read 15k list rows, so both are bounded: the map draws what is in
+// view, the list shows the closest/first slice.
+const MAX_MARKERS = 800
+const LIST_LIMIT = 200
 const KINDS: CourtKind[] = ["public", "private", "facility"]
 const SETTINGS: CourtSetting[] = ["indoor", "outdoor"]
 
@@ -69,7 +77,9 @@ const directionsUrl = (c: Court) =>
   `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
 
 const suggestMailto = (c: Court) =>
-  `mailto:play@skyball.us?subject=${encodeURIComponent(`Court demo suggestion: ${c.name}`)}&body=${encodeURIComponent(c.address)}`
+  `mailto:play@skyball.us?subject=${encodeURIComponent(`Court demo suggestion: ${c.name}`)}&body=${encodeURIComponent(
+    c.address ?? [c.name, c.city, c.state].filter(Boolean).join(", "),
+  )}`
 
 function humanizePlaceType(placeType: string): string {
   const s = placeType.replace(/_/g, " ").trim()
@@ -425,8 +435,17 @@ export default function CourtFinder({
       </div>
 
       <p className="text-xs text-gray-500">
-        Courts come from Google Places, refreshed periodically. SkyBall plays on any pickleball court
-        (44&prime; × 20&prime;) — including ones not listed here.
+        Courts come from Google Places and OpenStreetMap, refreshed periodically. SkyBall plays on any
+        pickleball court (44&prime; × 20&prime;) — including ones not listed here. Map data ©{" "}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-gray-700"
+        >
+          OpenStreetMap
+        </a>{" "}
+        contributors.
         {snapshotSource === "placeholder" && (
           <> This list is a starter set — the full Places snapshot lands with the next refresh.</>
         )}
@@ -503,9 +522,10 @@ function CourtList({
   if (courts.length === 0) {
     return <div className="p-6 text-sm text-white/70">No courts match — try a different search or turn a filter back on.</div>
   }
+  const shown = courts.slice(0, LIST_LIMIT)
   return (
     <ul className="max-h-[75vh] divide-y divide-white/10 overflow-y-auto">
-      {courts.map((c) => (
+      {shown.map((c) => (
         <li key={c.id}>
           <button
             type="button"
@@ -536,6 +556,12 @@ function CourtList({
           </button>
         </li>
       ))}
+      {courts.length > shown.length && (
+        <li className="px-4 py-3 text-xs text-white/50">
+          Showing the {userLocation ? "closest" : "first"} {shown.length.toLocaleString()} of{" "}
+          {courts.length.toLocaleString()} — search a city, or use Near me, to narrow it down.
+        </li>
+      )}
     </ul>
   )
 }
@@ -551,7 +577,11 @@ function CourtDetail({ court, onClose }: { court: Court; onClose: () => void }) 
           <h2 className="mt-1 text-xl font-bold leading-tight">{court.name}</h2>
           <p className="mt-1 flex items-start gap-1.5 text-sm text-white/70">
             <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{court.address}</span>
+            <span>
+              {court.address ||
+                [court.city, court.state].filter(Boolean).join(", ") ||
+                "Exact address not listed — use directions"}
+            </span>
           </p>
         </div>
         <button
@@ -568,6 +598,7 @@ function CourtDetail({ court, onClose }: { court: Court; onClose: () => void }) 
         <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">Type</p>
         <p className="mt-1 text-sm">
           {SETTING_LABELS[court.setting]} · {humanizePlaceType(court.placeType)}
+          {court.courtCount ? ` · ${court.courtCount} court${court.courtCount === 1 ? "" : "s"}` : ""}
         </p>
         {(court.website || court.phone) && (
           <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -663,6 +694,40 @@ function CourtMap({
     })
   }, [status])
 
+  // Track the visible region so markers can be scoped to it.
+  const [bounds, setBounds] = useState<google.maps.LatLngBounds | null>(null)
+  useEffect(() => {
+    const map = mapRef.current
+    if (status !== "ready" || !map) return
+    const listener = map.addListener("idle", () => setBounds(map.getBounds() ?? null))
+    return () => listener.remove()
+  }, [status])
+
+  // What actually gets a pin: courts in view, thinned to MAX_MARKERS nearest
+  // the centre so the thinning is predictable rather than arbitrary. The
+  // selected court is always included, even when panned off screen.
+  const visible = useMemo(() => {
+    if (status !== "ready") return []
+    let inView = courts
+    if (bounds) {
+      inView = courts.filter((c) => bounds.contains(new google.maps.LatLng(c.lat, c.lng)))
+    }
+    if (inView.length > MAX_MARKERS) {
+      const c0 = bounds?.getCenter()
+      const centre = c0 ? { lat: c0.lat(), lng: c0.lng() } : { lat: 39.5, lng: -98.35 }
+      inView = inView
+        .map((c) => ({ c, d: distanceMiles(centre, { lat: c.lat, lng: c.lng }) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, MAX_MARKERS)
+        .map(({ c }) => c)
+    }
+    if (selectedId && !inView.some((c) => c.id === selectedId)) {
+      const sel = courts.find((c) => c.id === selectedId)
+      if (sel) inView = [...inView, sel]
+    }
+    return inView
+  }, [courts, bounds, status, selectedId])
+
   useEffect(() => {
     const map = mapRef.current
     if (status !== "ready" || !map) return
@@ -672,7 +737,7 @@ function CourtMap({
     markersRef.current.clear()
     clustererRef.current?.clearMarkers()
 
-    const markers = courts.map((c) => {
+    const markers = visible.map((c) => {
       const marker = new google.maps.Marker({
         position: { lat: c.lat, lng: c.lng },
         title: c.name,
@@ -684,7 +749,7 @@ function CourtMap({
       return marker
     })
 
-    if (courts.length > CLUSTER_THRESHOLD) {
+    if (visible.length > CLUSTER_THRESHOLD) {
       void import("@googlemaps/markerclusterer").then(({ MarkerClusterer }) => {
         if (cancelled) return
         clustererRef.current ??= new MarkerClusterer({ map })
@@ -696,6 +761,18 @@ function CourtMap({
       markers.forEach((m) => m.setMap(map))
     }
 
+    return () => {
+      cancelled = true
+    }
+    // selectedId only changes icons, handled below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, visible])
+
+  // Framing is a separate concern from drawing pins: it depends on the whole
+  // filtered set, not just what is currently on screen.
+  useEffect(() => {
+    const map = mapRef.current
+    if (status !== "ready" || !map) return
     if (courts.length > 0 && !selectedId) {
       const bounds = new google.maps.LatLngBounds()
       if (userLocation) {
@@ -715,9 +792,6 @@ function CourtMap({
           if ((map.getZoom() ?? 0) > 14) map.setZoom(14)
         })
       }
-    }
-    return () => {
-      cancelled = true
     }
     // selectedId is applied by the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
