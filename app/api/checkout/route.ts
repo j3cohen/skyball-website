@@ -7,7 +7,7 @@ import { resolveOrigin } from "@/lib/server/requestOrigin";
 type ProductKind = "base" | "addon" | "bundle";
 
 type GripColor = "white" | "blue" | "orange" | "pink" | "random";
-type BallColor = "blue" | "orange";
+type BallColor = "orange";
 type CrewneckSize = "xs" | "s" | "m" | "l" | "xl" | "xxl";
 
 type CheckoutItemMeta = {
@@ -65,7 +65,7 @@ function isGripColor(v: unknown): v is GripColor {
 }
 
 function isBallColor(v: unknown): v is BallColor {
-  return v === "blue" || v === "orange";
+  return v === "orange";
 }
 
 function isCrewneckSize(v: unknown): v is CrewneckSize {
@@ -164,7 +164,9 @@ function isGripSlug(slug: string): boolean {
   );
 }
 
-/** Products that require a ball color selection: base or bundle, not a crewneck. */
+/** Products that ship with balls: base or bundle, not a crewneck or racket.
+ *  Only orange is sold now, so the customer no longer picks — checkout stamps
+ *  "orange" on these lines so fulfillment sheets / order_data stay explicit. */
 function requiresBallColor(slug: string, kind: ProductKind): boolean {
   if (kind !== "base" && kind !== "bundle") return false;
   if (slug.toLowerCase().includes("crewneck")) return false;
@@ -405,8 +407,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4) Ball color validation
-    // One color per cart line item (regardless of how many balls are in the pack).
+    // 4) Ball color — fixed to orange (no customer choice since 2026-10).
+    // Any ballColors the client still sends (old carts) are ignored.
     const ballSelections: BallSelectionForStripe[] = [];
 
     for (const item of body.items) {
@@ -414,25 +416,11 @@ export async function POST(request: Request) {
       if (!prod) continue;
       if (!requiresBallColor(prod.slug, prod.kind)) continue;
 
-      const picked = item.meta?.ballColors ?? [];
-      const validColors = picked.filter(isBallColor);
-
-      // Exactly one color must be provided per line item
-      if (validColors.length !== 1) {
-        return NextResponse.json(
-          {
-            error:
-              "Please select a ball color (Blue or Orange) for each SkyBall product in your cart.",
-          },
-          { status: 400 }
-        );
-      }
-
       ballSelections.push({
         priceRowId: item.priceRowId,
         slug: prod.slug,
         qty: item.qty,
-        color: validColors[0],
+        color: "orange",
       });
     }
 

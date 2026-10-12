@@ -3,17 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
-import { BallColorPicker } from "@/components/ball-color-picker";
 import { CrewneckSizePicker } from "@/components/crewneck-size-picker";
-import type { BallColor, CrewneckSize } from "@/lib/cart";
+import type { CrewneckSize } from "@/lib/cart";
 
 type Props = {
   priceRowId: string;
   qty?: number;
   label?: string;
   className?: string;
-  /** Pass the product slug + kind so we can decide whether to show the color picker */
+  /** Product slug decides whether a size picker is needed (crewneck). */
   productSlug?: string;
+  /** Kept for call-site compatibility; no longer affects the button. */
   productKind?: "base" | "addon" | "bundle";
 };
 
@@ -45,18 +45,6 @@ function CloseIcon() {
   );
 }
 
-/** Returns true when the product requires a ball color selection. */
-function requiresBallColorSelection(
-  slug: string | undefined,
-  kind: "base" | "addon" | "bundle" | undefined
-): boolean {
-  if (!slug || !kind) return false;
-  if (kind !== "base" && kind !== "bundle") return false;
-  if (slug.toLowerCase().includes("crewneck")) return false;
-  if (slug.toLowerCase().includes("racket")) return false;
-  return true;
-}
-
 function isCrewneckSlug(slug: string | undefined): boolean {
   return slug === "skyball-crewneck-1";
 }
@@ -68,25 +56,16 @@ export default function AddToCart({
   label = "Add to cart",
   className,
   productSlug,
-  productKind,
 }: Props) {
   const { addItem, addItemWithMeta } = useCart();
   const [added, setAdded] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const needsColorPick = useMemo(
-    () => requiresBallColorSelection(productSlug, productKind),
-    [productSlug, productKind]
-  );
-
+  // Ball products add straight to the cart: only orange balls are sold, so
+  // the old "choose your ball color" step is gone (checkout stamps orange).
   const needsSizePick = useMemo(
     () => isCrewneckSlug(productSlug),
     [productSlug]
-  );
-
-  const requiredColorCount = useMemo(
-    () => (needsColorPick && productSlug ? 1 * qty : 0),
-    [needsColorPick, productSlug, qty]
   );
 
   useEffect(() => {
@@ -109,12 +88,6 @@ export default function AddToCart({
 
   function handleSimpleAdd() {
     addItem(priceRowId, qty);
-    setAdded(true);
-  }
-
-  function handleColorConfirm(colors: BallColor[]) {
-    addItemWithMeta(priceRowId, { ballColors: colors }, qty);
-    setOpen(false);
     setAdded(true);
   }
 
@@ -142,7 +115,7 @@ export default function AddToCart({
     </span>
   );
 
-  if (!needsColorPick && !needsSizePick) {
+  if (!needsSizePick) {
     return (
       <Button
         className={className}
@@ -183,22 +156,7 @@ export default function AddToCart({
               <CloseIcon />
             </button>
 
-            {needsSizePick ? (
-              <CrewneckSizePicker onConfirm={handleSizeConfirm} />
-            ) : (
-              <>
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">Choose your ball color</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Pick the color of SkyBall™ you&apos;d like.
-                  </p>
-                </div>
-                <BallColorPicker
-                  requiredCount={requiredColorCount}
-                  onConfirm={handleColorConfirm}
-                />
-              </>
-            )}
+            <CrewneckSizePicker onConfirm={handleSizeConfirm} />
 
             <Button
               type="button"

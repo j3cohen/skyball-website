@@ -8,10 +8,9 @@ import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart-provider";
 import { GripColorPicker } from "@/components/grip-color-picker";
-import { BallColorPicker } from "@/components/ball-color-picker";
 import { getWebsiteShopClient } from "@/lib/websiteShopClient";
 import { cartLineKey } from "@/lib/cart-line-key";
-import type { CartItemMeta, GripColor, BallColor } from "@/lib/cart";
+import type { CartItemMeta, GripColor } from "@/lib/cart";
 
 
 
@@ -306,11 +305,6 @@ export default function CartPage() {
                               Grips: {line.meta.gripColors.join(", ")}
                             </div>
                           ) : null}
-                          {line.meta?.ballColors?.length ? (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Ball color: {line.meta.ballColors.join(", ")}
-                            </div>
-                          ) : null}
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -336,7 +330,7 @@ export default function CartPage() {
                             {formatMoney(line.unit_amount * line.qty, line.currency)}
                           </div>
 
-                          {(line.meta?.gripColors || line.meta?.ballColors) && (
+                          {line.meta?.gripColors && (
                             <Button variant="outline" onClick={() => setEditLine(line)}>
                               Edit
                             </Button>
@@ -409,22 +403,6 @@ export default function CartPage() {
                   setEditLine(null);
                 }}
               />
-            ) : editLine.meta?.ballColors ? (
-              <>
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">Edit ball color</h2>
-                  <p className="text-sm text-gray-500 mt-1">Choose the color of SkyBall™ you&apos;d like.</p>
-                </div>
-                <BallColorPicker
-                  requiredCount={editLine.meta.ballColors.length || 1}
-                  initialColors={editLine.meta.ballColors as BallColor[]}
-                  confirmLabel="Save ball color"
-                  onConfirm={(colors) => {
-                    updateItemMeta(editLine.priceRowId, editLine.meta, { ...editLine.meta, ballColors: colors });
-                    setEditLine(null);
-                  }}
-                />
-              </>
             ) : null}
 
             <Button type="button" variant="ghost" className="w-full mt-2" onClick={() => setEditLine(null)}>
