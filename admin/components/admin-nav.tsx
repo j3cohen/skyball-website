@@ -103,6 +103,7 @@ function NavLinks({
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
       <NavLink href="/fulfillment" label="Fulfillment" badge={pendingCount} mobile={mobile} />
+      <NavLink href="/products" label="Products" mobile={mobile} />
       <NavLink href="/revenue" label="Revenue" mobile={mobile} />
       <NavLink href="/sales" label="Sales Data" mobile={mobile} />
       <NavLink href="/certification" label="Certification" mobile={mobile} />
