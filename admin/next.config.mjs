@@ -10,7 +10,9 @@ const cspDirectives = [
   // Production builds contain no eval, so the prod policy stays strict.
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Product-image previews on /products come straight from the S3 bucket
+  // (and the old Vercel blob host) — the same hosts the site's next/image allows.
+  "img-src 'self' data: blob: https://jbcpublicbucket.s3.us-east-1.amazonaws.com https://hebbkx1anhila5yf.public.blob.vercel-storage.com",
   "font-src 'self'",
   // Dev also allows the HMR socket and a LOCAL Supabase stack. Both
   // localhost and 127.0.0.1 are listed: CSP matches hosts literally, so
