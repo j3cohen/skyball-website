@@ -1,7 +1,9 @@
 // lib/cart.ts
 export const CART_STORAGE_KEY = "skyball_cart_v1";
 
-export type BallColor = "blue" | "orange";
+// Only orange balls are sold (blue retired 2026-10). Kept as a type so
+// legacy cart meta still parses; "blue" is dropped by normalizeMeta.
+export type BallColor = "orange";
 export type GripColor =
   | "white"
   | "blue"
@@ -37,7 +39,7 @@ function isGripColor(v: unknown): v is GripColor {
 }
 
 function isBallColor(v: unknown): v is BallColor {
-  return v === "blue" || v === "orange";
+  return v === "orange";
 }
 
 function isCrewneckSize(v: unknown): v is CrewneckSize {
