@@ -2,6 +2,7 @@
 // All tournament/event data now comes from the mobile Supabase project.
 import { getMobileSupabase } from "@/lib/server/supabaseMobile"
 import type { Event as StaticEvent } from "@/data/events"
+import { isTestEvent } from "@/lib/test-events"
 
 // Row shape from the mobile DB tournaments table
 export type TournamentRow = {
@@ -80,10 +81,14 @@ export async function getAllTournaments(): Promise<StaticEvent[]> {
     (counts ?? []).map((c) => [(c as { id: string }).id, (c as { current_participants: number }).current_participants])
   )
 
-  return (data ?? []).map((row) => {
-    const r = row as TournamentRow
-    return rowToEvent({ ...r, current_participants: countById.get(r.id) ?? 0 })
-  })
+  // TEST-prefixed rehearsals (host dry runs on the live database) stay off
+  // the public lists; /play/[id] still opens by direct link.
+  return (data ?? [])
+    .filter((row) => !isTestEvent((row as TournamentRow).name))
+    .map((row) => {
+      const r = row as TournamentRow
+      return rowToEvent({ ...r, current_participants: countById.get(r.id) ?? 0 })
+    })
 }
 
 /** Fetch a single tournament by ID */
