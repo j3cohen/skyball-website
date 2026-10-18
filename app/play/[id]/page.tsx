@@ -5,6 +5,7 @@ export const revalidate = 0
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { getTournamentById, getTournamentSummary } from "@/lib/tournaments"
+import { isEventPast } from "@/lib/event-dates"
 import MatchResultsSection from "@/components/match-results-section"
 import { getEventById } from "@/data/events"
 import { notFound } from "next/navigation"
@@ -44,8 +45,14 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const staticEvent = getEventById(params.id)
 
-  // Determine past/upcoming
-  const isPastEvent = event.start_at ? new Date(event.start_at) < new Date() : event.isPast === true
+  // Determine past/upcoming. DB events carry a DATE in date_actual: the event is
+  // past only once that calendar day has ended (see lib/event-dates). Static
+  // events fall back to their start_at instant / isPast flag.
+  const isPastEvent = event.date_actual
+    ? isEventPast(event.date_actual)
+    : event.start_at
+      ? isEventPast(event.start_at)
+      : event.isPast === true
 
   const summary = await getTournamentSummary(params.id)
 
