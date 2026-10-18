@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { getMobileSupabaseClient } from "@/lib/supabaseMobileClient"
 import { isTestEvent } from "@/lib/test-events"
+import { isEventPast } from "@/lib/event-dates"
 import RegistrationStatus from "./registration-status"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import Link from "next/link"
@@ -36,14 +37,11 @@ export default function UpcomingTournaments() {
         setError(error.message)
         setTournaments([])
       } else if (data) {
-        const today = new Date()
         const upcoming = (data as Tournament[])
           // TEST-prefixed rehearsals stay off the public homepage.
           .filter((t) => !isTestEvent(t.name))
-          .filter((t) => {
-            const parsed = new Date(t.start_date)
-            return !isNaN(parsed.getTime()) && parsed >= today
-          })
+          // start_date is a DATE: keep day-of events listed until the day ends.
+          .filter((t) => !isEventPast(t.start_date))
           .sort((a, b) =>
             new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
           )

@@ -3,6 +3,7 @@
 import { getMobileSupabase } from "@/lib/server/supabaseMobile"
 import type { Event as StaticEvent } from "@/data/events"
 import { isTestEvent } from "@/lib/test-events"
+import { formatEventDate, isEventPast } from "@/lib/event-dates"
 
 // Row shape from the mobile DB tournaments table
 export type TournamentRow = {
@@ -29,14 +30,13 @@ export type TournamentRow = {
 
 // Map a mobile DB row to the StaticEvent shape the rest of the website uses
 function rowToEvent(row: TournamentRow): StaticEvent {
-  const isPast = new Date(row.start_date) < new Date()
+  // start_date is a DATE: past only once that calendar day has ended (see lib/event-dates).
+  const isPast = isEventPast(row.start_date)
   return {
     id:                   row.id,
     type:                 row.event_type === "open_play" ? "open-play" : "tournament",
     name:                 row.name,
-    date:                 new Date(row.start_date).toLocaleDateString("en-US", {
-                            month: "long", day: "numeric", year: "numeric",
-                          }),
+    date:                 formatEventDate(row.start_date),
     time:                 row.time_string ?? "",
     location:             row.location ?? "",
     description:          row.description ?? "",
