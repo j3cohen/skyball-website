@@ -51,15 +51,69 @@ In Google Cloud Console → *APIs & Services*, enable **Places API (New)** and
 Finally set a **budget alert** in Google Cloud Billing. Restrictions stop abuse
 from other sites; a budget alert is what tells you if something slips through.
 
-## Refreshing the court data
+## The two data sources
+
+Courts come from two places, fetched independently and merged:
+
+| File | Source | Command | Cost |
+| --- | --- | --- | --- |
+| `courts-places-US.json` | Google Places API (New) | `npm run courts:fetch` | billed calls |
+| `courts-osm-US.json` | OpenStreetMap (Overpass) | `npm run courts:fetch:osm` | free |
+| `courts-US.json` | **merge of both — what `/play` serves** | `npm run courts:build` | free |
+
+`courts-US.json` is a **derived file**. Don't hand-edit it; change a source and
+re-run `courts:build`.
+
+They see genuinely different things. Places knows *named venues* and gives you
+addresses and phone numbers. OSM knows *individual court polygons*, including
+the unnamed park courts Places has no listing for at all — in the NYC area OSM
+has 239 court elements where one Places query could only ever return 60.
+
+Because OSM tags each court separately, the OSM script clusters anything within
+90 m into one venue and records `courtCount`, otherwise a six-court park becomes
+six stacked pins. Roughly two thirds of OSM venues have no name of their own, so
+the script borrows the name of the smallest enclosing (or nearest) named park or
+sports centre — "Pickleball courts — Carl Schurz Park". The rest stay
+"Pickleball courts", and many have no street address; the detail panel handles
+that and directions still work from the coordinates.
+
+`courts:build` drops an OSM venue when a Places court sits within 150 m, keeping
+the richer Places record but borrowing OSM's court count.
+
+**OSM data is ODbL, which requires attribution wherever it appears.** The
+credit line under the map is not optional — leave it in place.
+
+### Full refresh
 
 ```bash
-npm run courts:fetch      # reads GOOGLE_MAPS_API_KEY from .env.local
+npm run courts:fetch        # Places  (needs GOOGLE_MAPS_API_KEY)
+npm run courts:fetch:osm    # OpenStreetMap (no key)
+npm run courts:build        # merge -> courts-US.json
 ```
 
-This text-searches Places for pickleball courts around ~150 US cities (~345
-billed requests, ~15 minutes) and rewrites `public/data/courts-US.json`. Commit
-the regenerated file and deploy — that is what publishes new courts.
+Then commit the regenerated files and deploy.
+
+### Places-only refresh
+
+```bash
+npm run courts:fetch && npm run courts:build
+```
+
+The Places fetch text-searches for pickleball courts around ~150 US cities
+(~345 billed requests, ~15 minutes).
+
+**Places Text Search caps every query at 60 results** (3 pages of 20), and on
+the last full run 67 of 147 cities hit that ceiling exactly — "New York, NY"
+returned 60 for the whole metro. So the Places count reflects our query design,
+not Google's coverage. To get more from Places you need *more queries*: tile a
+metro into smaller circles, or add query phrasings, or add suburbs to `CITIES`.
+Each query gets its own 60-result budget.
+
+Billing shape, as of the 2026 pricing model: Text Search is a **Pro** SKU with
+5,000 free calls/month, then ~$32 per 1,000. At 345 calls a monthly refresh is
+comfortably free. Separately, every `/play` view that renders the map is a
+**Dynamic Maps** load — 10,000/month free, then $7 per 1,000 — so visitor
+traffic, not data refreshes, is the cost to watch.
 
 **Re-run it at least every 30 days.** That is not only for freshness: Google's
 terms allow caching Places content only temporarily, with Place IDs the one
@@ -83,6 +137,24 @@ Coverage is "named places Google knows about": strong for facilities, clubs, and
 signposted park courts, thinner for small unnamed neighbourhood courts. To
 densify a region, add entries to the `CITIES` array in `scripts/fetch-courts.js`
 (`{ name, state, lat, lon }`) and re-run.
+
+## Why the map and list are capped
+
+At ~15,000 venues, drawing a marker for every court freezes the tab and no one
+reads 15,000 list rows, so both are bounded in `components/court-finder.tsx`:
+
+- `MAX_MARKERS` (800) — the map only builds markers for courts inside the
+  current viewport, re-computed when the map settles. Over the cap it keeps
+  those nearest the centre, so thinning is predictable rather than arbitrary.
+  The selected court always keeps its pin, even when panned off screen.
+- `LIST_LIMIT` (200) — the panel renders a slice and says what it is hiding
+  ("Showing the closest 200 of 14,856"). With a visitor location the slice is
+  the 200 nearest, which is the useful 200.
+- `CLUSTER_THRESHOLD` (200) — above this many *visible* markers, clustering
+  loads and takes over.
+
+Filtering and search always run over the full dataset; only rendering is
+bounded. Raising these is a one-line change, but test on a phone first.
 
 ## Data quality
 
