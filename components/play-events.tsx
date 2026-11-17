@@ -21,9 +21,11 @@ type TabValue = "open-play" | "tournaments"
 
 interface PlayEventProps {
   events: Event[]
+  /** Rendered under the event list, in the same column, on both tabs. */
+  belowList?: React.ReactNode
 }
 
-export function PlayEvents({ events }: PlayEventProps) {
+export function PlayEvents({ events, belowList }: PlayEventProps) {
   const searchParams = useSearchParams()
 
   // Get the tab from URL parameter or default to "tournaments"
@@ -171,7 +173,7 @@ export function PlayEvents({ events }: PlayEventProps) {
             </div>
 
             {/* Left column: Events list - Moved to bottom on mobile */}
-            <div className="flex-1 md:order-1 order-2">
+            <div className="min-w-0 flex-1 md:order-1 order-2">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Open Play Sessions</h2>
 
@@ -193,7 +195,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                       className="p-4 border rounded-lg bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm transition-all"
                     >
                       <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <h3 className="text-lg font-semibold">{event.name}</h3>
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
@@ -277,7 +279,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                     {pastOpenPlayEvents.map((event) => (
                       <div key={event.id} className="p-4 border rounded-lg bg-gray-50 border-gray-200">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
-                          <div className="flex-1">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-start gap-2">
                               <h3 className="text-lg font-semibold">{event.name}</h3>
                               <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
@@ -319,6 +321,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                   </div>
                 </>
               )}
+              {belowList && <div className="mt-10">{belowList}</div>}
             </div>
           </div>
         </section>
@@ -330,7 +333,7 @@ export function PlayEvents({ events }: PlayEventProps) {
           {/* Tournaments section */}
           <div className="flex flex-col md:flex-row gap-6 mb-6">
             {/* Left column: Events list - Keep original order for tournaments */}
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Tournaments</h2>
 
@@ -355,7 +358,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                     } transition-all`
                     const cardInner = (
                       <div className="flex flex-col md:flex-row md:items-start gap-4">
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-start gap-2 flex-wrap">
                             <h3 className="text-lg font-semibold">{event.name}</h3>
 
@@ -506,6 +509,7 @@ export function PlayEvents({ events }: PlayEventProps) {
                   </p>
                 </div>
               )}
+              {belowList && <div className="mt-10">{belowList}</div>}
             </div>
 
             {/* Right column: Info and signup */}

@@ -1,7 +1,7 @@
 // app/play/page.tsx
 //
-// Events first, court finder below (swap back once the map returns). Courts
-// come from the committed Google Places snapshot in
+// Events first, court finder under the event list (swap back once the map
+// returns). Courts come from the committed Google Places snapshot in
 // public/data/courts-US.json — regenerate it with
 // `npm run courts:fetch` (needs GOOGLE_MAPS_API_KEY, server-side only). The
 // map itself needs NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY; without that key the
@@ -45,7 +45,7 @@ export default async function PlayPage() {
               plays on any pickleball court, so you can also find one near you below.
             </p>
 
-            <section aria-labelledby="upcoming-events" className="mb-16">
+            <section aria-labelledby="upcoming-events">
               <h2
                 id="upcoming-events"
                 className="mb-8 text-2xl md:text-3xl font-bold text-center text-[#01014c]"
@@ -53,21 +53,22 @@ export default async function PlayPage() {
                 Tournaments &amp; open play
               </h2>
 
-              {/* now shows every static event + any DB updates */}
-              <PlayEvents events={tournaments} />
-            </section>
-
-            <section aria-labelledby="find-a-court">
-              <h2
-                id="find-a-court"
-                className="mb-2 text-2xl md:text-3xl font-bold text-center text-[#01014c]"
-              >
-                Find a court near you
-              </h2>
-              <p className="mx-auto mb-6 max-w-2xl text-center text-gray-600">
-                Search public pickleball courts across the US, then get directions.
-              </p>
-              <CourtFinder courtsUrl="/data/courts-US.json" browserKey={browserKey} />
+              {/* The court finder rides in the events column, under the list,
+                  so it sits beside the signup sidebar instead of below it. */}
+              <PlayEvents
+                events={tournaments}
+                belowList={
+                  <section aria-labelledby="find-a-court">
+                    <h2 id="find-a-court" className="mb-1 text-2xl font-bold">
+                      Find a court near you
+                    </h2>
+                    <p className="mb-4 text-gray-600">
+                      Search public pickleball courts across the US, then get directions.
+                    </p>
+                    <CourtFinder courtsUrl="/data/courts-US.json" browserKey={browserKey} />
+                  </section>
+                }
+              />
             </section>
           </div>
         </main>
