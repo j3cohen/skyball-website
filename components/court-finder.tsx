@@ -381,23 +381,19 @@ export default function CourtFinder({
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-lg border border-gray-200 bg-white lg:min-h-[60vh]",
-            // The fixed mobile height is for the map canvas; the keyless
-            // fallback card sizes to its content instead of floating in a band.
-            browserKey && "h-[55dvh] lg:h-auto",
-          )}
-        >
-          <CourtMap
-            courts={filtered}
-            selectedId={selectedId}
-            browserKey={browserKey}
-            onSelect={setSelectedId}
-            userLocation={coords}
-          />
-        </div>
+      {/* No key → no map pane at all; the list takes the full width. */}
+      <div className={cn("grid gap-4", browserKey && "lg:grid-cols-[minmax(0,1fr)_380px]")}>
+        {browserKey && (
+          <div className="relative h-[55dvh] overflow-hidden rounded-lg border border-gray-200 bg-white lg:h-auto lg:min-h-[60vh]">
+            <CourtMap
+              courts={filtered}
+              selectedId={selectedId}
+              browserKey={browserKey}
+              onSelect={setSelectedId}
+              userLocation={coords}
+            />
+          </div>
+        )}
         <aside
           className="hidden max-h-[75vh] flex-col overflow-hidden rounded-lg bg-[#01014c] text-white lg:flex lg:min-h-[60vh]"
           aria-label={selected ? "Court details" : "Court list"}

@@ -27,7 +27,10 @@ export const metadata: Metadata = pageMetadata({
 
 export default async function PlayPage() {
   const tournaments = await getAllTournaments()
-  const browserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? null
+  // Map is off while the Google Maps key is expired — the finder renders
+  // list-only without a key. To bring the map back, restore:
+  //   process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? null
+  const browserKey: string | null = null
 
   return (
     <>
